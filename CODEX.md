@@ -1,0 +1,98 @@
+# ORCA
+
+## Project
+ORCA is a marine decision-support platform that answers location- and
+time-specific queries using live ocean, weather, satellite, and GIS data.
+
+## Stack
+- Frontend: React + Vite + JavaScript + ESLint
+- Backend: Python + FastAPI
+- AI Orchestration: LangGraph
+- GIS: GeoPandas + Shapely
+- Database: PostgreSQL + PostGIS
+- Maps: MapLibre GL JS
+
+## Core Flow
+User → FastAPI → Query Understanding → Planner →
+Ocean / Weather / GIS Agents → Analysis →
+Evidence-backed Recommendation → Frontend
+
+## Main Modules
+- Authentication
+- Dashboard
+- Ask ORCA
+- Map Explorer
+- Alerts
+- Reports
+
+## Architecture Rules
+- Use the existing project structure; do not restructure it.
+- Keep frontend, API, agents, analysis, GIS, and data-provider logic separate.
+- Live data access belongs in `providers/` and `tools/`, not agents or analysis.
+- Agents gather and interpret data; analysis modules perform domain calculations.
+- Shared request/response formats must follow `docs/api_contracts.md`.
+- Do not change shared contracts unless explicitly required.
+- Use environment variables for secrets and API keys.
+- Add basic validation and error handling.
+- Avoid modifying files outside the assigned task.
+- At task completion, update only the assigned `Task Progress` section in `CODEX.md`.
+
+## Shared Documentation
+Read only what is relevant to the assigned task:
+- `docs/architecture.md` — component boundaries and system flow
+- `docs/api_contracts.md` — API request/response formats
+- `docs/data_sources.md` — live data provider specifications
+
+## Data Flow
+providers → tools → agents → analysis → API → frontend
+
+## Development
+Frontend:
+`cd frontend && npm run dev`
+
+Backend:
+`cd backend`
+Activate `.venv`, then:
+`uvicorn app.main:app --reload`
+
+
+## Task Progress
+
+Each Codex instance must update only its assigned section after completing
+its task. Keep entries brief.
+
+### Codex 1
+Status: Not Started
+Completed:
+Files Changed:
+Integration Notes:
+
+### Codex 2
+Status: Not Started
+Completed:
+Files Changed:
+Integration Notes:
+
+### Codex 3
+Status: Not Started
+Completed:
+Files Changed:
+Integration Notes:
+
+### Codex 4
+Status: Not Started
+Completed:
+Files Changed:
+Integration Notes:
+
+### Codex 5
+Status: Not Started
+Completed:
+Files Changed:
+Integration Notes:
+
+### Codex 6
+Status: Completed
+Completed: Runnable FastAPI foundation, schemas, routers, services, workflow interfaces, and DB configuration.
+Files Changed: backend/app/{main,config,api,core,workflows,services,models,schemas,database,utils,analysis}; docs/api_contracts.md
+Integration Notes: Agents register through workflow/data-coordination interfaces; database remains optional until ORCA_DATABASE_URL is supplied.
