@@ -17,7 +17,9 @@ class QueryParser:
         "safety": ("safe", "safety", "risk", "hazard"),
         "weather": ("weather", "wind", "rain", "storm", "temperature", "forecast"),
         "ocean": ("ocean", "marine", "wave", "current", "sea", "swell", "tide"),
-        "map": ("map", "layer", "area", "zone"),
+        "map": ("map", "layer", "area", "zone", "location", "near", "distance", "coordinates", "boundary", "coastal"),
+        "gis": ("restricted", "hazard zone", "spatial", "geofence"),
+        "pfz": ("pfz", "fishing zone"),
     }
 
     def parse(self, query: str) -> ParsedQuery:
@@ -25,5 +27,5 @@ class QueryParser:
         lowered = normalized.lower()
         matches = [name for name, terms in self._intent_terms.items() if any(term in lowered for term in terms)]
         intent = matches[0] if matches else "general"
-        domains = sorted({"gis" if match in {"route", "map"} else match for match in matches})
+        domains = sorted({"gis" if match in {"route", "map", "gis", "pfz"} else match for match in matches})
         return ParsedQuery(original=query, normalized=normalized, intent=intent, requested_domains=domains)

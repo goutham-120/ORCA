@@ -88,10 +88,10 @@ Files Changed: backend/app/{agents,providers,tools,core/query_parser.py,workflow
 Integration Notes: The existing DataCoordinator preserves injected weather/ocean tools and registers defaults only when absent. Query-selected weather/ocean domains execute; other requested domains remain pending for their future workstreams. Provider status is preserved in evidence as live, cached, or unavailable. No credentials are required.
 
 ### GIS & Spatial Analytics
-Status: Not Started
-Completed:
-Files Changed:
-Integration Notes:
+Status: Completed
+Completed: Added deterministic GeoJSON-compatible geometry, layers, spatial and temporal queries, GIS tool/agent orchestration, and focused GIS analysis helpers. Caller-provided layers are explicitly marked static; absent live GIS data is unavailable rather than fabricated. Tests: `python -m compileall -q app tests` and `python -m unittest discover -s tests -v` (13 passed).
+Files Changed: backend/app/{gis,tools/gis_tools.py,agents/gis_agent.py,analysis/{pfz_analysis.py,safety_analysis.py,route_analysis.py,investigation.py},core/query_parser.py,workflows/orca_graph.py}; backend/tests/test_gis.py
+Integration Notes: The workflow now runs GIS alongside selected Ocean/Weather domains without using DataCoordinator for GIS. Supply layers through query context metadata as `gis_layers`; GIS evidence preserves static/unavailable provenance. No live GIS provider or data source is configured.
 
 ### Backend Platform & API Foundation
 Status: Completed

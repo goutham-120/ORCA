@@ -7,6 +7,7 @@ separate modules and may not be installed while this service starts.
 from typing import Any
 from app.agents.ocean_agent import OceanAgent
 from app.agents.weather_agent import WeatherAgent
+from app.agents.gis_agent import GISAgent
 from app.core.context import QueryContext
 from app.services.data_coordinator import DataCoordinator
 from app.tools.ocean_tools import OceanTool
@@ -22,18 +23,21 @@ class OrcaWorkflow:
             self.coordinator.register("weather", WeatherTool())
         if "ocean" not in self.coordinator._sources:
             self.coordinator.register("ocean", OceanTool())
-        self._agents = {"weather": WeatherAgent(), "ocean": OceanAgent()}
+        self._agents = {"weather": WeatherAgent(), "ocean": OceanAgent(), "gis": GISAgent()}
 
     async def run(self, context: QueryContext) -> dict[str, Any]:
         # Preserve the existing coordinator boundary and only retrieve selected domains.
         requested = context.parsed_query.requested_domains
-        selected = [name for name in requested if name in self._agents]
-        pending_domains = [name for name in requested if name not in self._agents]
+        # GIS needs a location to perform a meaningful spatial operation. Keep it
+        # pending when absent, preserving the prior route/safety workflow result.
+        selected = [name for name in requested if name in self._agents and (name != "gis" or context.location is not None)]
+        pending_domains = [name for name in requested if name not in selected]
         context.metadata["pending_domains"] = pending_domains
         if not selected:
             return {"agents_used": [], "analysis_results": {}, "evidence": [], "pending_domains": pending_domains, "answer": "ORCA did not identify an ocean or weather data request."}
-        collected = await self.coordinator.collect(selected, context.as_dict())
-        results = {name: self._agents[name].interpret(collected.get(name, {})) for name in selected}
+        provider_domains = [name for name in selected if name in {"weather", "ocean"}]
+        collected = await self.coordinator.collect(provider_domains, context.as_dict())
+        results = {name: self._agents[name].interpret(context.as_dict() if name == "gis" else collected.get(name, {})) for name in selected}
         context.agent_results.update(results)
         evidence = []
         for name, data in collected.items():
@@ -45,7 +49,10 @@ class OrcaWorkflow:
                 "observed_at": observation.get("timestamp"),
                 "metadata": {"domain": name, "data_status": data.get("source_status", "unavailable"), "error": data.get("error")},
             })
-        available = [name for name, result in results.items() if result.get("data_status") in {"live", "cached"}]
+        if "gis" in results:
+            gis_result = results["gis"]
+            evidence.append({"source": "caller-supplied GIS layers" if gis_result.get("available") else "GIS integration", "summary": f"GIS data status: {gis_result.get('data_status', 'unavailable')}", "url": None, "observed_at": None, "metadata": {"domain": "gis", "data_status": gis_result.get("data_status", "unavailable"), "operation": gis_result.get("operation"), "layers": gis_result.get("layer_metadata", [])}})
+        available = [name for name, result in results.items() if result.get("data_status") in {"live", "cached", "static"}]
         unavailable = [name for name in selected if name not in available]
         answer = "ORCA processed " + (", ".join(available) if available else "no available live or cached") + " intelligence."
         if unavailable:
