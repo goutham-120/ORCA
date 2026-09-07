@@ -85,7 +85,7 @@ Status: Completed
 Owner: Ocean & Weather Data Intelligence
 Completed: Added live Open-Meteo weather and marine retrieval, normalized observations, cache-on-provider-failure handling, domain agents, and existing-workflow integration.
 Files Changed: backend/app/{agents,providers,tools,core/query_parser.py,workflows/orca_graph.py}; backend/tests/test_ocean_weather.py
-Integration Notes: The existing DataCoordinator registers only query-selected weather/ocean tools; provider status is preserved in evidence as live, cached, or unavailable. No credentials are required.
+Integration Notes: The existing DataCoordinator preserves injected weather/ocean tools and registers defaults only when absent. Query-selected weather/ocean domains execute; other requested domains remain pending for their future workstreams. Provider status is preserved in evidence as live, cached, or unavailable. No credentials are required.
 
 ### GIS & Spatial Analytics
 Status: Not Started

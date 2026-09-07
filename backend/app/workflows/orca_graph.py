@@ -18,15 +18,20 @@ class OrcaWorkflow:
 
     def __init__(self, coordinator: DataCoordinator | None = None) -> None:
         self.coordinator = coordinator or DataCoordinator()
-        self.coordinator.register("weather", WeatherTool())
-        self.coordinator.register("ocean", OceanTool())
+        if "weather" not in self.coordinator._sources:
+            self.coordinator.register("weather", WeatherTool())
+        if "ocean" not in self.coordinator._sources:
+            self.coordinator.register("ocean", OceanTool())
         self._agents = {"weather": WeatherAgent(), "ocean": OceanAgent()}
 
     async def run(self, context: QueryContext) -> dict[str, Any]:
         # Preserve the existing coordinator boundary and only retrieve selected domains.
-        selected = [name for name in context.parsed_query.requested_domains if name in self._agents]
+        requested = context.parsed_query.requested_domains
+        selected = [name for name in requested if name in self._agents]
+        pending_domains = [name for name in requested if name not in self._agents]
+        context.metadata["pending_domains"] = pending_domains
         if not selected:
-            return {"agents_used": [], "analysis_results": {}, "evidence": [], "answer": "ORCA did not identify an ocean or weather data request."}
+            return {"agents_used": [], "analysis_results": {}, "evidence": [], "pending_domains": pending_domains, "answer": "ORCA did not identify an ocean or weather data request."}
         collected = await self.coordinator.collect(selected, context.as_dict())
         results = {name: self._agents[name].interpret(collected.get(name, {})) for name in selected}
         context.agent_results.update(results)
@@ -45,7 +50,7 @@ class OrcaWorkflow:
         answer = "ORCA processed " + (", ".join(available) if available else "no available live or cached") + " intelligence."
         if unavailable:
             answer += " Unavailable: " + ", ".join(unavailable) + "."
-        return {"agents_used": selected, "analysis_results": results, "evidence": evidence, "answer": answer}
+        return {"agents_used": selected, "analysis_results": results, "evidence": evidence, "pending_domains": pending_domains, "answer": answer}
 
     def build_langgraph(self) -> Any | None:
         """Return a LangGraph graph when langgraph is installed; otherwise None.

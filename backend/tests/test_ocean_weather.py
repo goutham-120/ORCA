@@ -3,6 +3,7 @@ import unittest
 from app.agents.ocean_agent import OceanAgent
 from app.agents.weather_agent import WeatherAgent
 from app.providers.open_meteo import OpenMeteoProvider, ProviderError, normalize_marine, normalize_weather
+from app.services.data_coordinator import DataCoordinator
 from app.workflows.orca_graph import OrcaWorkflow
 from app.core.context import QueryContext
 from app.core.query_parser import QueryParser
@@ -53,3 +54,20 @@ class OceanWeatherTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["agents_used"], ["ocean", "weather"])
         self.assertEqual(set(result["analysis_results"]), {"ocean", "weather"})
         self.assertIn("Unavailable", result["answer"])
+
+    async def test_workflow_preserves_unimplemented_requested_domains(self):
+        context = QueryContext(QueryParser().parse("safe route"))
+        result = await OrcaWorkflow().run(context)
+        self.assertEqual(result["agents_used"], [])
+        self.assertEqual(result["pending_domains"], ["gis", "safety"])
+        self.assertEqual(context.metadata["pending_domains"], ["gis", "safety"])
+
+    def test_workflow_does_not_replace_injected_tools(self):
+        coordinator = DataCoordinator()
+        custom_weather = object()
+        custom_ocean = object()
+        coordinator.register("weather", custom_weather)
+        coordinator.register("ocean", custom_ocean)
+        OrcaWorkflow(coordinator)
+        self.assertIs(coordinator._sources["weather"], custom_weather)
+        self.assertIs(coordinator._sources["ocean"], custom_ocean)
