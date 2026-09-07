@@ -15,8 +15,8 @@ class QueryParser:
     _intent_terms = {
         "route": ("route", "navigate", "voyage", "path"),
         "safety": ("safe", "safety", "risk", "hazard"),
-        "weather": ("weather", "wind", "rain", "storm"),
-        "ocean": ("ocean", "wave", "current", "sea", "swell"),
+        "weather": ("weather", "wind", "rain", "storm", "temperature", "forecast"),
+        "ocean": ("ocean", "marine", "wave", "current", "sea", "swell", "tide"),
         "map": ("map", "layer", "area", "zone"),
     }
 
