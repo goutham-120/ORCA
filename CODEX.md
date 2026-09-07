@@ -61,37 +61,38 @@ Activate `.venv`, then:
 Each Codex instance must update only its assigned section after completing
 its task. Keep entries brief.
 
-### Codex 1
+### instances: 
+### Frontend Platform & UX Foundation
 Status: Completed
 Completed: Responsive ORCA frontend shell, auth foundation, shared API client, dashboard, and placeholder routes.
 Files Changed: frontend/src/{App,main,index,components/layout,components/dashboard,pages/{Login,Register,Dashboard},context,hooks,services/{api,authService}}
 Integration Notes: Future pages plug into App.jsx paths and render inside MainLayout; use services/api.js for backend calls.
 
-### Codex 2
+### Ask ORCA — Conversational Intelligence
 Status: Not Started
 Completed:
 Files Changed:
 Integration Notes:
 
-### Codex 3
+### Map Explorer — Geospatial Interface
 Status: Not Started
 Completed:
 Files Changed:
 Integration Notes:
 
-### Codex 4
+### Ocean & Weather Data Intelligence
 Status: Not Started
 Completed:
 Files Changed:
 Integration Notes:
 
-### Codex 5
+### GIS & Spatial Analytics
 Status: Not Started
 Completed:
 Files Changed:
 Integration Notes:
 
-### Codex 6
+### Backend Platform & API Foundation
 Status: Completed
 Completed: Runnable FastAPI foundation, schemas, routers, services, workflow interfaces, and DB configuration.
 Files Changed: backend/app/{main,config,api,core,workflows,services,models,schemas,database,utils,analysis}; docs/api_contracts.md
