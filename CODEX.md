@@ -62,10 +62,10 @@ Each Codex instance must update only its assigned section after completing
 its task. Keep entries brief.
 
 ### Codex 1
-Status: Not Started
-Completed:
-Files Changed:
-Integration Notes:
+Status: Completed
+Completed: Responsive ORCA frontend shell, auth foundation, shared API client, dashboard, and placeholder routes.
+Files Changed: frontend/src/{App,main,index,components/layout,components/dashboard,pages/{Login,Register,Dashboard},context,hooks,services/{api,authService}}
+Integration Notes: Future pages plug into App.jsx paths and render inside MainLayout; use services/api.js for backend calls.
 
 ### Codex 2
 Status: Not Started
