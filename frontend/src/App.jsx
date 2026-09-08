@@ -8,6 +8,8 @@ import MapExplorer from './pages/MapExplorer'
 import Alerts from './pages/Alerts'
 import { Reports } from './pages/Reports'
 import Home from './pages/Home'
+import Personalization from './pages/Personalization'
+import { useAuth } from './hooks/useAuth'
 import './App.css'
 
 function Placeholder({ title }) {
@@ -21,6 +23,7 @@ function Placeholder({ title }) {
 }
 
 export default function App() {
+  const { user } = useAuth()
   const [currentPath, setCurrentPath] = useState(() => {
     return window.location.pathname
   })
@@ -45,6 +48,11 @@ export default function App() {
   if (currentPath === '/login') return <Login navigate={navigate} />
   if (currentPath === '/register') return <Register navigate={navigate} />
   if (currentPath === '/') return <Home navigate={navigate} />
+  if (!user) return <Login navigate={navigate} />
+  if (currentPath === '/personalization') {
+    return user.user_category ? <Dashboard navigate={navigate} /> : <Personalization navigate={navigate} />
+  }
+  if (!user.user_category) return <Personalization navigate={navigate} />
 
   return (
     <MainLayout path={currentPath} navigate={navigate}>

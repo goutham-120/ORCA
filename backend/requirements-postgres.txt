@@ -1,0 +1,2 @@
+# Install alongside requirements.txt when ORCA_DATABASE_URL is PostgreSQL.
+psycopg[binary]==3.3.3

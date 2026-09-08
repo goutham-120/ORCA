@@ -16,9 +16,14 @@ class UserResponse(BaseModel):
     id: str
     email: str
     display_name: str
+    user_category: str | None = None
 
 
 class AuthResponse(BaseModel):
     user: UserResponse
     access_token: str | None = None
     token_type: str = "bearer"
+
+
+class ProfileUpdateRequest(BaseModel):
+    user_category: str

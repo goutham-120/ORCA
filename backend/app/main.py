@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.router import api_router
 from app.config import get_settings
+from app.database.session import database
 from app.schemas.common import HealthResponse
 
 settings = get_settings()
@@ -17,6 +18,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(api_router, prefix=settings.api_prefix)
+
+
+@app.on_event("startup")
+def initialize_database() -> None:
+    """Create the user table before handling authentication requests."""
+    database.initialize()
 
 
 @app.get("/health", response_model=HealthResponse, tags=["system"])
