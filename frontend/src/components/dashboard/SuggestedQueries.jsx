@@ -1,7 +1,3 @@
-const queries = [
-  ['◈', 'Is it safe to travel from Visakhapatnam tomorrow?'], ['◒', 'What are the current marine conditions near my location?'], ['⌁', 'Are there any hazards along this route?'], ['◉', 'Show suitable areas based on current conditions.'], ['⌖', 'Give me the best time to travel this week.'],
-]
-
-export default function SuggestedQueries({ onSelect }) {
-  return <section className="panel suggested"><div className="panel-title"><h2>Try Asking ORCA</h2><button onClick={() => onSelect('')}>See more →</button></div><div>{queries.map(([icon, query]) => <button className="suggestion" key={query} onClick={() => onSelect(query)}><span>{icon}</span><b>{query}</b><i>›</i></button>)}</div></section>
-}
+import { useState } from 'react'
+import { suggestedQueries } from '../../data/dashboardData'
+export default function SuggestedQueries({ onSelect }) { const [selected, setSelected] = useState(null); const select = (query) => { setSelected(query); onSelect(query) }; return <section className="panel suggested"><div className="panel-title"><div><p className="eyebrow">START AN ANALYSIS</p><h2>Try asking ORCA</h2></div><button onClick={() => onSelect('')}>Ask ORCA <span aria-hidden="true">-&gt;</span></button></div><div>{suggestedQueries.map((item) => <button className={`suggestion ${selected === item.query ? 'selected' : ''}`} key={item.query} onClick={() => select(item.query)} aria-pressed={selected === item.query}><span>{item.icon}</span><div><small>{item.category}</small><b>{item.query}</b></div><i aria-hidden="true">-&gt;</i></button>)}</div></section> }

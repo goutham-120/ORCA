@@ -1,8 +1,54 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Manrope:wght@600;700;800&display=swap');
 
-:root { font-family: 'DM Sans', Arial, sans-serif; color: #132640; background: #f3f8fd; font-synthesis: none; text-rendering: optimizeLegibility; }
-* { box-sizing: border-box; }
-body { margin: 0; min-width: 320px; }
-button, input { font: inherit; }
-button { cursor: pointer; }
-#root { min-height: 100vh; }
+:root {
+  /* Official ORCA Design System Tokens */
+  --orca-navy: #102c4e;
+  --orca-blue: #1077ca;
+  --orca-cyan: #1aa7ca;
+  --orca-mint: #168c75;
+  --orca-warning: #bd7905;
+  --orca-danger: #c84550;
+  --orca-background: #f3f8fc;
+  --orca-card: #ffffff;
+  --orca-text: #16324d;
+  --orca-muted: #667b91;
+  --orca-border: #dce7f0;
+  --orca-radius: 8px;
+  --orca-shadow: 0 8px 24px rgba(23, 58, 96, 0.08);
+
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: var(--orca-text);
+  background: var(--orca-background);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background-color: var(--orca-background);
+  color: var(--orca-text);
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--orca-blue);
+  outline-offset: 2px;
+}
+
+#root {
+  min-height: 100vh;
+}
