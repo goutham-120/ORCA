@@ -2,7 +2,19 @@ import { useEffect, useRef, useState } from 'react'
 import { Map, Marker, NavigationControl, Popup } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 
-const DEFAULT_STYLE = import.meta.env.VITE_MAP_STYLE_URL || 'https://demotiles.maplibre.org/style.json'
+const DEFAULT_STYLE = import.meta.env.VITE_MAP_STYLE_URL || {
+  version: 8,
+  sources: {
+    openstreetmap: {
+      type: 'raster',
+      tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+      tileSize: 256,
+      maxzoom: 19,
+      attribution: '© OpenStreetMap contributors',
+    },
+  },
+  layers: [{ id: 'openstreetmap', type: 'raster', source: 'openstreetmap' }],
+}
 const featureCollection = (features) => ({ type: 'FeatureCollection', features })
 
 export default function MapCanvas({ selectedLocation, layers, routeGeometry, onMapLocation, isExpanded, onToggleExpanded }) {
@@ -18,19 +30,36 @@ export default function MapCanvas({ selectedLocation, layers, routeGeometry, onM
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return undefined
     const initialLocation = initialLocationRef.current
-    const map = new Map({ container: containerRef.current, style: DEFAULT_STYLE, center: [initialLocation.longitude, initialLocation.latitude], zoom: 7 })
-    mapRef.current = map
-    map.addControl(new NavigationControl(), 'top-right')
-    map.on('load', () => {
+    let styleReady = false
+    let map
+    const timeoutId = window.setTimeout(() => {
+      if (!styleReady) setMapStatus('error')
+    }, 12000)
+    try {
+      map = new Map({ container: containerRef.current, style: DEFAULT_STYLE, center: [initialLocation.longitude, initialLocation.latitude], zoom: 7 })
+      mapRef.current = map
+      map.addControl(new NavigationControl(), 'top-right')
+      map.once('style.load', () => {
+        styleReady = true
+        window.clearTimeout(timeoutId)
       map.addSource('orca-layers', { type: 'geojson', data: featureCollection([]) })
       map.addLayer({ id: 'orca-fill', type: 'fill', source: 'orca-layers', filter: ['==', '$type', 'Polygon'], paint: { 'fill-color': '#f59e0b', 'fill-opacity': 0.25 } })
       map.addLayer({ id: 'orca-line', type: 'line', source: 'orca-layers', filter: ['==', '$type', 'LineString'], paint: { 'line-color': '#38bdf8', 'line-width': 3 } })
       map.addLayer({ id: 'orca-point', type: 'circle', source: 'orca-layers', filter: ['==', '$type', 'Point'], paint: { 'circle-radius': 6, 'circle-color': '#ef4444', 'circle-stroke-width': 2, 'circle-stroke-color': '#fff' } })
       setMapStatus('ready')
-    })
-    map.on('error', () => setMapStatus('error'))
-    map.on('click', (event) => locationHandlerRef.current({ latitude: event.lngLat.lat, longitude: event.lngLat.lng, label: 'Selected map coordinate' }))
-    return () => { map.remove(); mapRef.current = null }
+      })
+      map.on('error', () => {
+        if (!styleReady) {
+          window.clearTimeout(timeoutId)
+          setMapStatus('error')
+        }
+      })
+      map.on('click', (event) => locationHandlerRef.current({ latitude: event.lngLat.lat, longitude: event.lngLat.lng, label: 'Selected map coordinate' }))
+    } catch {
+      window.clearTimeout(timeoutId)
+      window.setTimeout(() => setMapStatus('error'), 0)
+    }
+    return () => { window.clearTimeout(timeoutId); map?.remove(); mapRef.current = null }
   }, [])
 
   useEffect(() => {
