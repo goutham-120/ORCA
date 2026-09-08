@@ -33,6 +33,12 @@ class OrcaWorkflow:
         selected = [name for name in requested if name in self._agents and (name != "gis" or context.location is not None)]
         pending_domains = [name for name in requested if name not in selected]
         context.metadata["pending_domains"] = pending_domains
+        context.metadata["plan"] = {
+            "intent": context.parsed_query.intent,
+            "requested_domains": requested,
+            "selected_agents": selected,
+            "evidence_needed": ["ocean observation" if name == "ocean" else "weather observation" if name == "weather" else "spatial layers" for name in selected],
+        }
         if not selected:
             return {"agents_used": [], "analysis_results": {}, "evidence": [], "pending_domains": pending_domains, "answer": "ORCA did not identify an ocean or weather data request."}
         provider_domains = [name for name in selected if name in {"weather", "ocean"}]
@@ -47,11 +53,11 @@ class OrcaWorkflow:
                 "summary": f"{name.title()} data status: {data.get('source_status', 'unavailable')}",
                 "url": data.get("source_url"),
                 "observed_at": observation.get("timestamp"),
-                "metadata": {"domain": name, "data_status": data.get("source_status", "unavailable"), "error": data.get("error")},
+                "metadata": {"domain": name, "data_status": data.get("source_status", "unavailable"), "error": data.get("error"), "measurements": observation},
             })
         if "gis" in results:
             gis_result = results["gis"]
-            evidence.append({"source": "caller-supplied GIS layers" if gis_result.get("available") else "GIS integration", "summary": f"GIS data status: {gis_result.get('data_status', 'unavailable')}", "url": None, "observed_at": None, "metadata": {"domain": "gis", "data_status": gis_result.get("data_status", "unavailable"), "operation": gis_result.get("operation"), "layers": gis_result.get("layer_metadata", [])}})
+            evidence.append({"source": "caller-supplied GIS layers" if gis_result.get("available") else "GIS integration", "summary": f"GIS data status: {gis_result.get('data_status', 'unavailable')}", "url": None, "observed_at": None, "metadata": {"domain": "gis", "data_status": gis_result.get("data_status", "unavailable"), "operation": gis_result.get("operation"), "layers": gis_result.get("layer_metadata", []), "results": gis_result.get("results", {}), "error": gis_result.get("error")}})
         available = [name for name, result in results.items() if result.get("data_status") in {"live", "cached", "static"}]
         unavailable = [name for name in selected if name not in available]
         answer = "ORCA processed " + (", ".join(available) if available else "no available live or cached") + " intelligence."
