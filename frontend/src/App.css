@@ -128,6 +128,21 @@
 .canvas-btn:hover { border-color: #ffffff88; background: #0a335ecc; }
 .canvas-btn.is-active-btn { border-color: #79d6f0; color: #0b2f54; background: #9ee6f8; }
 .map-viewport { position: relative; width: 100%; height: 100%; min-height: 480px; overflow: hidden; background: #082342; }
+.maplibre-viewport { width: 100%; min-height: 480px; height: 100%; background: #082342; }
+.map-unavailable { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; color: #fff; background: #082342e8; text-align: center; font-size: 13px; }
+.map-state { margin: 10px 0 0; color: #5d788f; font-size: 11px; line-height: 1.5; }
+.map-state-error { color: #b0404a; }
+.layer-toggle-chip:disabled { cursor: not-allowed; opacity: .58; }
+.layer-toggle-chip small { color: inherit; font-size: 9px; }
+.map-actions-panel { padding: 16px; }
+.map-actions-panel h2 { margin: 3px 0 0; font-size: 17px; }
+.map-action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px; }
+.map-action-grid > div { padding: 12px; border: 1px solid #e1ebf2; border-radius: 7px; background: #f9fcfe; }
+.map-action-grid p { margin: 0 0 10px; color: #5d788f; font-size: 11px; line-height: 1.5; }
+.map-action-grid .ask-orca-link-btn { width: auto; padding: 8px 12px; }
+.route-label { display: block; margin-bottom: 5px; color: #5d788f; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.map-action-grid select { width: 100%; margin-bottom: 10px; padding: 8px; border: 1px solid #d5e4ef; border-radius: 6px; background: #fff; color: var(--ink); }
+@media (max-width: 768px) { .maplibre-viewport { min-height: 380px; } .map-action-grid { grid-template-columns: 1fr; } }
 .map-transform-world { position: absolute; inset: 0; transform-origin: center center; transition: transform .25s ease-out; }
 .ocean-svg-bg { width: 100%; height: 100%; display: block; }
 .map-layer { position: absolute; inset: 0; pointer-events: none; }
