@@ -9,6 +9,8 @@ class OrcaQueryRequest(BaseModel):
     location: Location | None = None
     time_range: tuple[datetime | None, datetime | None] | None = None
     context: dict[str, Any] = Field(default_factory=dict)
+    conversation_id: str | None = Field(default=None, max_length=120)
+    language: str = Field(default="en", min_length=2, max_length=12)
 
 
 class AssessmentResponse(BaseModel):
@@ -35,6 +37,11 @@ class OrcaQueryResponse(BaseModel):
     recommendations: list[RecommendationResponse] = Field(default_factory=list)
     evidence: list[EvidenceItem] = Field(default_factory=list)
     created_at: datetime
+    conversation_id: str | None = None
+    language: str = "en"
+    context: dict[str, Any] = Field(default_factory=dict)
+    pending_domains: list[str] = Field(default_factory=list)
+    unavailable_domains: list[str] = Field(default_factory=list)
 
 
 class QueryHistoryItem(BaseModel):

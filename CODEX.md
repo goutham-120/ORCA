@@ -69,10 +69,10 @@ Files Changed: frontend/src/{App,main,index,components/layout,components/dashboa
 Integration Notes: Future pages plug into App.jsx paths and render inside MainLayout; use services/api.js for backend calls.
 
 ### Ask ORCA — Conversational Intelligence
-Status: Not Started
-Completed:
-Files Changed:
-Integration Notes:
+Status: Completed
+Completed: Added evidence-grounded conversational synthesis, multi-domain/fishing-safety planning, lightweight follow-up context, Hindi MVP parsing/response wrapper, and Ask ORCA chat UI with editable browser speech-to-text.
+Files Changed: backend/app/{core/{conversation,orchestrator,query_parser},workflows/orca_graph.py,schemas/orca.py}; backend/tests/test_conversation.py; frontend/src/{pages/AskOrca.jsx,components/chat,services/orcaService.js,App.jsx,App.css}; docs/api_contracts.md
+Integration Notes: Reuses existing Ocean/Weather tools through DataCoordinator and GISAgent unchanged. Coordinates supplied by Map Explorer can be sent as request location; place names are never geocoded. No LLM or translation service is required: deterministic synthesis exposes evidence, unavailable data, current-only time limitations, and PFZ unavailability. Voice uses the browser Web Speech API and falls back to editable text on unsupported/denied browsers.
 
 ### Map Explorer — Geospatial Interface
 Status: Not Started

@@ -3,6 +3,7 @@ import MainLayout from './components/layout/MainLayout'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
+import AskOrca from './pages/AskOrca'
 import './App.css'
 
 const titles = { '/ask-orca': 'Ask ORCA', '/map-explorer': 'Map Explorer', '/alerts': 'Alerts', '/reports': 'Reports' }
@@ -15,5 +16,5 @@ export default function App() {
   const path = location.pathname === '/' ? '/dashboard' : location.pathname
   if (path === '/login') return <Login navigate={navigate} />
   if (path === '/register') return <Register navigate={navigate} />
-  return <MainLayout path={path} navigate={navigate}>{path === '/dashboard' ? <Dashboard navigate={navigate} /> : <Placeholder title={titles[path] || 'Page not found'} />}</MainLayout>
+  return <MainLayout path={path} navigate={navigate}>{path === '/dashboard' ? <Dashboard navigate={navigate} /> : path === '/ask-orca' ? <AskOrca /> : <Placeholder title={titles[path] || 'Page not found'} />}</MainLayout>
 }

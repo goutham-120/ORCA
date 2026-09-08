@@ -23,8 +23,11 @@ as a development-only identity header until authentication is integrated.
 ## ORCA
 
 ### POST /orca/query
-Request: `{ "query", "location"?, "time_range"?, "context"? }`. Response includes
-`query_id`, `intent`, structured `assessment`, `recommendations`, and `evidence`.
+Request: `{ "query", "location"?, "time_range"?, "context"?, "conversation_id"?, "language"? }`. Response includes
+`query_id`, `intent`, structured `assessment`, `recommendations`, and `evidence`. Optional
+`conversation_id`, `language`, and `context` return client-session context for follow-up queries.
+The backward-compatible `pending_domains` and `unavailable_domains` arrays expose
+capability coverage; callers should treat incomplete safety evidence as limited.
 
 ### GET /orca/history
 Returns `{ "items": [{ "query_id", "query", "intent", "created_at" }] }`.
