@@ -7,6 +7,7 @@ import AskOrca from './pages/AskOrca'
 import MapExplorer from './pages/MapExplorer'
 import Alerts from './pages/Alerts'
 import { Reports } from './pages/Reports'
+import Home from './pages/Home'
 import './App.css'
 
 function Placeholder({ title }) {
@@ -21,14 +22,12 @@ function Placeholder({ title }) {
 
 export default function App() {
   const [currentPath, setCurrentPath] = useState(() => {
-    const p = window.location.pathname
-    return p === '/' ? '/dashboard' : p
+    return window.location.pathname
   })
 
   useEffect(() => {
     const listener = () => {
-      const p = window.location.pathname
-      setCurrentPath(p === '/' ? '/dashboard' : p)
+      setCurrentPath(window.location.pathname)
     }
 
     window.addEventListener('popstate', listener)
@@ -39,14 +38,13 @@ export default function App() {
     window.history.pushState({}, '', to)
 
     const url = new URL(to, window.location.origin)
-    const targetPath = url.pathname === '/' ? '/dashboard' : url.pathname
-
-    setCurrentPath(targetPath)
+    setCurrentPath(url.pathname)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   if (currentPath === '/login') return <Login navigate={navigate} />
   if (currentPath === '/register') return <Register navigate={navigate} />
+  if (currentPath === '/') return <Home navigate={navigate} />
 
   return (
     <MainLayout path={currentPath} navigate={navigate}>
