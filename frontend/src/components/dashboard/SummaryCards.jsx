@@ -1,7 +1,2 @@
-const cards = [
-  ['◒', 'Sea condition', 'Moderate', 'Wave height 1.2 m', 'blue'], ['≋', 'Wind speed', '12 km/h', 'From NE', 'mint'], ['♨', 'Water temperature', '28.4 °C', 'Surface level', 'amber'], ['▲', 'Active alerts', '3', '2 near your area', 'coral'],
-]
-
-export default function SummaryCards() {
-  return <section className="summary-cards" aria-label="Current marine summary">{cards.map(([icon, label, value, detail, color]) => <article className={`summary-card ${color}`} key={label}><span className="summary-icon">{icon}</span><div><small>{label}</small><strong>{value}</strong><p>{detail}</p></div><i>›</i></article>)}</section>
-}
+const metrics = [['wave', 'WV', 'Wave / sea conditions'], ['wind', 'WD', 'Wind'], ['temperature', 'TM', 'Water temperature']]
+export default function SummaryCards({ location, alertSummary, onViewAlerts }) { return <section className="summary-cards" aria-label="Current marine summary">{metrics.map(([id, icon, label]) => { const metric = location[id]; return <article className={`summary-card ${metric.tone}`} key={id}><span className="summary-icon">{icon}</span><div><small>{label}</small><strong>{metric.value}<em>{metric.unit}</em></strong><p>{metric.status}</p></div><span className="metric-trend">{metric.trend}</span></article> })}<article className="summary-card alert-card"><span className="summary-icon">AL</span><div><small>{alertSummary.filtered ? 'Filtered alerts' : 'Active alerts'}</small><strong>{alertSummary.total}</strong><p>{alertSummary.high} high · {alertSummary.moderate} moderate</p></div><button onClick={onViewAlerts}>View alerts <span aria-hidden="true">-&gt;</span></button></article></section> }

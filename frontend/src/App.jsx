@@ -4,17 +4,65 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import AskOrca from './pages/AskOrca'
+import MapExplorer from './pages/MapExplorer'
+import Alerts from './pages/Alerts'
+import { Reports } from './pages/Reports'
 import './App.css'
 
-const titles = { '/ask-orca': 'Ask ORCA', '/map-explorer': 'Map Explorer', '/alerts': 'Alerts', '/reports': 'Reports' }
-function Placeholder({ title }) { return <section className="feature-placeholder"><span>◒</span><h1>{title}</h1><p>This workspace is ready for its ORCA module to connect.</p></section> }
+function Placeholder({ title }) {
+  return (
+    <section className="feature-placeholder">
+      <span>◒</span>
+      <h1>{title}</h1>
+      <p>This workspace is ready for its ORCA module to connect.</p>
+    </section>
+  )
+}
 
 export default function App() {
-  const [location, setLocation] = useState(() => window.location)
-  useEffect(() => { const listener = () => setLocation(window.location); window.addEventListener('popstate', listener); return () => window.removeEventListener('popstate', listener) }, [])
-  const navigate = (to) => { window.history.pushState({}, '', to); setLocation(window.location); window.scrollTo({ top: 0, behavior: 'smooth' }) }
-  const path = location.pathname === '/' ? '/dashboard' : location.pathname
-  if (path === '/login') return <Login navigate={navigate} />
-  if (path === '/register') return <Register navigate={navigate} />
-  return <MainLayout path={path} navigate={navigate}>{path === '/dashboard' ? <Dashboard navigate={navigate} /> : path === '/ask-orca' ? <AskOrca /> : <Placeholder title={titles[path] || 'Page not found'} />}</MainLayout>
+  const [currentPath, setCurrentPath] = useState(() => {
+    const p = window.location.pathname
+    return p === '/' ? '/dashboard' : p
+  })
+
+  useEffect(() => {
+    const listener = () => {
+      const p = window.location.pathname
+      setCurrentPath(p === '/' ? '/dashboard' : p)
+    }
+
+    window.addEventListener('popstate', listener)
+    return () => window.removeEventListener('popstate', listener)
+  }, [])
+
+  const navigate = (to) => {
+    window.history.pushState({}, '', to)
+
+    const url = new URL(to, window.location.origin)
+    const targetPath = url.pathname === '/' ? '/dashboard' : url.pathname
+
+    setCurrentPath(targetPath)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  if (currentPath === '/login') return <Login navigate={navigate} />
+  if (currentPath === '/register') return <Register navigate={navigate} />
+
+  return (
+    <MainLayout path={currentPath} navigate={navigate}>
+      {currentPath === '/dashboard' ? (
+        <Dashboard navigate={navigate} />
+      ) : currentPath === '/ask-orca' ? (
+        <AskOrca key={window.location.search} navigate={navigate} />
+      ) : currentPath === '/map-explorer' ? (
+        <MapExplorer navigate={navigate} />
+      ) : currentPath === '/alerts' ? (
+        <Alerts navigate={navigate} />
+      ) : currentPath === '/reports' ? (
+        <Reports onNavigate={navigate} />
+      ) : (
+        <Placeholder title="Page not found" />
+      )}
+    </MainLayout>
+  )
 }
