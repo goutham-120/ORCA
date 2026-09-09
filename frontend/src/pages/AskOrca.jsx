@@ -25,6 +25,7 @@ export default function AskOrca({ navigate }) {
   const [language, setLanguage] = useState('en')
   const [conversationId, setConversationId] = useState(newId)
   const [isLocationOpen, setIsLocationOpen] = useState(false)
+  const [browserLocation, setBrowserLocation] = useState(null)
 
   // Active Location state
   const [location, setLocation] = useState(() => {
@@ -39,13 +40,17 @@ export default function AskOrca({ navigate }) {
         }
       }
     }
-    // Default Visakhapatnam monitoring area if no query location passed
-    return {
-      latitude: 17.6868,
-      longitude: 83.2185,
-      label: 'Visakhapatnam'
-    }
+    return null
   })
+
+  const requestBrowserLocation = () => {
+    if (!navigator.geolocation) { setError('Browser location is not supported on this device.'); return }
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => setBrowserLocation({ latitude: coords.latitude, longitude: coords.longitude, source: 'browser', accuracy: coords.accuracy }),
+      () => setError('Location permission was denied or unavailable. You can still select a location manually.'),
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
+    )
+  }
 
   // Extract last conversation context for follow-up queries
   const lastContext = [...messages]
@@ -90,7 +95,7 @@ export default function AskOrca({ navigate }) {
               ...(location.label?.trim() ? { label: location.label.trim() } : {})
             }
           : undefined,
-        context: lastContext ? { conversation_context: lastContext } : {},
+        context: { ...(lastContext ? { conversation_context: lastContext } : {}), ...(browserLocation ? { browser_location: browserLocation } : {}) },
         conversation_id: conversationId,
         language
       })
@@ -158,6 +163,7 @@ export default function AskOrca({ navigate }) {
         isOpen={isLocationOpen}
         onClose={() => setIsLocationOpen(false)}
       />
+      {!location && !browserLocation && <button type="button" className="orca-btn secondary outline" onClick={requestBrowserLocation}>Use current location</button>}
 
       {/* 3. CHAT VIEWPORT & WELCOME SCREEN */}
       <ChatWindow

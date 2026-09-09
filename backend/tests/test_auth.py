@@ -14,10 +14,15 @@ class AuthenticationTests(unittest.TestCase):
     def setUp(self):
         self.tempdir = tempfile.TemporaryDirectory()
         self.original_path = database.sqlite_path
+        self.original_is_postgres = database.is_postgres
         database.sqlite_path = Path(self.tempdir.name) / "auth-test.db"
+        # Auth unit tests use an isolated SQLite database even when the
+        # developer environment has Postgres configured.
+        database.is_postgres = False
 
     def tearDown(self):
         database.sqlite_path = self.original_path
+        database.is_postgres = self.original_is_postgres
         self.tempdir.cleanup()
 
     def register(self, email="user@example.com"):

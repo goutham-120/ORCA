@@ -101,7 +101,7 @@ export default function QueryInput({ value, onChange, onSend, loading, language 
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask ORCA anything about this marine area (e.g. wave height, safety, wind speeds)..."
+          placeholder="Ask ORCA anything — general questions or marine intelligence..."
           rows={1}
           disabled={loading}
           className="composer-textarea font-sans"

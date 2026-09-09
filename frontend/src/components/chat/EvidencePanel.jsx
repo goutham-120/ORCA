@@ -11,7 +11,7 @@ export default function EvidencePanel({ evidence = [] }) {
 
         <div className="evidence-grid">
           {evidence.map((item, index) => {
-            const status = item.metadata?.source_status || 'live'
+            const status = item.metadata?.data_status || item.metadata?.source_status || 'unavailable'
             const badgeClass = status === 'live' ? 'live' : status === 'cached' ? 'cached' : 'unavailable'
             const observedDate = item.observed_at ? new Date(item.observed_at).toLocaleString() : null
 
