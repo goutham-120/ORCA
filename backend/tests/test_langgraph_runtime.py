@@ -4,6 +4,8 @@ from app.core.query_parser import QueryParser
 from app.schemas.ai import QueryPlan
 from app.services.data_coordinator import DataCoordinator
 from app.workflows.orca_graph import OrcaWorkflow
+from app.core.orchestrator import OrcaOrchestrator
+from app.schemas.orca import OrcaQueryRequest
 
 class Source:
     def __init__(self, result): self.result = result
@@ -11,6 +13,7 @@ class Source:
 
 class BadLLM:
     async def plan(self, query, fallback, persona): return None
+    async def chat(self, query, language): return "Paris is the capital of France."
 
 class RuntimeTests(unittest.IsolatedAsyncioTestCase):
     def workflow(self):
@@ -34,3 +37,9 @@ class RuntimeTests(unittest.IsolatedAsyncioTestCase):
         result=await wf.run(context)
         self.assertIsInstance(result["plan"], QueryPlan)
         self.assertIn("timestamps", result["plan"].response_focus)
+    async def test_general_chat_bypasses_agents_and_assessment(self):
+        response=await OrcaOrchestrator(workflow=self.workflow()).handle(OrcaQueryRequest(query="What is the capital of France?"))
+        self.assertEqual(response.response_kind, "general")
+        self.assertEqual(response.agents_used, [])
+        self.assertIsNone(response.assessment)
+        self.assertNotIn("unknown risk", response.answer.lower())

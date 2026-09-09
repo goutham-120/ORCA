@@ -7,6 +7,7 @@ from app.schemas.ai import QueryPlan
 
 class LLMClient(Protocol):
     async def plan(self, query: str, fallback: QueryPlan, persona: str) -> QueryPlan | None: ...
+    async def chat(self, query: str, language: str) -> str | None: ...
 
 class OpenAICompatibleLLM:
     def __init__(self) -> None:
@@ -19,4 +20,12 @@ class OpenAICompatibleLLM:
             req=request.Request(self.base_url.rstrip("/")+"/chat/completions", data=body, headers={"Authorization":"Bearer "+self.api_key,"Content-Type":"application/json"})
             with request.urlopen(req, timeout=15) as response: data: dict[str, Any]=json.loads(response.read()) # nosec - deployment-controlled URL
             return QueryPlan.model_validate(json.loads(data["choices"][0]["message"]["content"]))
+        except Exception: return None
+    async def chat(self, query: str, language: str) -> str | None:
+        if not self.api_key: return None
+        try:
+            body=json.dumps({"model":self.model,"messages":[{"role":"system","content":f"You are ORCA, a helpful general conversational assistant. Respond in {language}. Do not claim to have live marine data."},{"role":"user","content":query}],"temperature":0.4}).encode()
+            req=request.Request(self.base_url.rstrip("/")+"/chat/completions", data=body, headers={"Authorization":"Bearer "+self.api_key,"Content-Type":"application/json"})
+            with request.urlopen(req, timeout=15) as response: data: dict[str, Any]=json.loads(response.read()) # nosec
+            return str(data["choices"][0]["message"]["content"])
         except Exception: return None
