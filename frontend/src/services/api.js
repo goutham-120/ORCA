@@ -18,10 +18,11 @@ function errorMessage(data, status) {
 }
 
 export async function api(path, { method = 'GET', body, headers = {}, signal } = {}) {
+  const mapApiKey = import.meta.env.VITE_MAP_API_KEY
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method,
     signal,
-    headers: { Accept: 'application/json', ...(body ? { 'Content-Type': 'application/json' } : {}), ...headers },
+    headers: { Accept: 'application/json', ...(mapApiKey ? { 'X-API-Key': mapApiKey } : {}), ...(body ? { 'Content-Type': 'application/json' } : {}), ...headers },
     body: body ? JSON.stringify(body) : undefined,
   })
   const isJson = response.headers.get('content-type')?.includes('application/json')

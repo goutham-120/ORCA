@@ -26,7 +26,7 @@ class GISAgent:
             return self._unavailable(str(exc), layers)
         latitude, longitude = coordinate["latitude"], coordinate["longitude"]
         if not layers:
-            return self._unavailable("No GIS layers were supplied; live GIS data is not configured.", layers, coordinate)
+            return self._unavailable("No source-backed GIS layers are loaded for this request. Import or synchronize an authorized layer before relying on spatial results.", layers, coordinate)
         operations: dict[str, Any] = {"coordinate": coordinate["geometry"]}
         if any(term in query for term in ("near", "distance", "nearby")):
             radius = context.get("metadata", {}).get("gis_radius_km", 25) if isinstance(context.get("metadata"), Mapping) else 25
@@ -52,8 +52,16 @@ class GISAgent:
         restricted = len(zone_hits.get("restricted_zones", []))
         hazards = len(zone_hits.get("hazards", []))
         risk = max(0.7 if restricted else 0.0, 0.6 if hazards else 0.0)
-        source_status = "static" if any(layer.available for layer in layers.values()) else "unavailable"
-        return {"summary": f"GIS checked {len(layers)} caller-supplied static layer(s); {matches} spatial match(es) found.", "risk_score": risk, "concerns": (["Location is inside a supplied restricted zone."] if restricted else []) + (["Location is inside a supplied hazard zone."] if hazards else []), "data_status": source_status, "available": source_status != "unavailable", "operation": self._operation_name(query), "results": operations, "layer_metadata": [{"id": layer.id, "source_status": layer.source_status, "source": layer.source, "available": layer.available} for layer in layers.values()]}
+        source_status = self._source_status(layers)
+        return {"summary": f"GIS checked {len(layers)} source-backed layer(s); {matches} spatial match(es) found.", "risk_score": risk, "concerns": (["Location is inside a supplied restricted zone."] if restricted else []) + (["Location is inside a supplied hazard zone."] if hazards else []), "data_status": source_status, "available": source_status != "unavailable", "operation": self._operation_name(query), "results": operations, "layer_metadata": [{"id": layer.id, "source_status": layer.source_status, "source": layer.source, "available": layer.available} for layer in layers.values()]}
+
+    @staticmethod
+    def _source_status(layers: Mapping[str, Any]) -> str:
+        statuses = {layer.source_status for layer in layers.values() if layer.available}
+        for status in ("live", "cached", "static", "stale"):
+            if status in statuses:
+                return status
+        return "unavailable"
 
     def _unavailable(self, message: str, layers: Mapping[str, Any], coordinate: Mapping[str, Any] | None = None) -> dict[str, Any]:
         return {"summary": message, "risk_score": None, "concerns": [], "data_status": "unavailable", "available": False, "operation": "unavailable", "results": {"coordinate": coordinate.get("geometry") if coordinate else None}, "layer_metadata": [{"id": layer.id, "source_status": layer.source_status, "source": layer.source, "available": layer.available} for layer in layers.values()]}

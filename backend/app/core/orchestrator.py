@@ -17,7 +17,7 @@ from app.workflows.orca_graph import OrcaWorkflow
 class OrcaOrchestrator:
     def __init__(self, parser: QueryParser | None = None, workflow: OrcaWorkflow | None = None, conversations: ConversationStore | None = None, location_resolver=geocoder) -> None:
         self.parser = parser or QueryParser()
-        self.workflow = workflow or OrcaWorkflow()
+        self.workflow = workflow or OrcaWorkflow(auto_sync_pfz=True)
         self.conversations = conversations or ConversationStore()
         self.location_resolver = location_resolver
 

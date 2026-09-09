@@ -161,7 +161,7 @@ def synthesize_answer(
 
     if "pfz" in pending:
         parts.append(
-            "PFZ information is unavailable because no PFZ data source is configured."
+            "PFZ information is unavailable because no current authorized advisory is loaded. Ask ORCA can refresh the official INCOIS source when network access is available."
         )
 
     # ---------------------------------------------------------
@@ -203,7 +203,7 @@ def synthesize_answer(
     # Decision intelligence
     # ---------------------------------------------------------
 
-    if isinstance(decision, dict):
+    if isinstance(decision, dict) and not (context.get("decision_type") == "pfz" and decision.get("assessment")):
         parts.append(
             "Decision intelligence: "
             + str(

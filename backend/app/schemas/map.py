@@ -9,7 +9,25 @@ class MapLayer(BaseModel):
     layer_type: str
     description: str
     available: bool = True
+    feature_count: int = 0
     features: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class MapFeature(BaseModel):
+    id: int
+    layer: str | None = None
+    dataset: str
+    geometry: dict[str, Any] | None = None
+    properties: dict[str, Any] = Field(default_factory=dict)
+    source: str
+    source_identifier: str | None = None
+    source_url: str | None = None
+    observed_at: Any | None = None
+    freshness_status: str
+
+
+class MapFeaturesResponse(BaseModel):
+    features: list[MapFeature] = Field(default_factory=list)
 
 
 class MapLayersResponse(BaseModel):

@@ -12,6 +12,7 @@ from app.schemas.ai import QueryPlan, Subtask
 from app.services.data_coordinator import DataCoordinator
 from app.services.decision_service import DecisionService
 from app.models.spatial_feature import spatial_features
+from app.providers.incois_pfz import incois_pfz_provider
 from app.tools.ocean_tools import OceanTool
 from app.tools.weather_tools import WeatherTool
 
@@ -30,11 +31,11 @@ class OrcaState(TypedDict, total=False):
 
 class OrcaWorkflow:
     stages=("context_preparation","query_understanding","planning","agent_selection","agent_execution","evidence_collection","evidence_validation","grounded_synthesis","final_response")
-    def __init__(self, coordinator: DataCoordinator | None=None, llm: LLMClient | None=None, decision_service: DecisionService | None=None) -> None:
+    def __init__(self, coordinator: DataCoordinator | None=None, llm: LLMClient | None=None, decision_service: DecisionService | None=None, auto_sync_pfz: bool = False) -> None:
         self.coordinator=coordinator or DataCoordinator()
         if "weather" not in self.coordinator._sources: self.coordinator.register("weather", WeatherTool())
         if "ocean" not in self.coordinator._sources: self.coordinator.register("ocean", OceanTool())
-        self._agents={"weather":WeatherAgent(),"ocean":OceanAgent(),"gis":GISAgent()}; self.llm=llm or OpenAICompatibleLLM(); self.decision_service=decision_service or DecisionService(weather=self.coordinator._sources["weather"], ocean=self.coordinator._sources["ocean"]); self.graph=self.build_langgraph()
+        self._agents={"weather":WeatherAgent(),"ocean":OceanAgent(),"gis":GISAgent()}; self.llm=llm or OpenAICompatibleLLM(); self.decision_service=decision_service or DecisionService(weather=self.coordinator._sources["weather"], ocean=self.coordinator._sources["ocean"]); self.auto_sync_pfz=auto_sync_pfz; self.graph=self.build_langgraph()
     def build_langgraph(self) -> Any:
         graph=StateGraph(OrcaState)
         for name, node in (("context_preparation",self._prepare),("query_understanding",self._understand),("planning",self._plan),("agent_execution",self._execute),("evidence_collection",self._evidence),("evidence_validation",self._validate),("decision",self._decision),("grounded_synthesis",self._synthesize),("final_response",self._final)): graph.add_node(name,node)
@@ -106,9 +107,16 @@ class OrcaWorkflow:
                     at=datetime.fromisoformat(expression[:10]).replace(tzinfo=timezone.utc)
                 except ValueError:
                     pass
+        pfz_records_loaded = bool(spatial_features.list(dataset="PFZ", valid_at=at or datetime.now(timezone.utc)))
         if decision_type == "fishing":
+            if self.auto_sync_pfz and not pfz_records_loaded:
+                await incois_pfz_provider.sync()
             decision=await self.decision_service.fishing(location, at)
         elif decision_type == "pfz":
+            if self.auto_sync_pfz and not pfz_records_loaded:
+                # Explicit PFZ questions may refresh the authorized source on demand.
+                # Provider failures are returned as unavailable evidence below.
+                await incois_pfz_provider.sync()
             decision=await self.decision_service.nearby_pfz(location, 50, at)
         elif decision_type == "safety":
             decision=await self.decision_service.safety(location, at)
