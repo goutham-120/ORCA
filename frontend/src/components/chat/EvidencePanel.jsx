@@ -1,4 +1,50 @@
 export default function EvidencePanel({ evidence = [] }) {
-  if (!evidence.length) return null
-  return <details className="evidence-panel"><summary>Supporting evidence ({evidence.length})</summary>{evidence.map((item, index) => <article key={`${item.source}-${index}`}><b>{item.source}</b><span className={`status ${item.metadata?.data_status || 'unavailable'}`}>{item.metadata?.data_status || 'unavailable'}</span><p>{item.summary}</p>{item.observed_at && <small>Observed: {new Date(item.observed_at).toLocaleString()}</small>}{item.url && <a href={item.url} target="_blank" rel="noreferrer">Source ↗</a>}{item.metadata?.error && <small className="evidence-error">{item.metadata.error}</small>}</article>)}</details>
+  if (!evidence || !evidence.length) return null
+
+  return (
+    <div className="evidence-panel-wrapper font-sans">
+      <details className="evidence-details" open>
+        <summary className="evidence-summary font-mono">
+          <span>🔍 EVIDENCE & DATA SOURCES ({evidence.length})</span>
+          <span className="summary-chevron">▼</span>
+        </summary>
+
+        <div className="evidence-grid">
+          {evidence.map((item, index) => {
+            const status = item.metadata?.source_status || 'live'
+            const badgeClass = status === 'live' ? 'live' : status === 'cached' ? 'cached' : 'unavailable'
+            const observedDate = item.observed_at ? new Date(item.observed_at).toLocaleString() : null
+
+            return (
+              <div key={`${item.source}-${index}`} className="evidence-item-card">
+                <div className="item-header">
+                  <span className="source-name font-sans">{item.source}</span>
+                  <span className={`evidence-badge font-mono ${badgeClass}`}>
+                    {status.toUpperCase()}
+                  </span>
+                </div>
+
+                <p className="item-summary font-sans">{item.summary}</p>
+
+                <div className="item-footer font-mono">
+                  {observedDate && <span className="timestamp">Observed: {observedDate}</span>}
+                  {item.url && (
+                    <a href={item.url} target="_blank" rel="noreferrer" className="source-link">
+                      Source API ↗
+                    </a>
+                  )}
+                </div>
+
+                {item.metadata?.error && (
+                  <div className="evidence-error-text font-sans">
+                    ⚠️ {item.metadata.error}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </details>
+    </div>
+  )
 }
