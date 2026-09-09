@@ -4,7 +4,8 @@ import AlertsSummaryCards from '../components/alerts/AlertsSummaryCards'
 import AlertsControls from '../components/alerts/AlertsControls'
 import AlertCard from '../components/alerts/AlertCard'
 import AlertTimeline from '../components/alerts/AlertTimeline'
-import { getAlertsByLocation, dashboardLocations } from '../data/dashboardData'
+import { dashboardLocations } from '../data/dashboardData'
+import { fetchLiveLocationData, LOCATION_COORDINATES } from '../services/openMeteoService'
 
 const READ_KEY = 'orca-alerts-read'
 const FILTER_KEY = 'orca-alerts-filter'
@@ -57,6 +58,56 @@ export default function Alerts({ navigate }) {
   const [sortBy, setSortBy] = useState('newest')
   const [readAlertIds, setReadAlertIds] = useState(() => loadSavedReadIds())
 
+  // Live telemetry state
+  const [liveLocationMap, setLiveLocationMap] = useState({})
+  const [isLoading, setIsLoading] = useState(true)
+  const [isError, setIsError] = useState(false)
+  const [retryCount, setRetryCount] = useState(0)
+
+  useEffect(() => {
+    let isMounted = true
+
+    const runTelemetryFetch = async () => {
+      setIsLoading(true)
+      setIsError(false)
+      try {
+        const locationKeys = selectedLocationId === 'all'
+          ? Object.keys(LOCATION_COORDINATES)
+          : [selectedLocationId]
+
+        const fetchedResults = await Promise.all(
+          locationKeys.map((id) => fetchLiveLocationData(id))
+        )
+
+        if (isMounted) {
+          setLiveLocationMap((prev) => {
+            const next = { ...prev }
+            fetchedResults.forEach((data) => {
+              next[data.id] = data
+            })
+            return next
+          })
+          setIsLoading(false)
+        }
+      } catch {
+        if (isMounted) {
+          setIsError(true)
+          setIsLoading(false)
+        }
+      }
+    }
+
+    runTelemetryFetch()
+
+    // 5-minute periodic refresh timer
+    const refreshInterval = setInterval(runTelemetryFetch, 300000)
+
+    return () => {
+      isMounted = false
+      clearInterval(refreshInterval)
+    }
+  }, [selectedLocationId, retryCount])
+
   // Persist read alert IDs
   useEffect(() => {
     try {
@@ -86,8 +137,29 @@ export default function Alerts({ navigate }) {
     }
   }, [selectedLocationId])
 
-  // Retrieve base alerts dataset according to location selection
-  const rawLocationAlerts = useMemo(() => getAlertsByLocation(selectedLocationId), [selectedLocationId])
+  // Gather live alerts according to location selection
+  const rawLocationAlerts = useMemo(() => {
+    const allAlerts = []
+    const targetKeys = selectedLocationId === 'all'
+      ? Object.keys(LOCATION_COORDINATES)
+      : [selectedLocationId]
+
+    targetKeys.forEach((key) => {
+      const locData = liveLocationMap[key]
+      if (locData && Array.isArray(locData.alertsList)) {
+        locData.alertsList.forEach((alert) => {
+          allAlerts.push({
+            ...alert,
+            locationId: locData.id,
+            locationName: locData.name,
+            region: locData.region,
+            coordinates: locData.coordinates
+          })
+        })
+      }
+    })
+    return allAlerts
+  }, [selectedLocationId, liveLocationMap])
 
   // Location display title
   const locationName = useMemo(() => {
@@ -99,14 +171,12 @@ export default function Alerts({ navigate }) {
   // Filtered & Searched Alerts
   const filteredAlerts = useMemo(() => {
     return rawLocationAlerts.filter((alert) => {
-      // Category / Severity Filter
       if (activeFilter === 'unread') {
         if (readAlertIds.has(alert.id)) return false
       } else if (activeFilter !== 'all') {
         if (alert.severity !== activeFilter) return false
       }
 
-      // Search Query Filter
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim()
         const titleMatch = alert.title.toLowerCase().includes(q)
@@ -172,12 +242,38 @@ export default function Alerts({ navigate }) {
         <div>
           <div className="header-meta-row">
             <p className="eyebrow">SAFETY & ADVISORY CENTER</p>
-            <span className="demo-data-chip">● Demo marine data</span>
+            <span className="demo-data-chip">● Live marine telemetry</span>
           </div>
           <h1>Marine Alerts</h1>
           <p className="subhead">Real-time hazard warnings, small craft watches, and oceanographic advisories.</p>
         </div>
       </section>
+
+      {/* Loading State Banner */}
+      {isLoading && (
+        <div className="panel" style={{ padding: '1rem 1.5rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', background: '#0B2E49', color: '#22B9F2', borderRadius: '8px', border: '1px solid rgba(34, 185, 242, 0.3)' }}>
+          <span style={{ display: 'inline-block', width: '12px', height: '12px', borderRadius: '50%', background: '#22B9F2', animation: 'pulse 1.5s infinite' }}></span>
+          <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Loading live marine telemetry...</span>
+        </div>
+      )}
+
+      {/* Error & Retry State Banner */}
+      {isError && (
+        <div className="panel" style={{ padding: '1rem 1.5rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#3D1518', color: '#FF7B7B', borderRadius: '8px', border: '1px solid rgba(255, 123, 123, 0.4)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <span style={{ fontSize: '1.2rem' }}>⚠️</span>
+            <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Live telemetry unavailable</span>
+          </div>
+          <button
+            type="button"
+            className="orca-btn"
+            style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }}
+            onClick={() => setRetryCount((c) => c + 1)}
+          >
+            Retry Connection
+          </button>
+        </div>
+      )}
 
       {/* Safety Priority Status Banner */}
       <SafetyStatusBanner
@@ -222,7 +318,7 @@ export default function Alerts({ navigate }) {
                 />
               ))}
             </div>
-          ) : rawLocationAlerts.length === 0 ? (
+          ) : rawLocationAlerts.length === 0 && !isLoading ? (
             <div className="alerts-empty-panel panel">
               <div className="empty-icon-orb green-orb">✓</div>
               <h2>No Active Alerts</h2>

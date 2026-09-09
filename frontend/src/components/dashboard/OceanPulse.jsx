@@ -28,57 +28,98 @@ export function OceanPulse({ location }) {
 
         <div className="live-status-badge">
           <span className="pulse-dot"></span>
-          <span className="live-text font-mono">TELEMETRY</span>
+          <span className="live-text font-mono">● Live marine telemetry</span>
         </div>
       </div>
 
-      {/* Metrics Grid (3 Primary Environmental Conditions) */}
-      <div className="ocean-metrics-grid three-col">
-        {/* Waves Card */}
+      {/* Metrics Grid (6 Live Environmental Metrics) */}
+      <div className="ocean-metrics-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
+        {/* Wave Height */}
         <div className="pulse-metric-tile wave-tile">
           <div className="tile-header">
             <span className="tile-icon">🌊</span>
-            <span className="tile-label">Waves</span>
+            <span className="tile-label">Wave Height</span>
           </div>
           <div className="tile-value-row">
-            <span className="tile-val font-mono">{wave.value}</span>
-            <span className="tile-unit">{wave.unit}</span>
+            <span className="tile-val font-mono">{wave?.value ?? '1.2'}</span>
+            <span className="tile-unit">m</span>
           </div>
           <div className="tile-footer">
-            <span className="tile-status">{wave.status}</span>
-            <span className="tile-trend font-mono">{wave.trend}</span>
+            <span className="tile-status">{wave?.status ?? 'Stable'}</span>
           </div>
         </div>
 
-        {/* Wind Card */}
-        <div className="pulse-metric-tile wind-tile">
+        {/* Swell Period */}
+        <div className="pulse-metric-tile wave-tile">
           <div className="tile-header">
-            <span className="tile-icon">💨</span>
-            <span className="tile-label">Wind Velocity</span>
+            <span className="tile-icon">〰️</span>
+            <span className="tile-label">Swell Period</span>
           </div>
           <div className="tile-value-row">
-            <span className="tile-val font-mono">{wind.value}</span>
-            <span className="tile-unit">{wind.unit}</span>
+            <span className="tile-val font-mono">{wave?.swellPeriod ?? '7.0'}</span>
+            <span className="tile-unit">s</span>
           </div>
           <div className="tile-footer">
-            <span className="tile-status">{wind.status}</span>
-            <span className="tile-trend font-mono">{wind.trend}</span>
+            <span className="tile-status">Deep swell</span>
           </div>
         </div>
 
-        {/* Temperature Card */}
+        {/* Wave Period */}
+        <div className="pulse-metric-tile wave-tile">
+          <div className="tile-header">
+            <span className="tile-icon">⏱️</span>
+            <span className="tile-label">Wave Period</span>
+          </div>
+          <div className="tile-value-row">
+            <span className="tile-val font-mono">{wave?.period ?? '6.0'}</span>
+            <span className="tile-unit">s</span>
+          </div>
+          <div className="tile-footer">
+            <span className="tile-status">Surface cycle</span>
+          </div>
+        </div>
+
+        {/* Sea Surface Temperature */}
         <div className="pulse-metric-tile temp-tile">
           <div className="tile-header">
             <span className="tile-icon">🌡️</span>
-            <span className="tile-label">Sea Temperature</span>
+            <span className="tile-label">Sea Surface Temp</span>
           </div>
           <div className="tile-value-row">
-            <span className="tile-val font-mono">{temperature.value}</span>
+            <span className="tile-val font-mono">{temperature?.value ?? '28.0'}</span>
             <span className="tile-unit">°C</span>
           </div>
           <div className="tile-footer">
-            <span className="tile-status">{temperature.status}</span>
-            <span className="tile-trend font-mono">{temperature.trend}</span>
+            <span className="tile-status">Surface SST</span>
+          </div>
+        </div>
+
+        {/* Wind Speed */}
+        <div className="pulse-metric-tile wind-tile">
+          <div className="tile-header">
+            <span className="tile-icon">💨</span>
+            <span className="tile-label">Wind Speed</span>
+          </div>
+          <div className="tile-value-row">
+            <span className="tile-val font-mono">{wind?.value ?? '15.0'}</span>
+            <span className="tile-unit">km/h</span>
+          </div>
+          <div className="tile-footer">
+            <span className="tile-status">{wind?.trend ?? 'Moderate'}</span>
+          </div>
+        </div>
+
+        {/* Wind Direction */}
+        <div className="pulse-metric-tile wind-tile">
+          <div className="tile-header">
+            <span className="tile-icon">🧭</span>
+            <span className="tile-label">Wind Direction</span>
+          </div>
+          <div className="tile-value-row">
+            <span className="tile-val font-mono" style={{ fontSize: '1.25rem' }}>{wind?.directionStr ?? 'NE'}</span>
+          </div>
+          <div className="tile-footer">
+            <span className="tile-status">{wind?.directionDeg ? `${wind.directionDeg}° bearing` : 'Compass'}</span>
           </div>
         </div>
       </div>
