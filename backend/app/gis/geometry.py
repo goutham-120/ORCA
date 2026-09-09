@@ -88,7 +88,7 @@ def _coordinate(value: Any) -> Coordinate:
 
 
 def normalize_geometry(value: Mapping[str, Any]) -> Geometry:
-    """Validate a GeoJSON Point, LineString, or Polygon and return a copy."""
+    """Validate supported GeoJSON geometry types and return a copy."""
     geometry = value.get("geometry", value) if isinstance(value, Mapping) else None
     if not isinstance(geometry, Mapping):
         raise ValueError("Geometry must be a mapping.")
@@ -100,6 +100,15 @@ def normalize_geometry(value: Mapping[str, Any]) -> Geometry:
         if not isinstance(coordinates, (list, tuple)) or len(coordinates) < 2:
             raise ValueError("A LineString needs at least two coordinates.")
         return {"type": kind, "coordinates": [list(_coordinate(item)) for item in coordinates]}
+    if kind == "MultiLineString":
+        if not isinstance(coordinates, (list, tuple)) or not coordinates:
+            raise ValueError("A MultiLineString needs at least one line.")
+        lines = []
+        for line in coordinates:
+            if not isinstance(line, (list, tuple)) or len(line) < 2:
+                raise ValueError("Each MultiLineString part needs at least two coordinates.")
+            lines.append([list(_coordinate(item)) for item in line])
+        return {"type": kind, "coordinates": lines}
     if kind == "Polygon":
         if not isinstance(coordinates, (list, tuple)) or not coordinates:
             raise ValueError("A Polygon needs at least one ring.")

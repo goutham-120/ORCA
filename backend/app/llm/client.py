@@ -4,6 +4,7 @@ import json
 import logging
 from typing import Any, Protocol
 from urllib import request
+import requests
 from app.config import get_settings
 from app.schemas.ai import QueryPlan
 
@@ -26,17 +27,37 @@ class OpenAICompatibleLLM:
         if not self.api_key:
             self.last_error = "No API key is configured."
             return None
-        body = json.dumps({"model": self.model, "instructions": instructions, "input": prompt}).encode()
-        req = request.Request(
-            self.base_url.rstrip("/") + "/responses",
-            data=body,
-            headers={"Authorization": "Bearer " + self.api_key, "Content-Type": "application/json"},
-        )
+        is_openai_responses = "api.openai.com" in self.base_url.lower()
+        if is_openai_responses:
+            endpoint = "/responses"
+            payload = {"model": self.model, "instructions": instructions, "input": prompt}
+        else:
+            endpoint = "/chat/completions"
+            payload = {
+                "model": self.model,
+                "messages": [
+                    {"role": "system", "content": instructions},
+                    {"role": "user", "content": prompt},
+                ],
+            }
+        url = self.base_url.rstrip("/") + endpoint
+        headers = {"Authorization": "Bearer " + self.api_key, "Content-Type": "application/json"}
         try:
-            with request.urlopen(req, timeout=15) as response:
-                data: dict[str, Any] = json.loads(response.read())  # nosec - deployment-controlled URL
+            if is_openai_responses:
+                req = request.Request(url, data=json.dumps(payload).encode(), headers=headers)
+                with request.urlopen(req, timeout=15) as response:
+                    data: dict[str, Any] = json.loads(response.read())  # nosec - deployment-controlled URL
+            else:
+                response = requests.post(url, json=payload, headers=headers, timeout=15)
+                response.raise_for_status()
+                data = response.json()
             if isinstance(data.get("output_text"), str):
                 return data["output_text"]
+            choices = data.get("choices")
+            if isinstance(choices, list) and choices:
+                content = choices[0].get("message", {}).get("content")
+                if isinstance(content, str):
+                    return content
             for item in data.get("output", []):
                 for content in item.get("content", []):
                     if content.get("type") == "output_text" and isinstance(content.get("text"), str):
