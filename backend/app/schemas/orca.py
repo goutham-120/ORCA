@@ -33,7 +33,7 @@ class OrcaQueryResponse(BaseModel):
     answer: str
     intent: str
     agents_used: list[str] = Field(default_factory=list)
-    assessment: AssessmentResponse
+    assessment: AssessmentResponse | None = None
     recommendations: list[RecommendationResponse] = Field(default_factory=list)
     evidence: list[EvidenceItem] = Field(default_factory=list)
     created_at: datetime
@@ -42,6 +42,7 @@ class OrcaQueryResponse(BaseModel):
     context: dict[str, Any] = Field(default_factory=dict)
     pending_domains: list[str] = Field(default_factory=list)
     unavailable_domains: list[str] = Field(default_factory=list)
+    response_kind: Literal["general", "specialized"] = "specialized"
 
 
 class QueryHistoryItem(BaseModel):

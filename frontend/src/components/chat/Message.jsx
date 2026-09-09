@@ -5,6 +5,7 @@ export default function Message({ message }) {
   const [copied, setCopied] = useState(false)
   const isUser = message.role === 'user'
   const response = message.response
+  const isSpecialized = Boolean(response?.evidence?.length || response?.agents_used?.length || response?.response_kind === 'specialized')
 
   const handleCopy = async () => {
     try {
@@ -64,7 +65,7 @@ export default function Message({ message }) {
         {/* Card Header */}
         <div className="message-header">
           <div className="orca-identity">
-            <strong className="font-mono">ORCA INTELLIGENCE ASSESSMENT</strong>
+            <strong className="font-mono">{isSpecialized ? 'ORCA INTELLIGENCE ASSESSMENT' : 'ORCA'}</strong>
             {response?.intent && (
               <span className="intent-badge font-mono">{response.intent.toUpperCase()}</span>
             )}
@@ -73,7 +74,7 @@ export default function Message({ message }) {
         </div>
 
         {/* 1. Risk Assessment Banner */}
-        {assessment && (
+        {isSpecialized && assessment && (
           <section className={`assessment-banner ${levelBadgeClass}`}>
             <div className="banner-title-row">
               <span className={`risk-level-badge ${levelBadgeClass}`}>
