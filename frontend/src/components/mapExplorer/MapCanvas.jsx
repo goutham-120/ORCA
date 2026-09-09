@@ -16,6 +16,7 @@ const DEFAULT_STYLE = import.meta.env.VITE_MAP_STYLE_URL || {
   layers: [{ id: 'openstreetmap', type: 'raster', source: 'openstreetmap' }],
 }
 const featureCollection = (features) => ({ type: 'FeatureCollection', features })
+const DEFAULT_LOCATION = { latitude: 13.0827, longitude: 80.2707, label: 'Chennai' }
 
 export default function MapCanvas({ selectedLocation, layers, routeGeometry, onMapLocation, isExpanded, onToggleExpanded }) {
   const containerRef = useRef(null)
@@ -29,19 +30,22 @@ export default function MapCanvas({ selectedLocation, layers, routeGeometry, onM
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return undefined
-    const initialLocation = initialLocationRef.current
+    const initialLocation = initialLocationRef.current || DEFAULT_LOCATION
+    const initialLatitude = Number.isFinite(Number(initialLocation.latitude)) ? Number(initialLocation.latitude) : DEFAULT_LOCATION.latitude
+    const initialLongitude = Number.isFinite(Number(initialLocation.longitude)) ? Number(initialLocation.longitude) : DEFAULT_LOCATION.longitude
     let styleReady = false
     let map
     const timeoutId = window.setTimeout(() => {
       if (!styleReady) setMapStatus('error')
     }, 12000)
     try {
-      map = new Map({ container: containerRef.current, style: DEFAULT_STYLE, center: [initialLocation.longitude, initialLocation.latitude], zoom: 7 })
+      map = new Map({ container: containerRef.current, style: DEFAULT_STYLE, center: [initialLongitude, initialLatitude], zoom: 7 })
       mapRef.current = map
       map.addControl(new NavigationControl(), 'top-right')
       map.once('style.load', () => {
         styleReady = true
         window.clearTimeout(timeoutId)
+      map.jumpTo({ center: [initialLongitude, initialLatitude], zoom: 7 })
       map.addSource('orca-layers', { type: 'geojson', data: featureCollection([]) })
       map.addLayer({ id: 'orca-fill', type: 'fill', source: 'orca-layers', filter: ['==', '$type', 'Polygon'], paint: { 'fill-color': '#f59e0b', 'fill-opacity': 0.25 } })
       map.addLayer({ id: 'orca-line', type: 'line', source: 'orca-layers', filter: ['==', '$type', 'LineString'], paint: { 'line-color': '#38bdf8', 'line-width': 3 } })
@@ -73,9 +77,13 @@ export default function MapCanvas({ selectedLocation, layers, routeGeometry, onM
   useEffect(() => {
     const map = mapRef.current
     if (!map || mapStatus !== 'ready') return
+    const latitude = Number(selectedLocation?.latitude)
+    const longitude = Number(selectedLocation?.longitude)
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return
     markerRef.current?.remove()
-    markerRef.current = new Marker({ color: '#0ea5e9' }).setLngLat([selectedLocation.longitude, selectedLocation.latitude]).setPopup(new Popup({ offset: 20 }).setText(`${selectedLocation.name} (curated monitoring location)`)).addTo(map)
-    map.flyTo({ center: [selectedLocation.longitude, selectedLocation.latitude], zoom: Math.max(map.getZoom(), 7), essential: true })
+    const locationLabel = selectedLocation.label || selectedLocation.name || 'Selected map coordinate'
+    markerRef.current = new Marker({ color: '#0ea5e9' }).setLngLat([longitude, latitude]).setPopup(new Popup({ offset: 20 }).setText(locationLabel)).addTo(map)
+    map.flyTo({ center: [longitude, latitude], zoom: Math.max(map.getZoom(), 7), essential: true })
   }, [selectedLocation, mapStatus])
 
   useEffect(() => { mapRef.current?.resize() }, [isExpanded])

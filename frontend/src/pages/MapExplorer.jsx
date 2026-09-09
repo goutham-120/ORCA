@@ -10,19 +10,27 @@ import { analyzeLocation, analyzeRoute, getMapLayers, mapErrorMessage } from '..
 const LOCATION_COORDINATES = { visakhapatnam: { latitude: 17.6868, longitude: 83.2185 }, chennai: { latitude: 13.0827, longitude: 80.2707 }, mumbai: { latitude: 19.076, longitude: 72.8777 } }
 
 export default function MapExplorer({ navigate }) {
-  const [locationId, setLocationId] = useState('visakhapatnam')
+  const searchParams = useMemo(() => new URLSearchParams(window.location.search), [])
+  const initialLatitudeValue = searchParams.get('latitude') || searchParams.get('lat')
+  const initialLongitudeValue = searchParams.get('longitude') || searchParams.get('lon')
+  const initialLatitude = Number(initialLatitudeValue)
+  const initialLongitude = Number(initialLongitudeValue)
+  const initialLabel = searchParams.get('label') || 'Selected map coordinate'
+  const hasInitialCoordinate = Boolean(initialLatitudeValue?.trim() && initialLongitudeValue?.trim()) && Number.isFinite(initialLatitude) && Number.isFinite(initialLongitude)
+  const [locationId, setLocationId] = useState('chennai')
   const [layers, setLayers] = useState([])
   const [layersState, setLayersState] = useState({ loading: true, error: '' })
-  const [selectedCoordinate, setSelectedCoordinate] = useState(null)
+  const [selectedCoordinate, setSelectedCoordinate] = useState(() => hasInitialCoordinate ? { latitude: initialLatitude, longitude: initialLongitude, label: initialLabel } : null)
   const [analysis, setAnalysis] = useState({ loading: false, error: '', data: null })
   const [route, setRoute] = useState({ loading: false, error: '', data: null })
   const [destinationId, setDestinationId] = useState('chennai')
   const [isExpanded, setIsExpanded] = useState(false)
-  const selectedLocation = useMemo(() => {
+  const curatedLocation = useMemo(() => {
     const match = dashboardLocations.find((item) => item.id === locationId) || dashboardLocations[0]
     return { id: match.id, name: match.name, region: match.region, ...LOCATION_COORDINATES[match.id], label: match.name }
   }, [locationId])
-  const activeLocation = selectedCoordinate || selectedLocation
+  const selectedLocation = selectedCoordinate || curatedLocation
+  const activeLocation = selectedLocation
 
   useEffect(() => {
     const controller = new AbortController()

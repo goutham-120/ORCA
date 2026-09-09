@@ -12,6 +12,7 @@ def synthesize_answer(
     pending: list[str],
     context: dict[str, Any],
     language: str = "en",
+    decision: dict[str, Any] | None = None,
 ) -> str:
     """Create a deterministic answer using only workflow outputs and context."""
 
@@ -138,10 +139,17 @@ def synthesize_answer(
     time_expression = context.get("time_expression")
 
     if time_expression:
+        has_forecast_evidence = any(
+            isinstance(result, dict)
+            and isinstance(result.get("observation"), dict)
+            and result["observation"].get("timestamp")
+            for result in results.values()
+        )
         parts.append(
-            f"You asked about {time_expression}. "
-            "The configured providers return current observations only, "
-            "so this is not a forecast for that requested time."
+            f"These are the available provider forecasts for {time_expression}; "
+            "conditions can change, so check the latest advisories before deciding."
+            if has_forecast_evidence
+            else f"You asked about {time_expression}, but no forecast evidence was returned for that time."
         )
 
     # ---------------------------------------------------------
@@ -191,8 +199,6 @@ def synthesize_answer(
     # ---------------------------------------------------------
     # Decision intelligence
     # ---------------------------------------------------------
-
-    decision = results.get("decision")
 
     if isinstance(decision, dict):
         parts.append(
