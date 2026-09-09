@@ -1,3 +1,5 @@
+import orcaLogo from '../../assets/orcologo.jpeg'
+
 const PROMPT_SUGGESTIONS = [
   {
     id: 'sea_conditions',
@@ -43,33 +45,33 @@ const PROMPT_SUGGESTIONS = [
 
 export default function WelcomeScreen({ onSelectPrompt }) {
   return (
-    <div className="welcome-command-screen font-sans">
+    <div className="welcome-command-screen font-inter">
       <div className="welcome-hero-card">
         <div className="welcome-avatar-orb">
-          <span className="orb-icon">🐋</span>
+          <img src={orcaLogo} alt="ORCA Logo" className="orb-logo-img" />
           <div className="orb-pulse-ring"></div>
         </div>
-        <h2 className="welcome-title font-sans">What would you like to analyze?</h2>
-        <p className="welcome-subtitle font-sans">
+        <h2 className="welcome-title font-sora">What would you like to analyze?</h2>
+        <p className="welcome-subtitle font-inter">
           Ask ORCA about ocean conditions, weather, marine safety, hazards, routes, or fishing conditions.
         </p>
       </div>
 
-      <div className="welcome-prompts-grid">
+      <div className="welcome-prompts-grid font-inter">
         {PROMPT_SUGGESTIONS.map((item) => (
           <button
             key={item.id}
             type="button"
-            className="welcome-prompt-card"
+            className="welcome-prompt-card font-inter"
             onClick={() => onSelectPrompt(item.query)}
           >
             <div className="card-top-row">
               <span className="card-icon">{item.icon}</span>
-              <span className="card-category-tag font-mono">{item.category}</span>
+              <span className="card-category-tag font-inter">{item.category}</span>
             </div>
-            <h4 className="card-title font-sans">{item.title}</h4>
-            <p className="card-desc font-sans">{item.desc}</p>
-            <div className="card-arrow font-mono">
+            <h4 className="card-title font-sora">{item.title}</h4>
+            <p className="card-desc font-inter">{item.desc}</p>
+            <div className="card-arrow font-inter">
               <span>Ask ORCA</span> <i>→</i>
             </div>
           </button>

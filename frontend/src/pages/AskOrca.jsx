@@ -162,8 +162,8 @@ export default function AskOrca({ navigate }) {
         onNavigateMap={(path) => navigate && navigate(path)}
         isOpen={isLocationOpen}
         onClose={() => setIsLocationOpen(false)}
+        onRequestBrowserLocation={requestBrowserLocation}
       />
-      {!location && !browserLocation && <button type="button" className="orca-btn secondary outline" onClick={requestBrowserLocation}>Use current location</button>}
 
       {/* 3. CHAT VIEWPORT & WELCOME SCREEN */}
       <ChatWindow

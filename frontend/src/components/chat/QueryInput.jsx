@@ -88,9 +88,9 @@ export default function QueryInput({ value, onChange, onSend, loading, language 
   }
 
   return (
-    <div className="query-input-composer-wrap no-print font-sans">
+    <div className="query-input-composer-wrap no-print font-inter">
       {voiceError && (
-        <div className="voice-error-banner font-sans" role="status">
+        <div className="voice-error-banner font-inter" role="status">
           ⚠️ {voiceError}
         </div>
       )}
@@ -104,23 +104,23 @@ export default function QueryInput({ value, onChange, onSend, loading, language 
           placeholder="Ask ORCA anything — general questions or marine intelligence..."
           rows={1}
           disabled={loading}
-          className="composer-textarea font-sans"
+          className="composer-textarea font-inter"
           aria-label="Ask ORCA question input"
         />
 
-        <div className="composer-actions-group font-sans">
+        <div className="composer-actions-group font-inter">
           <button
             type="button"
-            className={`voice-mic-btn ${voiceState}`}
+            className={`voice-mic-btn font-inter ${voiceState}`}
             onClick={toggleVoice}
             disabled={loading}
             title={voiceState === 'listening' ? 'Stop listening' : 'Use voice input (Web Speech API)'}
             aria-label="Use voice input"
           >
             {voiceState === 'listening' ? (
-              <span className="listening-tag font-mono">● Listening</span>
+              <span className="listening-tag font-inter">● Listening</span>
             ) : voiceState === 'processing' ? (
-              <span className="processing-tag font-mono">Processing…</span>
+              <span className="processing-tag font-inter">Processing…</span>
             ) : (
               <span className="mic-icon">🎤</span>
             )}
@@ -128,7 +128,7 @@ export default function QueryInput({ value, onChange, onSend, loading, language 
 
           <button
             type="button"
-            className="send-query-btn glow"
+            className="send-query-btn font-inter glow"
             onClick={() => onSend()}
             disabled={loading || !value.trim()}
           >
@@ -138,7 +138,7 @@ export default function QueryInput({ value, onChange, onSend, loading, language 
         </div>
       </div>
 
-      <div className="composer-footer-hint font-mono">
+      <div className="composer-footer-hint font-inter">
         <span>
           {voiceState === 'listening'
             ? 'Speak now into microphone. Transcript remains editable before sending.'

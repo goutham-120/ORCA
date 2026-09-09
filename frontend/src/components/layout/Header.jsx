@@ -8,10 +8,9 @@ function formatNow(value) {
   }
 }
 
-export default function Header({ navigate }) {
+export default function Header() {
   const { user } = useAuth()
   const [now, setNow] = useState(() => new Date())
-  const [searchQuery, setSearchQuery] = useState('')
   const initials = (user?.display_name || user?.email || 'OR').slice(0, 2).toUpperCase()
   const formatted = formatNow(now)
 
@@ -20,26 +19,8 @@ export default function Header({ navigate }) {
     return () => window.clearInterval(timer)
   }, [])
 
-  const handleSearchSubmit = (e) => {
-    e.preventDefault()
-    if (searchQuery.trim() && navigate) {
-      navigate(`/ask-orca?query=${encodeURIComponent(searchQuery.trim())}`)
-      setSearchQuery('')
-    }
-  }
-
   return (
     <header className="topbar font-sans">
-      <form onSubmit={handleSearchSubmit} className="global-search-form">
-        <input
-          type="text"
-          className="global-search-input"
-          placeholder="Search locations, conditions, or ask ORCA..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          aria-label="Global search query"
-        />
-      </form>
       <div className="topbar-meta">
         <span>
           ● Demo marine data
