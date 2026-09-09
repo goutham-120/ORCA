@@ -10,7 +10,21 @@ from app.database.database import Database
 from app.database.session import database
 from app.schemas.spatial import SpatialFeatureCreate, SpatialFeatureRecord
 
-_COLUMNS = "id, dataset, layer, geometry_type, properties, source, source_identifier, source_url, observed_at, valid_from, valid_to, fetched_at, updated_at, freshness_status, confidence, quality"
+_POSTGRES_COLUMNS = """
+id, dataset, layer, geometry_type, properties,
+source, source_identifier, source_url, observed_at,
+valid_from, valid_to, fetched_at, updated_at,
+freshness_status, confidence, quality
+"""
+
+_SQLITE_COLUMNS = """
+id, dataset, layer, geometry_type,
+properties_json AS properties,
+source, source_identifier, source_url, observed_at,
+valid_from, valid_to, fetched_at, updated_at,
+freshness_status, confidence,
+quality_json AS quality
+"""
 
 
 class SpatialFeatureRepository:
@@ -38,23 +52,68 @@ class SpatialFeatureRepository:
             raise RuntimeError("Spatial feature creation did not persist.")
         return _record_from_row(row, self.db.is_postgres)
 
-    def list(self, *, dataset: str | None = None, layer: str | None = None, source: str | None = None, status: str | None = None, valid_at: datetime | None = None) -> list[SpatialFeatureRecord]:
-        self.initialize()
-        clauses, params = ["1=1"], []
-        for column, value in (("dataset", dataset), ("layer", layer), ("source", source), ("freshness_status", status)):
-            if value is not None:
-                clauses.append(f"{column} = ?")
-                params.append(value)
-        if valid_at is not None:
-            clauses.extend(["(valid_from IS NULL OR valid_from <= ?)", "(valid_to IS NULL OR valid_to >= ?)"])
-            params.extend([valid_at, valid_at])
-        geometry_column = "ST_AsGeoJSON(geometry) AS geometry" if self.db.is_postgres else "geometry_json AS geometry"
-        rows = self.db.fetchall(f"SELECT {_COLUMNS}, {geometry_column} FROM spatial_features WHERE {' AND '.join(clauses)} ORDER BY id", tuple(params))
-        return [_record_from_row(row, self.db.is_postgres) for row in rows]
+    def list(
+    self,
+    *,
+    dataset: str | None = None,
+    layer: str | None = None,
+    source: str | None = None,
+    status: str | None = None,
+    valid_at: datetime | None = None,
+) -> list[SpatialFeatureRecord]:
+    self.initialize()
 
+    clauses = ["1=1"]
+    params: list[object] = []
 
-def _time(value: datetime | None) -> str | None:
-    return value.astimezone(timezone.utc).isoformat() if value else None
+    for column, value in (
+        ("dataset", dataset),
+        ("layer", layer),
+        ("source", source),
+        ("freshness_status", status),
+    ):
+        if value is not None:
+            clauses.append(f"{column} = ?")
+            params.append(value)
+
+    if valid_at is not None:
+        clauses.extend([
+            "(valid_from IS NULL OR valid_from <= ?)",
+            "(valid_to IS NULL OR valid_to >= ?)",
+        ])
+
+        valid_at_value = (
+            _time(valid_at)
+            if not self.db.is_postgres
+            else valid_at
+        )
+
+        params.extend([valid_at_value, valid_at_value])
+
+    geometry_column = (
+        "ST_AsGeoJSON(geometry) AS geometry"
+        if self.db.is_postgres
+        else "geometry_json AS geometry"
+    )
+
+    columns = (
+        _POSTGRES_COLUMNS
+        if self.db.is_postgres
+        else _SQLITE_COLUMNS
+    )
+
+    rows = self.db.fetchall(
+        f"SELECT {columns}, {geometry_column} "
+        f"FROM spatial_features "
+        f"WHERE {' AND '.join(clauses)} "
+        f"ORDER BY id",
+        tuple(params),
+    )
+
+    return [
+        _record_from_row(row, self.db.is_postgres)
+        for row in rows
+    ]
 
 
 def _record_from_row(row: Any, postgres: bool) -> SpatialFeatureRecord:
