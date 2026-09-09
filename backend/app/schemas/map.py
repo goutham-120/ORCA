@@ -9,6 +9,7 @@ class MapLayer(BaseModel):
     layer_type: str
     description: str
     available: bool = True
+    features: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class MapLayersResponse(BaseModel):

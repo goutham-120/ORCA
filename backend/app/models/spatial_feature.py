@@ -36,6 +36,13 @@ class SpatialFeatureRepository:
     def initialize(self) -> None:
         self.db.initialize()
 
+    def delete_source_dataset(self, dataset: str, source: str) -> None:
+        self.initialize()
+        self.db.execute(
+            "DELETE FROM spatial_features WHERE dataset = ? AND source = ?",
+            (dataset, source),
+        )
+
     def create(
         self,
         feature: SpatialFeatureCreate,
@@ -76,7 +83,7 @@ class SpatialFeatureRepository:
                     ?,
                     ?,
                     CASE
-                        WHEN ? IS NULL THEN NULL
+                        WHEN ?::text IS NULL THEN NULL
                         ELSE ST_SetSRID(
                             ST_GeomFromGeoJSON(?),
                             4326

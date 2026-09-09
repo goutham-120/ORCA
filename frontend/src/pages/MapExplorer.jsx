@@ -35,7 +35,7 @@ export default function MapExplorer({ navigate }) {
   useEffect(() => {
     const controller = new AbortController()
     getMapLayers({ signal: controller.signal }).then((availableLayers) => {
-      setLayers(availableLayers.map((layer) => ({ ...layer, enabled: false, features: [] })))
+      setLayers(availableLayers.map((layer) => ({ ...layer, enabled: false, features: layer.features || [] })))
       setLayersState({ loading: false, error: '' })
     }).catch((error) => { if (error.name !== 'AbortError') setLayersState({ loading: false, error: mapErrorMessage(error) }) })
     return () => controller.abort()

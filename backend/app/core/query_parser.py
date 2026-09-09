@@ -39,11 +39,14 @@ class QueryParser:
         lowered = normalized.lower()
         matches = [name for name, terms in self._intent_terms.items() if any(term in lowered for term in terms)]
         matches.extend(name for name, terms in self._hindi_terms.items() if any(term in normalized for term in terms) and name not in matches)
-        fishing = any(term in lowered for term in ("fish", "fishing")) or "pfz" in matches
+        explicit_pfz = "pfz" in matches or any(term in lowered for term in ("fishing zone", "potential fishing zone", "potential fishing zones"))
+        fishing = any(term in lowered for term in ("fish", "fishing")) or explicit_pfz
         safety = "safety" in matches
-        decision_type = "route" if "route" in matches else "fishing" if fishing else "safety" if safety else "hazard" if "hazard" in matches else None
+        decision_type = "route" if "route" in matches else "pfz" if explicit_pfz and not safety else "fishing" if fishing else "safety" if safety else "hazard" if "hazard" in matches else None
         if decision_type in {"fishing", "safety"}:
             matches.extend(name for name in ("ocean", "weather") if name not in matches)
+        if explicit_pfz:
+            matches = [name for name in matches if name != "map"]
         # A place qualifier such as "near Visakhapatnam" is location context,
         # not a request for spatial analysis. GIS is selected only for explicit
         # spatial work or when the caller supplies a GIS-specific request.

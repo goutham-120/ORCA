@@ -17,6 +17,7 @@ def synthesize_answer(
     """Create a deterministic answer using only workflow outputs and context."""
 
     parts: list[str] = []
+    decision = decision or results.get("decision")
 
     level = assessment.get("level", "unknown")
 
@@ -40,7 +41,9 @@ def synthesize_answer(
     # Overall assessment
     # ---------------------------------------------------------
 
-    if incomplete:
+    if context.get("decision_type") == "pfz" and isinstance(decision, dict):
+        parts.append(str(decision.get("assessment", "No current PFZ advisory was returned.")))
+    elif incomplete:
         parts.append(
             f"ORCA cannot make a complete safety assessment{subject} "
             f"because required evidence is unavailable or pending: "

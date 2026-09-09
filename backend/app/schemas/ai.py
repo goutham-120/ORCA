@@ -15,4 +15,4 @@ class QueryPlan(BaseModel):
     time_expression: str | None = None
     subtasks: list[Subtask] = Field(default_factory=list)
     response_focus: str = "clear conditions and limitations"
-    decision_type: Literal["safety", "fishing", "hazard", "route", "anomaly"] | None = None
+    decision_type: Literal["safety", "fishing", "pfz", "hazard", "route", "anomaly"] | None = None
