@@ -1,24 +1,7 @@
-import { useMemo } from 'react'
-
-export function OceanPulse({ location, onNavigateAsk }) {
-  // Determine dynamic safety status styling with useMemo at top-level
-  const safetyTone = useMemo(() => {
-    if (!location || !location.safety) {
-      return { label: 'Favorable', statusClass: 'status-good', color: '#34d399', bg: 'rgba(52, 211, 153, 0.15)', text: 'Low Risk' }
-    }
-    const score = location.safety.score
-    if (score >= 80) {
-      return { label: 'Favorable', statusClass: 'status-good', color: '#34d399', bg: 'rgba(52, 211, 153, 0.15)', text: 'Low Risk' }
-    } else if (score >= 65) {
-      return { label: 'Moderate', statusClass: 'status-warning', color: '#fbbf24', bg: 'rgba(251, 191, 36, 0.15)', text: 'Monitor Activity' }
-    } else {
-      return { label: 'Caution', statusClass: 'status-danger', color: '#f87171', bg: 'rgba(248, 113, 113, 0.15)', text: 'Elevated Risk' }
-    }
-  }, [location])
-
+export function OceanPulse({ location }) {
   if (!location) return null
 
-  const { wave, wind, temperature, safety, name, coordinates } = location
+  const { wave, wind, temperature, name, coordinates } = location
 
   return (
     <section className="ocean-pulse-card font-sans">
@@ -36,7 +19,7 @@ export function OceanPulse({ location, onNavigateAsk }) {
       {/* Header Bar */}
       <div className="ocean-pulse-header">
         <div className="header-title-group">
-          <span className="ocean-pulse-eyebrow">LIVE OCEAN INTELLIGENCE</span>
+          <span className="ocean-pulse-eyebrow">CURRENT MARINE CONDITIONS</span>
           <div className="location-name-row">
             <h2 className="pulse-title">Ocean Pulse — {name}</h2>
             <span className="coords-tag font-mono">{coordinates}</span>
@@ -45,12 +28,12 @@ export function OceanPulse({ location, onNavigateAsk }) {
 
         <div className="live-status-badge">
           <span className="pulse-dot"></span>
-          <span className="live-text font-mono">LIVE</span>
+          <span className="live-text font-mono">TELEMETRY</span>
         </div>
       </div>
 
-      {/* Metrics Grid */}
-      <div className="ocean-metrics-grid">
+      {/* Metrics Grid (3 Primary Environmental Conditions) */}
+      <div className="ocean-metrics-grid three-col">
         {/* Waves Card */}
         <div className="pulse-metric-tile wave-tile">
           <div className="tile-header">
@@ -98,43 +81,7 @@ export function OceanPulse({ location, onNavigateAsk }) {
             <span className="tile-trend font-mono">{temperature.trend}</span>
           </div>
         </div>
-
-        {/* Dynamic Safety Status Card */}
-        <div className={`pulse-metric-tile safety-tile ${safetyTone.statusClass}`}>
-          <div className="tile-header">
-            <span className="tile-icon">🛡️</span>
-            <span className="tile-label">Safety Index</span>
-          </div>
-          <div className="tile-value-row">
-            <span className="tile-val font-mono" style={{ color: safetyTone.color }}>
-              {safety.score}
-            </span>
-            <span className="tile-unit">/100</span>
-          </div>
-          <div className="tile-footer">
-            <span className="safety-badge-pill" style={{ color: safetyTone.color, backgroundColor: safetyTone.bg }}>
-              {safety.label}
-            </span>
-            <span className="safety-risk-text">{safetyTone.text}</span>
-          </div>
-        </div>
       </div>
-
-      {/* Interactive Micro-CTA */}
-      {onNavigateAsk && (
-        <div className="ocean-pulse-footer">
-          <p className="footer-brief-snippet">
-            💡 {location.brief}
-          </p>
-          <button
-            type="button"
-            className="pulse-ask-btn"
-            onClick={() => onNavigateAsk(`What are the latest sea conditions for ${name}?`)}
-          >
-            Ask ORCA AI &rarr;
-          </button>
-        </div>
-      )}
     </section>
   )
 }
