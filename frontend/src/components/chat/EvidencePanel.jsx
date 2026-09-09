@@ -5,7 +5,7 @@ export default function EvidencePanel({ evidence = [] }) {
     <div className="evidence-panel-wrapper font-sans">
       <details className="evidence-details" open>
         <summary className="evidence-summary font-mono">
-          <span>🔍 EVIDENCE & DATA SOURCES ({evidence.length})</span>
+          <span>Sources & evidence ({evidence.length})</span>
           <span className="summary-chevron">▼</span>
         </summary>
 

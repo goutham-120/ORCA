@@ -43,6 +43,8 @@ class OrcaQueryResponse(BaseModel):
     pending_domains: list[str] = Field(default_factory=list)
     unavailable_domains: list[str] = Field(default_factory=list)
     response_kind: Literal["general", "specialized"] = "specialized"
+    selected_agents: list[str] = Field(default_factory=list)
+    decision: dict[str, Any] | None = None
 
 
 class QueryHistoryItem(BaseModel):

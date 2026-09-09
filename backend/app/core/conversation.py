@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 
-def synthesize_answer(query: str, assessment: dict[str, Any], results: dict[str, Any], pending: list[str], context: dict[str, Any], language: str = "en") -> str:
+def synthesize_answer(query: str, assessment: dict[str, Any], results: dict[str, Any], pending: list[str], context: dict[str, Any], language: str = "en", decision: dict[str, Any] | None = None) -> str:
     """Create a deterministic answer using only workflow outputs and context."""
     parts: list[str] = []
     level = assessment.get("level", "unknown")
@@ -35,16 +35,24 @@ def synthesize_answer(query: str, assessment: dict[str, Any], results: dict[str,
         parts.append(f"“{requested_place}” was retained as the requested place, but coordinates were not supplied, so location-dependent data could not be retrieved.")
     time_expression = context.get("time_expression")
     if time_expression:
-        parts.append(f"You asked about {time_expression}. The configured providers return current observations only, so this is not a forecast for that requested time.")
+        future_evidence = any(
+            isinstance(result, dict)
+            and isinstance(result.get("observation"), dict)
+            and result["observation"].get("timestamp")
+            for result in results.values()
+        )
+        if future_evidence:
+            parts.append(f"These are the available provider forecasts for {time_expression}; conditions can change, so check the latest advisories before deciding.")
+        else:
+            parts.append(f"You asked about {time_expression}, but no forecast evidence was returned for that time.")
     if "pfz" in pending:
         parts.append("PFZ information is unavailable because no PFZ data source is configured.")
     other_pending = [name for name in pending if name not in {"pfz", "safety"}]
     if other_pending:
-        parts.append("Pending capability: " + ", ".join(other_pending) + ".")
+        parts.append("Some requested supporting information is not available yet: " + ", ".join(other_pending) + ".")
     concerns = [concern for result in results.values() if isinstance(result, dict) for concern in result.get("concerns", [])]
     if concerns:
         parts.append("Risk factors: " + "; ".join(concerns) + ".")
-    decision = results.get("decision")
     if isinstance(decision, dict):
         parts.append("Decision intelligence: " + str(decision.get("assessment", "No decision assessment available.")))
         if decision.get("unavailable_data"):

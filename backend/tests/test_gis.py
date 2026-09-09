@@ -12,6 +12,12 @@ from app.workflows.orca_graph import OrcaWorkflow
 ZONE = {"id": "zone-1", "geometry": {"type": "Polygon", "coordinates": [[[83.0, 17.0], [84.0, 17.0], [84.0, 18.0], [83.0, 18.0], [83.0, 17.0]]]}, "properties": {"name": "Test restriction"}}
 
 
+class NoNetworkLLM:
+    api_key = None
+    async def plan(self, query, fallback, persona): return None
+    async def synthesize(self, payload, language): return None
+
+
 class GISTests(unittest.IsolatedAsyncioTestCase):
     def test_coordinate_validation_and_point_creation(self):
         self.assertEqual(validate_latitude_longitude(17.7, 83.3), (17.7, 83.3))
@@ -40,15 +46,15 @@ class GISTests(unittest.IsolatedAsyncioTestCase):
     async def test_gis_and_mixed_workflows_preserve_other_domains(self):
         metadata = {"gis_layers": {"hazards": {"features": [ZONE], "source_status": "static"}}}
         gis_context = QueryContext(QueryParser().parse("hazard zone"), {"latitude": 17.7, "longitude": 83.3}, metadata=metadata)
-        gis_result = await OrcaWorkflow().run(gis_context)
+        gis_result = await OrcaWorkflow(llm=NoNetworkLLM()).run(gis_context)
         self.assertEqual(gis_result["agents_used"], ["gis"])
         self.assertEqual(gis_result["analysis_results"]["gis"]["data_status"], "static")
         mixed_context = QueryContext(QueryParser().parse("marine weather near hazard zone"), {"latitude": 17.7, "longitude": 83.3}, metadata=metadata)
-        mixed_result = await OrcaWorkflow().run(mixed_context)
+        mixed_result = await OrcaWorkflow(llm=NoNetworkLLM()).run(mixed_context)
         self.assertEqual(set(mixed_result["agents_used"]), {"ocean", "weather", "gis"})
         self.assertIn("gis", mixed_result["analysis_results"])
 
     async def test_workflow_reports_unavailable_gis_without_fabricating_data(self):
         context = QueryContext(QueryParser().parse("map near coordinates"), {"latitude": 17.7, "longitude": 83.3})
-        result = await OrcaWorkflow().run(context)
+        result = await OrcaWorkflow(llm=NoNetworkLLM()).run(context)
         self.assertEqual(result["analysis_results"]["gis"]["data_status"], "unavailable")

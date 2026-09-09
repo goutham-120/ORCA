@@ -21,8 +21,11 @@ class DecisionService:
         self.weather, self.ocean = weather or WeatherTool(), ocean or OceanTool()
         self.spatial, self.gis = spatial or SpatialQueryService(), GISTool()
 
-    async def _conditions(self, location: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
-        return await self.weather.fetch({"location": location}), await self.ocean.fetch({"location": location})
+    async def _conditions(self, location: dict[str, Any], at: datetime | None = None) -> tuple[dict[str, Any], dict[str, Any]]:
+        request = {"location": location}
+        if at is not None:
+            request["time_expression"] = at.isoformat()
+        return await self.weather.fetch(request), await self.ocean.fetch(request)
 
     @staticmethod
     def _evidence(result: Mapping[str, Any], data_type: str, location: dict[str, Any], key: str, unit: str | None = None) -> dict[str, Any] | None:
@@ -32,7 +35,7 @@ class DecisionService:
         return {"source": result.get("provider", "unknown provider"), "data_type": data_type, "timestamp": obs.get("timestamp"), "location": location, "value": value, "unit": unit, "freshness": result.get("source_status"), "provenance": {"source_url": result.get("source_url")}}
 
     async def safety(self, location: dict[str, Any], at: datetime | None = None) -> dict[str, Any]:
-        weather, ocean = await self._conditions(location)
+        weather, ocean = await self._conditions(location, at)
         factors, evidence, missing, levels = [], [], [], []
         wave = (ocean.get("observation") or {}).get("wave_height_m")
         if isinstance(wave, (int, float)):
@@ -78,9 +81,9 @@ class DecisionService:
     async def fishing(self, location: dict[str, Any], at: datetime | None = None) -> dict[str, Any]:
         pfz = await self.nearby_pfz(location, 50, at); safety = await self.safety(location, at)
         if pfz["status"] == "unavailable":
-            return {**pfz, "status":"partial" if safety["status"] != "unavailable" else "unavailable", "assessment":"Fishing suitability cannot be completed because authorized PFZ data is unavailable. " + safety["assessment"], "evidence": safety["evidence"], "unavailable_data": list(set(pfz["unavailable_data"] + safety["unavailable_data"]))}
+            return {**pfz, "status":"partial" if safety["status"] != "unavailable" else "unavailable", "risk_level": safety["risk_level"], "assessment":"Fishing suitability cannot be completed because authorized PFZ data is unavailable. " + safety["assessment"], "evidence": safety["evidence"], "unavailable_data": list(set(pfz["unavailable_data"] + safety["unavailable_data"]))}
         suitability = "unfavorable" if safety["risk_level"] in {"high","critical"} else "moderate" if safety["status"] != "available" or safety["risk_level"] == "moderate" else "favorable"
-        return {**pfz, "status":"available" if safety["status"] == "available" else "partial", "suitability":suitability, "assessment":f"Fishing suitability is {suitability}; {safety['assessment']}", "evidence":pfz["evidence"] + safety["evidence"], "warnings":pfz["warnings"] + safety["warnings"], "unavailable_data":safety["unavailable_data"]}
+        return {**pfz, "status":"available" if safety["status"] == "available" else "partial", "risk_level": safety["risk_level"], "suitability":suitability, "assessment":f"Fishing suitability is {suitability}; {safety['assessment']}", "evidence":pfz["evidence"] + safety["evidence"], "warnings":pfz["warnings"] + safety["warnings"], "unavailable_data":safety["unavailable_data"]}
 
     async def hazard(self, location: dict[str, Any], at: datetime | None = None) -> dict[str, Any]:
         records = self._records(("ibtracs", "cyclone", "cyclones"))
@@ -97,7 +100,7 @@ class DecisionService:
         return {"status":"available","hazard_status":status,"risk_level":"high" if cyclones else "low","assessment":("Relevant cyclone evidence was found within 500 km." if cyclones else "No relevant cyclone feature was found within 500 km in the available cyclone dataset."),"cyclones":cyclones,"evidence":[{"source":c["source"],"data_type":"cyclone_position","timestamp":c["observed_at"],"location":location,"value":c["distance_km"],"unit":"km","freshness":"loaded"} for c in cyclones],"warnings":[],"unavailable_data":[]}
 
     async def anomaly(self, location: dict[str, Any], at: datetime | None = None) -> dict[str, Any]:
-        _, ocean = await self._conditions(location); wave=(ocean.get("observation") or {}).get("wave_height_m")
+        _, ocean = await self._conditions(location, at); wave=(ocean.get("observation") or {}).get("wave_height_m")
         if not isinstance(wave,(int,float)): return {"status":"unavailable","assessment":"Wave source is unavailable, so marine anomaly assessment cannot be made.","anomaly_status":"source_unavailable","evidence":[],"warnings":[],"unavailable_data":["wave height"]}
         ev=self._evidence(ocean,"wave_height",location,"wave_height_m","m")
         return {"status":"partial","assessment":("Notable high-wave condition (>= 2.5 m) detected." if wave >= 2.5 else "No operational high-wave condition detected. A true anomaly needs historical reference data."),"anomaly_status":"notable_condition" if wave >= 2.5 else "insufficient_reference_data","evidence":[ev],"warnings":["Historical/reference baseline is not configured; this is a threshold condition, not a statistical anomaly."],"unavailable_data":["historical wave reference"]}

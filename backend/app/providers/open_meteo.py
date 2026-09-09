@@ -3,6 +3,7 @@
 import asyncio
 from copy import deepcopy
 from datetime import datetime, timezone
+from datetime import date, timedelta
 import json
 from typing import Any
 from urllib.error import URLError
@@ -50,6 +51,22 @@ def _coordinates(request: dict[str, Any]) -> tuple[float, float]:
     return latitude, longitude
 
 
+def _requested_date(request: dict[str, Any]) -> date | None:
+    expression = request.get("metadata", {}).get("time_expression") if isinstance(request.get("metadata"), dict) else None
+    expression = expression or request.get("time_expression")
+    if not isinstance(expression, str):
+        return None
+    lowered = expression.lower()
+    if lowered.startswith("tomorrow"):
+        return datetime.now(timezone.utc).date() + timedelta(days=1)
+    if lowered == "today" or lowered == "tonight":
+        return datetime.now(timezone.utc).date()
+    try:
+        return date.fromisoformat(expression[:10])
+    except ValueError:
+        return None
+
+
 def _weather_description(code: Any) -> str | None:
     descriptions = {0: "clear sky", 1: "mainly clear", 2: "partly cloudy", 3: "overcast", 45: "fog", 48: "rime fog", 51: "light drizzle", 53: "moderate drizzle", 55: "dense drizzle", 61: "slight rain", 63: "moderate rain", 65: "heavy rain", 71: "slight snow", 73: "moderate snow", 75: "heavy snow", 80: "rain showers", 81: "moderate rain showers", 82: "violent rain showers", 95: "thunderstorm", 96: "thunderstorm with hail", 99: "severe thunderstorm with hail"}
     return descriptions.get(code) if isinstance(code, int) else None
@@ -71,8 +88,10 @@ class OpenMeteoProvider:
             return {"available": False, "source_status": "unavailable", "provider": "Open-Meteo", "error": str(error), "observation": None}
         key = (latitude, longitude)
         try:
-            payload = await self._request(latitude, longitude)
-            normalized = self.normalizer(payload, latitude, longitude)
+            requested_date = _requested_date(request)
+            future = requested_date and requested_date > datetime.now(timezone.utc).date()
+            payload = await self._request(latitude, longitude, requested_date) if future else await self._request(latitude, longitude)
+            normalized = self.normalizer(payload, latitude, longitude, requested_date) if future else self.normalizer(payload, latitude, longitude)
             self._cache[key] = deepcopy(normalized)
             return normalized
         except (ProviderError, URLError, TimeoutError, json.JSONDecodeError) as error:
@@ -84,8 +103,11 @@ class OpenMeteoProvider:
                 return result
             return {"available": False, "source_status": "unavailable", "provider": "Open-Meteo", "error": f"Live provider unavailable: {error}", "observation": None}
 
-    async def _request(self, latitude: float, longitude: float) -> dict[str, Any]:
-        parameters = urlencode({"latitude": latitude, "longitude": longitude, "current": self.fields, "timezone": "GMT", "wind_speed_unit": "ms"})
+    async def _request(self, latitude: float, longitude: float, requested_date: date | None = None) -> dict[str, Any]:
+        if requested_date and requested_date > datetime.now(timezone.utc).date():
+            parameters = urlencode({"latitude": latitude, "longitude": longitude, "hourly": self.fields, "start_date": requested_date.isoformat(), "end_date": requested_date.isoformat(), "timezone": "GMT", "wind_speed_unit": "ms"})
+        else:
+            parameters = urlencode({"latitude": latitude, "longitude": longitude, "current": self.fields, "timezone": "GMT", "wind_speed_unit": "ms"})
         url = f"{self.endpoint}?{parameters}"
         last_error: Exception | None = None
         for _ in range(2):
@@ -104,8 +126,15 @@ class OpenMeteoProvider:
         return payload
 
 
-def normalize_weather(payload: dict[str, Any], latitude: float, longitude: float) -> dict[str, Any]:
-    current = payload.get("current")
+def _first_hour(payload: dict[str, Any], fields: tuple[str, ...]) -> dict[str, Any] | None:
+    hourly = payload.get("hourly")
+    if not isinstance(hourly, dict) or not isinstance(hourly.get("time"), list) or not hourly["time"]:
+        return None
+    return {field: hourly.get(field, [None])[0] for field in fields} | {"time": hourly["time"][0]}
+
+
+def normalize_weather(payload: dict[str, Any], latitude: float, longitude: float, requested_date: date | None = None) -> dict[str, Any]:
+    current = payload.get("current") or _first_hour(payload, ("temperature_2m", "wind_speed_10m", "wind_direction_10m", "precipitation", "pressure_msl", "relative_humidity_2m", "weather_code"))
     if not isinstance(current, dict) or _timestamp(current.get("time")) is None:
         raise ProviderError("Provider response omitted a valid current weather observation.")
     observation = {
@@ -119,8 +148,8 @@ def normalize_weather(payload: dict[str, Any], latitude: float, longitude: float
     return {"available": True, "source_status": "live", "provider": "Open-Meteo Forecast API", "source_url": WEATHER_URL, "observation": observation}
 
 
-def normalize_marine(payload: dict[str, Any], latitude: float, longitude: float) -> dict[str, Any]:
-    current = payload.get("current")
+def normalize_marine(payload: dict[str, Any], latitude: float, longitude: float, requested_date: date | None = None) -> dict[str, Any]:
+    current = payload.get("current") or _first_hour(payload, ("sea_surface_temperature", "wave_height", "wave_direction", "wave_period"))
     if not isinstance(current, dict) or _timestamp(current.get("time")) is None:
         raise ProviderError("Provider response omitted a valid current marine observation.")
     observation = {
@@ -135,3 +164,31 @@ def normalize_marine(payload: dict[str, Any], latitude: float, longitude: float)
 
 weather_provider = OpenMeteoProvider(WEATHER_URL, WEATHER_FIELDS, normalize_weather)
 marine_provider = OpenMeteoProvider(MARINE_URL, MARINE_FIELDS, normalize_marine)
+
+
+class OpenMeteoGeocoder:
+    endpoint = "https://geocoding-api.open-meteo.com/v1/search"
+
+    async def resolve(self, place: str) -> dict[str, Any] | None:
+        parameters = urlencode({"name": place, "count": 1, "language": "en", "format": "json"})
+        try:
+            payload = await asyncio.to_thread(self._read_json, f"{self.endpoint}?{parameters}")
+        except (URLError, TimeoutError, json.JSONDecodeError):
+            return None
+        results = payload.get("results") if isinstance(payload, dict) else None
+        item = results[0] if isinstance(results, list) and results else None
+        if not isinstance(item, dict) or not isinstance(item.get("latitude"), (int, float)) or not isinstance(item.get("longitude"), (int, float)):
+            return None
+        label = ", ".join(str(value) for value in (item.get("name"), item.get("admin1"), item.get("country")) if value)
+        return {"latitude": item["latitude"], "longitude": item["longitude"], "label": label or place}
+
+    @staticmethod
+    def _read_json(url: str) -> dict[str, Any]:
+        with urlopen(url, timeout=8) as response:  # nosec B310: fixed HTTPS provider URL
+            payload = json.loads(response.read().decode("utf-8"))
+        if not isinstance(payload, dict):
+            raise ProviderError("Geocoder response was not an object.")
+        return payload
+
+
+geocoder = OpenMeteoGeocoder()

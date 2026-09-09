@@ -13,6 +13,12 @@ WEATHER_PAYLOAD = {"latitude": 17.7, "longitude": 83.3, "current": {"time": "202
 MARINE_PAYLOAD = {"latitude": 17.7, "longitude": 83.3, "current": {"time": "2026-09-07T12:00", "sea_surface_temperature": 28, "wave_height": 2.7, "wave_direction": 130, "wave_period": 9}}
 
 
+class NoNetworkLLM:
+    api_key = None
+    async def plan(self, query, fallback, persona): return None
+    async def chat(self, query, language): return None
+
+
 class OceanWeatherTests(unittest.IsolatedAsyncioTestCase):
     def test_normalizers_keep_missing_fields_unavailable(self):
         weather = normalize_weather(WEATHER_PAYLOAD, 17.7, 83.3)
@@ -50,17 +56,17 @@ class OceanWeatherTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_workflow_runs_selected_agents_and_tolerates_missing_location(self):
         context = QueryContext(QueryParser().parse("marine weather conditions"))
-        result = await OrcaWorkflow().run(context)
+        result = await OrcaWorkflow(llm=NoNetworkLLM()).run(context)
         self.assertEqual(result["agents_used"], ["ocean", "weather"])
         self.assertEqual(set(result["analysis_results"]), {"ocean", "weather"})
         self.assertIn("Unavailable", result["answer"])
 
     async def test_workflow_preserves_unimplemented_requested_domains(self):
         context = QueryContext(QueryParser().parse("safe route"))
-        result = await OrcaWorkflow().run(context)
+        result = await OrcaWorkflow(llm=NoNetworkLLM()).run(context)
         self.assertEqual(result["agents_used"], [])
-        self.assertEqual(result["pending_domains"], ["gis", "safety"])
-        self.assertEqual(context.metadata["pending_domains"], ["gis", "safety"])
+        self.assertEqual(result["pending_domains"], ["gis"])
+        self.assertEqual(context.metadata["pending_domains"], ["gis"])
 
     def test_workflow_does_not_replace_injected_tools(self):
         coordinator = DataCoordinator()

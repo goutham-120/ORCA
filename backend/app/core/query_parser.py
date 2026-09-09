@@ -11,15 +11,16 @@ class ParsedQuery:
     requested_domains: list[str]
     requested_location: str | None = None
     time_expression: str | None = None
+    decision_type: str | None = None
 
 
 class QueryParser:
     _intent_terms = {
         "route": ("route", "navigate", "voyage", "path"),
-        "safety": ("safe", "safety", "risk", "hazard"),
+        "safety": ("safe", "safety", "risk"),
         "weather": ("weather", "wind", "rain", "storm", "temperature", "forecast"),
         "ocean": ("ocean", "marine", "wave", "current", "sea", "swell", "tide"),
-        "map": ("map", "layer", "area", "zone", "location", "near", "distance", "coordinates", "boundary", "coastal"),
+        "map": ("map", "layer", "area", "zone", "location", "distance", "coordinates", "boundary", "coastal"),
         "gis": ("restricted", "hazard zone", "spatial", "geofence"),
         "pfz": ("pfz", "fishing zone"),
         "hazard": ("cyclone", "hurricane", "typhoon"),
@@ -38,16 +39,20 @@ class QueryParser:
         lowered = normalized.lower()
         matches = [name for name, terms in self._intent_terms.items() if any(term in lowered for term in terms)]
         matches.extend(name for name, terms in self._hindi_terms.items() if any(term in normalized for term in terms) and name not in matches)
-        # Fishing/PFZ questions use the available marine, weather, and spatial
-        # evidence. PFZ remains explicitly pending because no PFZ source is
-        # configured; this never implies that PFZ information exists.
-        fishing = any(term in lowered for term in ("fish", "fishing", "pfz")) or "pfz" in matches
-        if fishing:
-            matches.extend(name for name in ("ocean", "weather", "gis", "pfz") if name not in matches)
+        fishing = any(term in lowered for term in ("fish", "fishing")) or "pfz" in matches
+        safety = "safety" in matches
+        decision_type = "route" if "route" in matches else "fishing" if fishing else "safety" if safety else "hazard" if "hazard" in matches else None
+        if decision_type in {"fishing", "safety"}:
+            matches.extend(name for name in ("ocean", "weather") if name not in matches)
+        # A place qualifier such as "near Visakhapatnam" is location context,
+        # not a request for spatial analysis. GIS is selected only for explicit
+        # spatial work or when the caller supplies a GIS-specific request.
+        if decision_type in {"safety", "fishing"} and any(term in lowered for term in ("zone", "restricted", "hazard area", "geofence")):
+            matches.append("gis") if "gis" not in matches else None
         intent = matches[0] if matches else "general"
         domains = sorted({"gis" if match in {"route", "map", "gis", "hazard"} else match for match in matches})
         location = self._location_mention(normalized)
-        return ParsedQuery(original=query, normalized=normalized, intent=intent, requested_domains=domains, requested_location=location, time_expression=self._time_expression(lowered, normalized))
+        return ParsedQuery(original=query, normalized=normalized, intent=intent, requested_domains=domains, requested_location=location, time_expression=self._time_expression(lowered, normalized), decision_type=decision_type)
 
     @staticmethod
     def _location_mention(query: str) -> str | None:
