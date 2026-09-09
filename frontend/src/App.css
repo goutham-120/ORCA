@@ -1443,8 +1443,14 @@
   position: relative;
   z-index: 2;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
+}
+
+@media (max-width: 768px) {
+  .ocean-metrics-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .pulse-metric-tile {
