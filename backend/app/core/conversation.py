@@ -44,6 +44,11 @@ def synthesize_answer(query: str, assessment: dict[str, Any], results: dict[str,
     concerns = [concern for result in results.values() if isinstance(result, dict) for concern in result.get("concerns", [])]
     if concerns:
         parts.append("Risk factors: " + "; ".join(concerns) + ".")
+    decision = results.get("decision")
+    if isinstance(decision, dict):
+        parts.append("Decision intelligence: " + str(decision.get("assessment", "No decision assessment available.")))
+        if decision.get("unavailable_data"):
+            parts.append("Decision limitations: " + ", ".join(decision["unavailable_data"]) + ".")
     if language.lower() in {"hi", "hi-in"}:
         return _hindi_answer(level, results, pending, incomplete, time_expression)
     if language.lower() not in {"en", "en-in"}:

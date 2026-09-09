@@ -46,7 +46,7 @@ class OrcaOrchestrator:
             "requested_location": metadata.get("requested_location"),
             "time_expression": metadata.get("time_expression"),
         }
-        unavailable_domains = [name for name, value in result.get("analysis_results", {}).items() if isinstance(value, dict) and value.get("data_status") not in {"live", "cached", "static"}]
+        unavailable_domains = [name for name, value in result.get("analysis_results", {}).items() if name in {"ocean", "weather", "gis"} and isinstance(value, dict) and value.get("data_status") not in {"live", "cached", "static"}]
         answer = synthesize_answer(request.query, assessment, result.get("analysis_results", {}), pending_domains, response_context, request.language)
         return OrcaQueryResponse(query_id=str(uuid4()), answer=answer, intent=parsed.intent, agents_used=result.get("agents_used", []), assessment=assessment, recommendations=recommendations, evidence=result.get("evidence", []), created_at=datetime.now(timezone.utc), conversation_id=request.conversation_id, language=self._response_language(request.language), context=response_context, pending_domains=pending_domains, unavailable_domains=unavailable_domains)
 
