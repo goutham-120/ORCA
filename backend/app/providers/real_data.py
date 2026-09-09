@@ -10,6 +10,7 @@ from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 import io
 import json
+import math
 import os
 from typing import Any
 from urllib.error import URLError
@@ -31,6 +32,19 @@ def _now() -> datetime:
 
 def _iso_now() -> str:
     return _now().isoformat()
+
+
+def _csv_number(value: Any, *, minimum: float | None = None, maximum: float | None = None) -> float | None:
+    """Validate a numeric IBTrACS CSV cell without loosening JSON-provider parsing."""
+    if isinstance(value, bool) or not isinstance(value, (str, int, float)):
+        return None
+    try:
+        result = float(value)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(result) or (minimum is not None and result < minimum) or (maximum is not None and result > maximum):
+        return None
+    return result
 
 
 def unavailable(provider: str, source_url: str, error: str) -> dict[str, Any]:
@@ -185,16 +199,18 @@ def normalize_ibtracs_csv(payload: str, *, source_url: str) -> dict[str, Any]:
     next(reader, None)
     records: list[dict[str, Any]] = []
     for row in reader:
-        latitude, longitude = _number(row.get("LAT"), minimum=-90, maximum=90), _number(row.get("LON"), minimum=-180, maximum=180)
+        # csv.DictReader yields text cells. IBTrACS has a header followed by a
+        # units row, which is skipped above; data rows remain strings by design.
+        latitude, longitude = _csv_number(row.get("LAT"), minimum=-90, maximum=90), _csv_number(row.get("LON"), minimum=-180, maximum=180)
         timestamp = _timestamp(row.get("ISO_TIME"))
         if latitude is None or longitude is None or timestamp is None:
             continue
         records.append({"storm_identifier": row.get("SID") or None, "name": row.get("NAME") or None,
                         "timestamp": timestamp, "latitude": latitude, "longitude": longitude,
-                        "intensity_knots": _number(row.get("USA_WIND"), minimum=0),
-                        "pressure_hpa": _number(row.get("USA_PRES"), minimum=0),
-                        "movement_speed_knots": _number(row.get("STORM_SPEED"), minimum=0),
-                        "movement_direction_degrees": _number(row.get("STORM_DIR"), minimum=0, maximum=360),
+                        "intensity_knots": _csv_number(row.get("USA_WIND"), minimum=0),
+                        "pressure_hpa": _csv_number(row.get("USA_PRES"), minimum=0),
+                        "movement_speed_knots": _csv_number(row.get("STORM_SPEED"), minimum=0),
+                        "movement_direction_degrees": _csv_number(row.get("STORM_DIR"), minimum=0, maximum=360),
                         "agency": row.get("USA_AGENCY") or row.get("WMO_AGENCY") or None,
                         "quality": {"nature": row.get("NATURE"), "track_type": row.get("TRACK_TYPE")}})
     if not records:

@@ -14,7 +14,10 @@ PFZ_GEOJSON = {"type": "FeatureCollection", "features": [{"type": "Feature", "ge
 CHLOROPHYLL_GEOJSON = {"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "Point", "coordinates": [83.3, 17.7]}, "properties": {"chlorophyll_mg_m3": 1.2, "time": "2026-09-08T00:00:00Z"}}]}
 WEATHER_HOURLY = {"latitude": 17.7, "longitude": 83.3, "hourly": {"time": ["2026-09-08T00:00"], "temperature_2m": [29], "precipitation": [0], "wind_speed_10m": [4], "wind_direction_10m": [160]}}
 MARINE_HOURLY = {"latitude": 17.7, "longitude": 83.3, "hourly": {"time": ["2026-09-08T00:00"], "sea_surface_temperature": [28], "wave_height": [1.2], "wave_direction": [120], "wave_period": [7], "ocean_current_velocity": [0.8], "ocean_current_direction": [90]}}
-IBTRACS_CSV = 'SID,SEASON,NUMBER,BASIN,SUBBASIN,NAME,ISO_TIME,NATURE,LAT,LON,WMO_WIND,WMO_PRES,USA_AGENCY,USA_WIND,USA_PRES,STORM_SPEED,STORM_DIR,TRACK_TYPE\ntext,year,text,text,text,text,iso_time,text,degree_north,degree_east,kts,mb,text,kts,mb,kts,degree,text\n2026240N10080,2026,1,NI,BB,REALSTORM,2026-09-01 00:00:00,TS,17.7,83.3,40,990,NEWDELHI,42,988,12,90,main\n'
+# NOAA IBTrACS CSV has column names followed by a units row, then string-valued
+# records. This is structurally representative without presenting test values as
+# provider output.
+IBTRACS_CSV = 'SID,SEASON,NUMBER,BASIN,SUBBASIN,NAME,ISO_TIME,NATURE,LAT,LON,WMO_WIND,WMO_PRES,USA_AGENCY,USA_WIND,USA_PRES,STORM_SPEED,STORM_DIR,TRACK_TYPE\ntext,year,text,text,text,text,iso_time,text,degree_north,degree_east,kts,mb,text,kts,mb,kts,degree,text\n2026240N10080,2026,1,NI,BB,TEST_RECORD,2026-09-01 00:00:00,TS,17.7,83.3,40,990,NEWDELHI,42,988,12,90,main\n'
 
 
 class RealDataProviderTests(unittest.IsolatedAsyncioTestCase):
@@ -44,7 +47,8 @@ class RealDataProviderTests(unittest.IsolatedAsyncioTestCase):
         chlorophyll = normalize_chlorophyll_geojson(CHLOROPHYLL_GEOJSON, source_url="https://official.example/chl")
         cyclone = normalize_ibtracs_csv(IBTRACS_CSV, source_url="https://ncei.noaa.gov/ibtracs.csv")
         self.assertEqual(chlorophyll["data"][0]["chlorophyll_mg_m3"], 1.2)
-        self.assertEqual(cyclone["data"][0]["name"], "REALSTORM")
+        self.assertEqual(cyclone["data"][0]["name"], "TEST_RECORD")
+        self.assertEqual(cyclone["data"][0]["latitude"], 17.7)
         self.assertEqual(cyclone["data"][0]["agency"], "NEWDELHI")
 
     def test_forecast_and_current_normalization(self):
