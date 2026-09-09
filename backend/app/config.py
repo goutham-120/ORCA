@@ -4,14 +4,22 @@ from functools import lru_cache
 import os
 
 from dataclasses import dataclass, field
-
+from dotenv import load_dotenv
+load_dotenv()
 
 @dataclass(frozen=True)
 class Settings:
     app_name: str = "ORCA API"
     environment: str = "development"
     api_prefix: str = ""
-    cors_origins: list[str] = field(default_factory=lambda: ["http://localhost:5173", "http://127.0.0.1:5173"])
+    cors_origins: list[str] = field(
+        default_factory=lambda: [
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "http://localhost:5174",
+            "http://127.0.0.1:5174",
+        ]
+    )
     database_url: str | None = None
     jwt_secret: str | None = None
 
@@ -25,7 +33,7 @@ def get_settings() -> Settings:
         environment=os.getenv("ORCA_ENVIRONMENT", "development"),
         api_prefix=os.getenv("ORCA_API_PREFIX", ""),
         cors_origins=[origin.strip() for origin in origins.split(",") if origin.strip()]
-        or ["http://localhost:5173", "http://127.0.0.1:5173"],
+        or ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5174", "http://127.0.0.1:5174"],
         database_url=os.getenv("ORCA_DATABASE_URL"),
         jwt_secret=os.getenv("ORCA_JWT_SECRET"),
     )
