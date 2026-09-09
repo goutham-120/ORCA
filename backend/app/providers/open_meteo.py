@@ -16,7 +16,9 @@ WEATHER_FIELDS = (
     "temperature_2m,relative_humidity_2m,precipitation,pressure_msl,"
     "wind_speed_10m,wind_direction_10m,weather_code"
 )
-MARINE_FIELDS = "sea_surface_temperature,wave_height,wave_direction,wave_period"
+MARINE_FIELDS = "sea_surface_temperature,wave_height,wave_direction,wave_period,ocean_current_velocity,ocean_current_direction"
+WEATHER_FORECAST_FIELDS = "temperature_2m,precipitation,wind_speed_10m,wind_direction_10m"
+MARINE_FORECAST_FIELDS = "sea_surface_temperature,wave_height,wave_direction,wave_period,ocean_current_velocity,ocean_current_direction"
 
 
 class ProviderError(RuntimeError):
@@ -58,10 +60,11 @@ def _weather_description(code: Any) -> str | None:
 class OpenMeteoProvider:
     """Small provider with in-memory recent-value caching and retry handling."""
 
-    def __init__(self, endpoint: str, fields: str, normalizer: Any) -> None:
+    def __init__(self, endpoint: str, fields: str, normalizer: Any, *, parameter: str = "current") -> None:
         self.endpoint = endpoint
         self.fields = fields
         self.normalizer = normalizer
+        self.parameter = parameter
         self._cache: dict[tuple[float, float], dict[str, Any]] = {}
 
     async def fetch(self, request: dict[str, Any]) -> dict[str, Any]:
@@ -85,7 +88,12 @@ class OpenMeteoProvider:
             return {"available": False, "source_status": "unavailable", "provider": "Open-Meteo", "error": f"Live provider unavailable: {error}", "observation": None}
 
     async def _request(self, latitude: float, longitude: float) -> dict[str, Any]:
-        parameters = urlencode({"latitude": latitude, "longitude": longitude, "current": self.fields, "timezone": "GMT", "wind_speed_unit": "ms"})
+        parameters_dict: dict[str, Any] = {"latitude": latitude, "longitude": longitude, self.parameter: self.fields, "timezone": "GMT", "wind_speed_unit": "ms"}
+        if self.parameter == "hourly":
+            # Open-Meteo validates range constraints; clamp requests to published limits.
+            parameters_dict["forecast_days"] = 3
+            parameters_dict["cell_selection"] = "sea" if self.endpoint == MARINE_URL else "land"
+        parameters = urlencode(parameters_dict)
         url = f"{self.endpoint}?{parameters}"
         last_error: Exception | None = None
         for _ in range(2):
@@ -128,10 +136,46 @@ def normalize_marine(payload: dict[str, Any], latitude: float, longitude: float)
         "longitude": _number(payload.get("longitude"), minimum=-180, maximum=180) or longitude,
         "timestamp": _timestamp(current["time"]), "sea_surface_temperature_c": _number(current.get("sea_surface_temperature")),
         "wave_height_m": _number(current.get("wave_height"), minimum=0), "wave_direction_degrees": _number(current.get("wave_direction"), minimum=0, maximum=360),
-        "wave_period_s": _number(current.get("wave_period"), minimum=0), "current": None,
+        "wave_period_s": _number(current.get("wave_period"), minimum=0),
+        # Open-Meteo's marine API returns ocean-current velocity in km/h by default.
+        "current": {"speed_kmh": _number(current.get("ocean_current_velocity"), minimum=0), "direction_degrees": _number(current.get("ocean_current_direction"), minimum=0, maximum=360)} if current.get("ocean_current_velocity") is not None else None,
     }
     return {"available": True, "source_status": "live", "provider": "Open-Meteo Marine API", "source_url": MARINE_URL, "observation": observation}
 
 
+def _hourly_records(payload: dict[str, Any], latitude: float, longitude: float, fields: dict[str, tuple[str, float | None, float | None]]) -> list[dict[str, Any]]:
+    hourly = payload.get("hourly")
+    times = hourly.get("time") if isinstance(hourly, dict) else None
+    if not isinstance(times, list):
+        raise ProviderError("Provider response omitted hourly timestamps.")
+    records = []
+    for index, value in enumerate(times):
+        timestamp = _timestamp(value)
+        if timestamp is None:
+            continue
+        record = {"latitude": _number(payload.get("latitude"), minimum=-90, maximum=90) or latitude,
+                  "longitude": _number(payload.get("longitude"), minimum=-180, maximum=180) or longitude,
+                  "timestamp": timestamp}
+        for output, (field, minimum, maximum) in fields.items():
+            values = hourly.get(field)
+            record[output] = _number(values[index], minimum=minimum, maximum=maximum) if isinstance(values, list) and index < len(values) else None
+        records.append(record)
+    if not records:
+        raise ProviderError("Provider response contained no valid hourly observations.")
+    return records
+
+
+def normalize_weather_forecast(payload: dict[str, Any], latitude: float, longitude: float) -> dict[str, Any]:
+    records = _hourly_records(payload, latitude, longitude, {"air_temperature_c": ("temperature_2m", None, None), "precipitation_mm": ("precipitation", 0, None), "wind_speed_mps": ("wind_speed_10m", 0, None), "wind_direction_degrees": ("wind_direction_10m", 0, 360)})
+    return {"available": True, "source_status": "live", "provider": "Open-Meteo Forecast API", "source_url": WEATHER_URL, "fetched_at": datetime.now(timezone.utc).isoformat(), "forecast": records}
+
+
+def normalize_marine_forecast(payload: dict[str, Any], latitude: float, longitude: float) -> dict[str, Any]:
+    records = _hourly_records(payload, latitude, longitude, {"sea_surface_temperature_c": ("sea_surface_temperature", None, None), "wave_height_m": ("wave_height", 0, None), "wave_direction_degrees": ("wave_direction", 0, 360), "wave_period_s": ("wave_period", 0, None), "current_speed_kmh": ("ocean_current_velocity", 0, None), "current_direction_degrees": ("ocean_current_direction", 0, 360)})
+    return {"available": True, "source_status": "live", "provider": "Open-Meteo Marine API", "source_url": MARINE_URL, "fetched_at": datetime.now(timezone.utc).isoformat(), "forecast": records}
+
+
 weather_provider = OpenMeteoProvider(WEATHER_URL, WEATHER_FIELDS, normalize_weather)
 marine_provider = OpenMeteoProvider(MARINE_URL, MARINE_FIELDS, normalize_marine)
+weather_forecast_provider = OpenMeteoProvider(WEATHER_URL, WEATHER_FORECAST_FIELDS, normalize_weather_forecast, parameter="hourly")
+marine_forecast_provider = OpenMeteoProvider(MARINE_URL, MARINE_FORECAST_FIELDS, normalize_marine_forecast, parameter="hourly")
