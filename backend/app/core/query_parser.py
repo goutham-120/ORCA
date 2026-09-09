@@ -22,6 +22,7 @@ class QueryParser:
         "map": ("map", "layer", "area", "zone", "location", "near", "distance", "coordinates", "boundary", "coastal"),
         "gis": ("restricted", "hazard zone", "spatial", "geofence"),
         "pfz": ("pfz", "fishing zone"),
+        "hazard": ("cyclone", "hurricane", "typhoon"),
     }
 
     _hindi_terms = {
@@ -44,7 +45,7 @@ class QueryParser:
         if fishing:
             matches.extend(name for name in ("ocean", "weather", "gis", "pfz") if name not in matches)
         intent = matches[0] if matches else "general"
-        domains = sorted({"gis" if match in {"route", "map", "gis"} else match for match in matches})
+        domains = sorted({"gis" if match in {"route", "map", "gis", "hazard"} else match for match in matches})
         location = self._location_mention(normalized)
         return ParsedQuery(original=query, normalized=normalized, intent=intent, requested_domains=domains, requested_location=location, time_expression=self._time_expression(lowered, normalized))
 
