@@ -1,4 +1,41 @@
 export default function LocationInfoPanel({ location, selectedCoordinate, navigate }) {
   const coordinate = selectedCoordinate || location
-  return <div className="location-info-panel panel"><div className="panel-title"><div><p className="eyebrow">SELECTED LOCATION</p><h2>📍 {coordinate.label || location.name}</h2><small className="location-coords">{coordinate.latitude.toFixed(4)}° N · {coordinate.longitude.toFixed(4)}° E</small></div></div><p className="map-state">Monitoring locations and clicked coordinates are inputs for spatial analysis. Marine conditions, advisories, vessel activity, and PFZ data are not shown unless supplied by a configured source.</p><div className="panel-actions"><button type="button" className="ask-orca-link-btn" onClick={() => navigate(`/ask-orca?query=${encodeURIComponent(`Analyze GIS context near ${coordinate.latitude.toFixed(4)}, ${coordinate.longitude.toFixed(4)}`)}`)}><span>Ask ORCA about this location</span><i>→</i></button></div></div>
+  const label = coordinate.label || location.name
+
+  const handleAskOrca = () => {
+    const lat = coordinate.latitude.toFixed(4)
+    const lon = coordinate.longitude.toFixed(4)
+    const query = encodeURIComponent(`What are the current ocean conditions, weather, and marine safety risks near ${label}?`)
+    const targetUrl = `/ask-orca?latitude=${lat}&longitude=${lon}&label=${encodeURIComponent(label)}&query=${query}`
+    if (navigate) {
+      navigate(targetUrl)
+    }
+  }
+
+  return (
+    <div className="location-info-panel panel font-sans">
+      <div className="panel-title">
+        <div>
+          <p className="eyebrow font-mono">SELECTED LOCATION</p>
+          <h2 className="font-sans">📍 {label}</h2>
+          <small className="location-coords font-mono">
+            {coordinate.latitude.toFixed(4)}° N · {coordinate.longitude.toFixed(4)}° E
+          </small>
+        </div>
+      </div>
+      <p className="map-state font-sans">
+        Monitoring locations and clicked coordinates are inputs for spatial analysis. Marine conditions, advisories, vessel activity, and PFZ data are retrieved directly from connected evidence sources.
+      </p>
+      <div className="panel-actions">
+        <button
+          type="button"
+          className="ask-orca-link-btn glow font-sans"
+          onClick={handleAskOrca}
+        >
+          <span>Ask ORCA about this area</span>
+          <i>→</i>
+        </button>
+      </div>
+    </div>
+  )
 }

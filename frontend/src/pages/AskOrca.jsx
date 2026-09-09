@@ -1,69 +1,78 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import ChatHeader from '../components/chat/ChatHeader'
+import LocationContextPanel from '../components/chat/LocationContextPanel'
 import ChatWindow from '../components/chat/ChatWindow'
 import QueryInput from '../components/chat/QueryInput'
 import { askOrca } from '../services/orcaService'
+import './AskOrca.css'
 
 const newId = () => globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`
 
-export default function AskOrca() {
-  const initial = useMemo(
-    () => new URLSearchParams(window.location.search).get('query') || '',
-    []
-  )
+export default function AskOrca({ navigate }) {
+  // Parse URL Parameters for query, latitude, longitude, and label
+  const searchParams = useMemo(() => new URLSearchParams(window.location.search), [])
 
-  const [query, setQuery] = useState(initial)
+  const initialQuery = searchParams.get('query') || ''
+  const initialLat = searchParams.get('latitude') || searchParams.get('lat')
+  const initialLon = searchParams.get('longitude') || searchParams.get('lon')
+  const initialLabel = searchParams.get('label') || ''
+
+  const [query, setQuery] = useState(initialQuery)
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [failedQuery, setFailedQuery] = useState('')
   const [language, setLanguage] = useState('en')
-  const [latitude, setLatitude] = useState('')
-  const [longitude, setLongitude] = useState('')
-  const [label, setLabel] = useState('')
-  const [conversationId] = useState(newId)
+  const [conversationId, setConversationId] = useState(newId)
+  const [isLocationOpen, setIsLocationOpen] = useState(false)
 
+  // Active Location state
+  const [location, setLocation] = useState(() => {
+    if (initialLat != null && initialLon != null) {
+      const lat = Number(initialLat)
+      const lon = Number(initialLon)
+      if (Number.isFinite(lat) && Number.isFinite(lon)) {
+        return {
+          latitude: lat,
+          longitude: lon,
+          label: initialLabel || `${lat.toFixed(4)}°, ${lon.toFixed(4)}°`
+        }
+      }
+    }
+    // Default Visakhapatnam monitoring area if no query location passed
+    return {
+      latitude: 17.6868,
+      longitude: 83.2185,
+      label: 'Visakhapatnam'
+    }
+  })
+
+  // Extract last conversation context for follow-up queries
   const lastContext = [...messages]
     .reverse()
-    .find((message) => message.response)?.response?.context
+    .find((m) => m.response?.context)?.response?.context
 
-  const send = async (retryText = '', retry = false) => {
-    const text = (retryText || query).trim()
+  const send = async (overrideText = '', isRetry = false) => {
+    const text = (overrideText || query).trim()
 
     if (!text || loading) return
 
-    const hasLatitude = latitude !== ''
-    const hasLongitude = longitude !== ''
-
-    if (hasLatitude !== hasLongitude) {
-      setError('Provide both latitude and longitude, or leave both blank.')
-      return
-    }
-
-    const location = hasLatitude
-      ? {
-          latitude: Number(latitude),
-          longitude: Number(longitude),
-          ...(label.trim() ? { label: label.trim() } : {}),
-        }
-      : undefined
-
-    if (
-      location &&
-      (!Number.isFinite(location.latitude) ||
-        !Number.isFinite(location.longitude))
-    ) {
-      setError('Coordinates must be valid numbers.')
-      return
+    if (location) {
+      if (!Number.isFinite(location.latitude) || !Number.isFinite(location.longitude)) {
+        setError('Location coordinates must be valid numbers.')
+        return
+      }
     }
 
     const userMessage = {
       id: newId(),
       role: 'user',
       text,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
 
-    if (!retry) {
-      setMessages((items) => [...items, userMessage])
+    if (!isRetry) {
+      setMessages((prev) => [...prev, userMessage])
     }
 
     setQuery('')
@@ -74,103 +83,113 @@ export default function AskOrca() {
     try {
       const response = await askOrca({
         query: text,
-        location,
-        context: lastContext
-          ? { conversation_context: lastContext }
-          : {},
+        location: location
+          ? {
+              latitude: Number(location.latitude),
+              longitude: Number(location.longitude),
+              ...(location.label?.trim() ? { label: location.label.trim() } : {})
+            }
+          : undefined,
+        context: lastContext ? { conversation_context: lastContext } : {},
         conversation_id: conversationId,
-        language,
+        language
       })
 
-      setMessages((items) => [
-        ...items,
-        {
-          id: response.query_id,
-          role: 'assistant',
-          text: response.answer,
-          response,
-        },
-      ])
-    } catch (requestError) {
-      setError(
-        requestError.message || 'ORCA could not complete this request.'
-      )
+      const assistantMessage = {
+        id: response.query_id || newId(),
+        role: 'assistant',
+        text: response.answer,
+        response,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }
+
+      setMessages((prev) => [...prev, assistantMessage])
+    } catch (err) {
+      setError(err.message || 'ORCA could not complete this analysis request.')
       setFailedQuery(text)
     } finally {
       setLoading(false)
     }
   }
 
+  // Auto-send query if passed in URL
+  useEffect(() => {
+    if (initialQuery && messages.length === 0 && !loading) {
+      const timer = setTimeout(() => {
+        send(initialQuery)
+      }, 50)
+      return () => clearTimeout(timer)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialQuery])
+
+  const handleClearSession = () => {
+    if (messages.length > 0 && !window.confirm('Start a new session? Conversation history will be cleared.')) {
+      return
+    }
+    setMessages([])
+    setError('')
+    setFailedQuery('')
+    setConversationId(newId())
+  }
+
+  const handleSelectPrompt = (promptQuery) => {
+    setQuery(promptQuery)
+    send(promptQuery)
+  }
+
   return (
-    <section className="ask-orca">
-      <header className="ask-heading">
-        <div>
-          <p className="eyebrow">CONVERSATIONAL INTELLIGENCE</p>
-          <h1>Ask ORCA</h1>
-          <p>
-            Ask in text or voice. ORCA only reports evidence returned by its
-            connected data sources.
-          </p>
-        </div>
+    <section className="ask-orca-command-center font-sans">
+      {/* 1. TOP HEADER */}
+      <ChatHeader
+        language={language}
+        onLanguageChange={setLanguage}
+        onClearSession={handleClearSession}
+        locationLabel={location?.label}
+        onToggleLocation={() => setIsLocationOpen((prev) => !prev)}
+        isLocationOpen={isLocationOpen}
+      />
 
-        <label>
-          Language
-          <select
-            value={language}
-            onChange={(event) => setLanguage(event.target.value)}
-          >
-            <option value="en">English</option>
-            <option value="hi">हिन्दी (MVP)</option>
-          </select>
-        </label>
-      </header>
+      {/* 2. LOCATION CONTEXT PANEL */}
+      <LocationContextPanel
+        location={location}
+        onChangeLocation={setLocation}
+        onNavigateMap={(path) => navigate && navigate(path)}
+        isOpen={isLocationOpen}
+        onClose={() => setIsLocationOpen(false)}
+      />
 
-      <section className="location-context">
-        <b>Map / location context</b>
-        <span>
-          Optional coordinates are required for live Ocean, Weather, and GIS
-          checks.
-        </span>
+      {/* 3. CHAT VIEWPORT & WELCOME SCREEN */}
+      <ChatWindow
+        messages={messages}
+        loading={loading}
+        onSelectPrompt={handleSelectPrompt}
+      />
 
-        <input
-          value={label}
-          onChange={(event) => setLabel(event.target.value)}
-          placeholder="Location label"
-        />
-
-        <input
-          value={latitude}
-          onChange={(event) => setLatitude(event.target.value)}
-          inputMode="decimal"
-          placeholder="Latitude"
-        />
-
-        <input
-          value={longitude}
-          onChange={(event) => setLongitude(event.target.value)}
-          inputMode="decimal"
-          placeholder="Longitude"
-        />
-      </section>
-
-      <ChatWindow messages={messages} loading={loading} />
-
+      {/* ERROR / RETRY BANNER */}
       {error && (
-        <div className="ask-error">
-          {error}
-          <button
-            onClick={() => send(failedQuery, true)}
-            disabled={!failedQuery || loading}
-          >
-            Retry
-          </button>
+        <div className="ask-orca-error-bar no-print font-sans" role="alert">
+          <div className="error-text font-sans">
+            <span>⚠️ {error}</span>
+          </div>
+          {failedQuery && (
+            <button
+              type="button"
+              className="orca-btn secondary outline text-xs font-sans"
+              onClick={() => send(failedQuery, true)}
+              disabled={loading}
+            >
+              🔄 Retry Analysis
+            </button>
+          )}
         </div>
       )}
 
+      {/* 4. BOTTOM COMPOSER */}
       <QueryInput
         value={query}
         onChange={setQuery}
-        onSend={send}
+        onSend={() => send()}
         loading={loading}
         language={language}
       />
