@@ -12,6 +12,55 @@ Geometry = dict[str, Any]
 Coordinate = tuple[float, float]  # longitude, latitude
 
 
+def geojson_to_shapely(value: Mapping[str, Any]) -> Any:
+    """Convert GeoJSON to a validated Shapely geometry in EPSG:4326 coordinates."""
+    try:
+        from shapely.geometry import shape
+    except ImportError as exc:
+        raise RuntimeError("Shapely is required for GeoJSON conversion. Install backend requirements.") from exc
+    geometry = shape(value.get("geometry", value))
+    if geometry.is_empty or not geometry.is_valid:
+        raise ValueError("GeoJSON geometry must be non-empty and valid.")
+    return geometry
+
+
+def shapely_to_geojson(value: Any) -> Geometry:
+    """Convert a non-empty valid Shapely geometry to a GeoJSON mapping."""
+    try:
+        from shapely.geometry import mapping
+    except ImportError as exc:
+        raise RuntimeError("Shapely is required for GeoJSON conversion. Install backend requirements.") from exc
+    if getattr(value, "is_empty", True) or not getattr(value, "is_valid", False):
+        raise ValueError("Shapely geometry must be non-empty and valid.")
+    return dict(mapping(value))
+
+
+def geojson_features_to_geodataframe(features: Iterable[Mapping[str, Any]], crs: str = "EPSG:4326") -> Any:
+    """Create a GeoPandas GeoDataFrame from GeoJSON Features, preserving CRS."""
+    try:
+        import geopandas as gpd
+    except ImportError as exc:
+        raise RuntimeError("GeoPandas is required for GeoDataFrame conversion. Install backend requirements.") from exc
+    records = []
+    for feature in features:
+        geometry = geojson_to_shapely(feature)
+        records.append({**dict(feature.get("properties") or {}), "geometry": geometry})
+    return gpd.GeoDataFrame(records, geometry="geometry", crs=crs)
+
+
+def geodataframe_to_geojson_features(frame: Any) -> list[dict[str, Any]]:
+    """Convert a GeoDataFrame to GeoJSON Features; EPSG:4326 is required."""
+    if getattr(frame, "crs", None) is None:
+        raise ValueError("GeoDataFrame CRS is required.")
+    epsg_frame = frame.to_crs("EPSG:4326")
+    return list(__import__("json").loads(epsg_frame.to_json())["features"])
+
+
+def geometry_to_postgis_wkt(value: Mapping[str, Any]) -> str:
+    """Return WKT suitable for ``ST_GeomFromText(..., 4326)``."""
+    return geojson_to_shapely(value).wkt
+
+
 def validate_latitude_longitude(latitude: Any, longitude: Any) -> tuple[float, float]:
     """Validate and return a latitude/longitude pair as floats."""
     if isinstance(latitude, bool) or isinstance(longitude, bool):
