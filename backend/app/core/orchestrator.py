@@ -27,7 +27,10 @@ class OrcaOrchestrator:
             chat = getattr(self.workflow.llm, "chat", None)
             answer = await chat(request.query, self._response_language(request.language)) if chat else None
             if not answer:
-                answer = "General conversation is unavailable because no LLM provider is configured. Set ORCA_LLM_API_KEY to enable it."
+                if not getattr(self.workflow.llm, "api_key", None):
+                    answer = "General conversation is unavailable because no LLM provider is configured. Set ORCA_LLM_API_KEY to enable it."
+                else:
+                    answer = "General conversation is temporarily unavailable because the configured LLM provider request failed. Check the server log and your API key, model access, and account billing."
             return OrcaQueryResponse(query_id=str(uuid4()), answer=answer, intent="general_chat", agents_used=[], assessment=None, recommendations=[], evidence=[], created_at=datetime.now(timezone.utc), conversation_id=request.conversation_id or str(uuid4()), language=self._response_language(request.language), context={"response_language": self._response_language(request.language), "llm_mode": "llm" if answer else "unavailable"}, pending_domains=[], unavailable_domains=[], response_kind="general")
         metadata = dict(request.context)
         # Server state is authoritative; client context is only a backwards-compatible fallback.

@@ -1,9 +1,13 @@
 """Safe optional OpenAI-compatible structured planning boundary."""
 from __future__ import annotations
-import json, os
+import json
+import logging
 from typing import Any, Protocol
 from urllib import request
+from app.config import get_settings
 from app.schemas.ai import QueryPlan
+
+logger = logging.getLogger(__name__)
 
 class LLMClient(Protocol):
     async def plan(self, query: str, fallback: QueryPlan, persona: str) -> QueryPlan | None: ...
@@ -11,21 +15,46 @@ class LLMClient(Protocol):
 
 class OpenAICompatibleLLM:
     def __init__(self) -> None:
-        self.api_key=os.getenv("ORCA_LLM_API_KEY"); self.base_url=os.getenv("ORCA_LLM_BASE_URL", "https://api.openai.com/v1"); self.model=os.getenv("ORCA_LLM_MODEL", "gpt-4o-mini")
+        settings = get_settings()
+        self.api_key = settings.llm_api_key
+        self.base_url = settings.llm_base_url
+        self.model = settings.llm_model
+        self.last_error: str | None = None
+
+    def _response_text(self, prompt: str, instructions: str) -> str | None:
+        if not self.api_key:
+            self.last_error = "No API key is configured."
+            return None
+        body = json.dumps({"model": self.model, "instructions": instructions, "input": prompt}).encode()
+        req = request.Request(
+            self.base_url.rstrip("/") + "/responses",
+            data=body,
+            headers={"Authorization": "Bearer " + self.api_key, "Content-Type": "application/json"},
+        )
+        try:
+            with request.urlopen(req, timeout=15) as response:
+                data: dict[str, Any] = json.loads(response.read())  # nosec - deployment-controlled URL
+            if isinstance(data.get("output_text"), str):
+                return data["output_text"]
+            for item in data.get("output", []):
+                for content in item.get("content", []):
+                    if content.get("type") == "output_text" and isinstance(content.get("text"), str):
+                        return content["text"]
+            self.last_error = "The provider returned no text output."
+        except Exception as exc:
+            self.last_error = str(exc)
+            logger.warning("LLM provider request failed: %s", exc)
+        return None
+
     async def plan(self, query: str, fallback: QueryPlan, persona: str) -> QueryPlan | None:
         if not self.api_key: return None
         prompt=("Return JSON only: intent, requested_domains (ocean/weather/gis/pfz), location_required, time_expression, subtasks [{id,domain,purpose,evidence_required}], response_focus. Do not claim facts, invoke tools, or write code. Query: "+query+" Persona: "+persona)
         try:
-            body=json.dumps({"model":self.model,"messages":[{"role":"system","content":"You are ORCA. Never invent marine data."},{"role":"user","content":prompt}],"temperature":0}).encode()
-            req=request.Request(self.base_url.rstrip("/")+"/chat/completions", data=body, headers={"Authorization":"Bearer "+self.api_key,"Content-Type":"application/json"})
-            with request.urlopen(req, timeout=15) as response: data: dict[str, Any]=json.loads(response.read()) # nosec - deployment-controlled URL
-            return QueryPlan.model_validate(json.loads(data["choices"][0]["message"]["content"]))
-        except Exception: return None
+            response = self._response_text(prompt, "You are ORCA. Never invent marine data.")
+            return QueryPlan.model_validate(json.loads(response)) if response else None
+        except Exception as exc:
+            self.last_error = str(exc)
+            return None
     async def chat(self, query: str, language: str) -> str | None:
         if not self.api_key: return None
-        try:
-            body=json.dumps({"model":self.model,"messages":[{"role":"system","content":f"You are ORCA, a helpful general conversational assistant. Respond in {language}. Do not claim to have live marine data."},{"role":"user","content":query}],"temperature":0.4}).encode()
-            req=request.Request(self.base_url.rstrip("/")+"/chat/completions", data=body, headers={"Authorization":"Bearer "+self.api_key,"Content-Type":"application/json"})
-            with request.urlopen(req, timeout=15) as response: data: dict[str, Any]=json.loads(response.read()) # nosec
-            return str(data["choices"][0]["message"]["content"])
-        except Exception: return None
+        return self._response_text(query, f"You are ORCA, a helpful general conversational assistant. Respond in {language}. Do not claim to have live marine data.")

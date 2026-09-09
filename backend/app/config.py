@@ -2,10 +2,12 @@
 
 from functools import lru_cache
 import os
+from pathlib import Path
 
 from dataclasses import dataclass, field
 from dotenv import load_dotenv
-load_dotenv()
+
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 @dataclass(frozen=True)
 class Settings:
@@ -22,6 +24,9 @@ class Settings:
     )
     database_url: str | None = None
     jwt_secret: str | None = None
+    llm_api_key: str | None = None
+    llm_base_url: str = "https://api.openai.com/v1"
+    llm_model: str = "gpt-4o-mini"
 
 
 @lru_cache
@@ -36,4 +41,7 @@ def get_settings() -> Settings:
         or ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5174", "http://127.0.0.1:5174"],
         database_url=os.getenv("ORCA_DATABASE_URL"),
         jwt_secret=os.getenv("ORCA_JWT_SECRET"),
+        llm_api_key=os.getenv("ORCA_LLM_API_KEY"),
+        llm_base_url=os.getenv("ORCA_LLM_BASE_URL", "https://api.openai.com/v1"),
+        llm_model=os.getenv("ORCA_LLM_MODEL", "gpt-4o-mini"),
     )
