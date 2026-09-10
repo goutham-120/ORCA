@@ -49,9 +49,19 @@ export default function Message({ message }) {
   const scorePercent = assessment?.score != null ? Math.round(assessment.score * 100) : null
   const recommendations = response?.recommendations || []
   const hasLimitations = Boolean(response?.unavailable_domains?.length || response?.pending_domains?.length || decision?.unavailable_data?.length || decision?.warnings?.length)
-  const answer = response?.answer || message.text
-  const mapFollowUp = response?.context?.map_follow_up
-  const mapUrl = mapFollowUp ? `/map?latitude=${encodeURIComponent(mapFollowUp.latitude)}&longitude=${encodeURIComponent(mapFollowUp.longitude)}&label=${encodeURIComponent(mapFollowUp.label || 'Selected map coordinate')}` : null
+  const answer = response?.answer || message.text || ''
+  const targetLocation = response?.context?.location || response?.location || evidenceList.find((e) => e.location?.latitude != null)?.location || null
+  const hasTargetCoords = targetLocation && Number.isFinite(Number(targetLocation.latitude)) && Number.isFinite(Number(targetLocation.longitude))
+  const isPFZContext = response?.context?.decision_type === 'pfz' || isPFZDiscovery || evidenceList.some((e) => e.data_type === 'pfz_feature' || e.source?.toLowerCase().includes('incois') || (e.metadata?.domain === 'gis' && e.summary?.toLowerCase().includes('pfz'))) || answer.toLowerCase().includes('pfz') || answer.toLowerCase().includes('fishing zone')
+
+  const handleNavigateMap = (isPFZMode = false) => {
+    const lat = hasTargetCoords ? Number(targetLocation.latitude).toFixed(4) : '13.0827'
+    const lon = hasTargetCoords ? Number(targetLocation.longitude).toFixed(4) : '80.2707'
+    const label = encodeURIComponent(targetLocation?.label || (isPFZMode ? 'PFZ Area' : 'Selected Location'))
+    const path = `/map?latitude=${lat}&longitude=${lon}&label=${label}${isPFZMode ? '&layer=pfz' : ''}`
+    window.history.pushState({}, '', path)
+    window.dispatchEvent(new PopStateEvent('popstate'))
+  }
 
   return (
     <div className="chat-bubble-wrap orca-wrap font-sans">
@@ -108,7 +118,6 @@ export default function Message({ message }) {
 
         {/* Card Actions */}
         <div className="message-actions">
-          {mapUrl && <a className="action-btn copy-btn" href={mapUrl}>View on Map</a>}
           <button
             type="button"
             className={`action-btn copy-btn ${copied ? 'is-copied' : ''}`}
@@ -117,7 +126,27 @@ export default function Message({ message }) {
           >
             {copied ? '✓ Copied' : '📋 Copy Assessment'}
           </button>
+          {isPFZContext ? (
+            <button
+              type="button"
+              className="action-btn map-link-btn font-mono"
+              onClick={() => handleNavigateMap(true)}
+              title="View Potential Fishing Zones on Map Explorer"
+            >
+              🐟 View PFZs on Map
+            </button>
+          ) : (hasTargetCoords || isSpecialized) ? (
+            <button
+              type="button"
+              className="action-btn map-link-btn font-mono"
+              onClick={() => handleNavigateMap(false)}
+              title="View this area on Map Explorer"
+            >
+              🗺️ View on Map
+            </button>
+          ) : null}
         </div>
+
       </div>
     </div>
   )

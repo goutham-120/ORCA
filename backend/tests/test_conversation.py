@@ -51,15 +51,19 @@ class ConversationTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(any(item.metadata["data_status"] == "unavailable" for item in response.evidence))
 
     async def test_fishing_safety_is_limited_when_weather_is_unavailable(self):
+        from unittest.mock import patch
+        from app.models.spatial_feature import spatial_features
         unavailable = {"available": False, "source_status": "unavailable", "provider": "Weather fixture", "error": "timeout", "observation": None}
         layers = {"hazards": {"features": [], "source_status": "static", "source": "fixture"}}
-        response = await orchestrator(weather=unavailable).handle(OrcaQueryRequest(query="Is it safe for fishing?", location={"latitude": 17.7, "longitude": 83.3}, context={"gis_layers": layers}))
-        self.assertEqual(response.assessment.level, "unknown")
-        self.assertIsNone(response.assessment.score)
-        self.assertIn("weather", response.assessment.summary)
-        self.assertIn("weather", response.unavailable_domains)
-        self.assertIn("authorized PFZ source", response.decision["unavailable_data"])
-        self.assertNotIn("proceed with caution", response.recommendations[0].action.lower())
+        with patch.object(spatial_features, "list", return_value=[]):
+            response = await orchestrator(weather=unavailable).handle(OrcaQueryRequest(query="Is it safe for fishing?", location={"latitude": 17.7, "longitude": 83.3}, context={"gis_layers": layers}))
+            self.assertEqual(response.assessment.level, "unknown")
+            self.assertIsNone(response.assessment.score)
+            self.assertIn("weather", response.assessment.summary)
+            self.assertIn("weather", response.unavailable_domains)
+            self.assertIn("authorized PFZ source", response.decision["unavailable_data"])
+            self.assertNotIn("proceed with caution", response.recommendations[0].action.lower())
+
 
     async def test_fishing_safety_with_multiple_missing_domains_is_limited(self):
         unavailable = {"available": False, "source_status": "unavailable", "provider": "fixture", "error": "timeout", "observation": None}
