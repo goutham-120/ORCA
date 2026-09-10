@@ -37,35 +37,20 @@ def require_map_api_key(
     api_key: str | None = Header(default=None, alias="X-API-Key"),
 ) -> None:
     configured_key = get_settings().map_api_key
-<<<<<<< HEAD
+    if get_settings().environment.lower() == "development":
+        return
 
     if not configured_key:
-        # Local development has no secret to send from Vite.
-        # Deployments set ORCA_MAP_API_KEY and retain the header check below.
-        if get_settings().environment.lower() == "development":
-            return
-
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="ORCA_MAP_API_KEY is not configured.",
         )
 
-=======
-    if not configured_key or get_settings().environment.lower() == "development":
-        return
->>>>>>> b42eda4a44d52963f4d35d6098beb7591cdf58bd
     if api_key != configured_key:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="A valid X-API-Key is required.",
         )
-
-
-<<<<<<< HEAD
-=======
-
-
->>>>>>> b42eda4a44d52963f4d35d6098beb7591cdf58bd
 @router.get(
     "/layers",
     response_model=MapLayersResponse,
