@@ -43,11 +43,12 @@ export default function Message({ message }) {
   const assessment = response?.assessment
   const decision = response?.decision
   const level = decision?.risk_level || assessment?.level
+  const isPFZDiscovery = response?.context?.decision_type === 'pfz' && decision?.status === 'available' && decision?.features?.length > 0 && decision?.suitability === 'unavailable'
   const levelBadgeClass = level === 'low' ? 'low' : level === 'moderate' ? 'moderate' : level === 'high' ? 'high' : level === 'critical' ? 'critical' : 'unknown'
   const evidenceList = response?.evidence || []
   const scorePercent = assessment?.score != null ? Math.round(assessment.score * 100) : null
   const recommendations = response?.recommendations || []
-  const hasLimitations = Boolean(response?.unavailable_domains?.length || response?.pending_domains?.length || decision?.unavailable_data?.length)
+  const hasLimitations = Boolean(response?.unavailable_domains?.length || response?.pending_domains?.length || decision?.unavailable_data?.length || decision?.warnings?.length)
   const answer = response?.answer || message.text
 
   return (
@@ -63,10 +64,10 @@ export default function Message({ message }) {
 
         <div className="message-body font-sans conversational-answer">{answer}</div>
 
-        {isSpecialized && level && level !== 'unknown' && (
+        {isSpecialized && (isPFZDiscovery || (level && level !== 'unknown')) && (
           <section className={`assessment-banner ${levelBadgeClass}`}>
             <div className="banner-title-row">
-              <span className={`risk-level-badge ${levelBadgeClass}`}>{level.toUpperCase()} RISK</span>
+              <span className={`risk-level-badge ${isPFZDiscovery ? 'moderate' : levelBadgeClass}`}>{isPFZDiscovery ? 'PFZ FOUND' : `${level.toUpperCase()} RISK`}</span>
               {scorePercent != null && <span className="risk-score-text font-mono">Confidence {scorePercent}%</span>}
             </div>
             {scorePercent != null && (
@@ -81,6 +82,7 @@ export default function Message({ message }) {
           <details className="response-supporting-details">
             <summary className="font-mono">Supporting details</summary>
             {hasLimitations && <p className="supporting-note font-sans">Some location-specific evidence is incomplete, so this response should not be treated as a complete safety clearance.</p>}
+            {decision?.warnings?.map((warning, index) => <p key={index} className="supporting-note font-sans">{warning}</p>)}
             {recommendations.length > 0 && <div className="recommendations-list font-sans">
               {recommendations.map((item, index) => {
                 const priorityClass = item.priority || 'medium'

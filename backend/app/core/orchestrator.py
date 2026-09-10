@@ -17,7 +17,7 @@ from app.workflows.orca_graph import OrcaWorkflow
 class OrcaOrchestrator:
     def __init__(self, parser: QueryParser | None = None, workflow: OrcaWorkflow | None = None, conversations: ConversationStore | None = None, location_resolver=geocoder) -> None:
         self.parser = parser or QueryParser()
-        self.workflow = workflow or OrcaWorkflow()
+        self.workflow = workflow or OrcaWorkflow(auto_sync_pfz=True)
         self.conversations = conversations or ConversationStore()
         self.location_resolver = location_resolver
 
@@ -32,6 +32,8 @@ class OrcaOrchestrator:
             if not llm_answer:
                 if not getattr(self.workflow.llm, "api_key", None):
                     answer = "General conversation is unavailable because no LLM provider is configured. Set ORCA_LLM_API_KEY to enable it."
+                elif "403" in str(getattr(self.workflow.llm, "last_error", "")):
+                    answer = "General conversation is unavailable because the configured LLM provider denied access. Check the API key, account permissions, and provider endpoint."
                 else:
                     answer = "General conversation is temporarily unavailable because the configured LLM provider request failed. Check the server log and your API key, model access, and account billing."
             return OrcaQueryResponse(query_id=str(uuid4()), answer=answer, intent="general_chat", agents_used=[], selected_agents=[], assessment=None, recommendations=[], evidence=[], created_at=datetime.now(timezone.utc), conversation_id=request.conversation_id or str(uuid4()), language=self._response_language(request.language), context={"response_language": self._response_language(request.language), "llm_mode": "llm" if llm_answer else "deterministic_fallback", "llm_synthesis_attempted": False}, pending_domains=[], unavailable_domains=[], response_kind="general")
@@ -82,6 +84,8 @@ class OrcaOrchestrator:
         response_context["llm_synthesis_attempted"] = bool(getattr(self.workflow.llm, "api_key", None) and getattr(self.workflow.llm, "synthesize", None))
         response_context["selected_agents"] = result.get("selected", result.get("agents_used", []))
         decision = result.get("decision")
+        if decision and parsed.decision_type == "pfz":
+            pending_domains = [domain for domain in pending_domains if domain != "pfz"]
         response_context["decision_type"] = parsed.decision_type
         answer = result.get("answer") if result.get("llm_synthesis") else None
         answer = answer or synthesize_answer(request.query, assessment, result.get("analysis_results", {}), pending_domains, response_context, request.language, decision)

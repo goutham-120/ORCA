@@ -1,6 +1,12 @@
 import { useState } from 'react'
 import { dashboardLocations, standardReportTemplates } from '../../data/dashboardData'
 
+const ZapIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+  </svg>
+)
+
 export function ReportConfigurator({ initialTemplateId = 'daily', onGenerate, onClose }) {
   const [selectedTemplate, setSelectedTemplate] = useState(initialTemplateId)
   const [locationId, setLocationId] = useState('visakhapatnam')
@@ -145,8 +151,9 @@ export function ReportConfigurator({ initialTemplateId = 'daily', onGenerate, on
         </div>
 
         <div className="configurator-actions">
-          <button type="submit" className="orca-btn primary shadow glow">
-            ⚡ Generate Marine Report
+          <button type="submit" className="orca-btn primary shadow glow font-inter">
+            <ZapIcon />
+            <span>Generate Marine Report</span>
           </button>
         </div>
       </form>

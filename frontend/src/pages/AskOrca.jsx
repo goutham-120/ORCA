@@ -4,9 +4,39 @@ import LocationContextPanel from '../components/chat/LocationContextPanel'
 import ChatWindow from '../components/chat/ChatWindow'
 import QueryInput from '../components/chat/QueryInput'
 import { askOrca } from '../services/orcaService'
+import { LOCATION_COORDINATES } from '../services/openMeteoService'
 import './AskOrca.css'
 
+const PREFERENCES_KEY = 'orca-dashboard-preferences'
 const newId = () => globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`
+
+function loadSavedLocation() {
+  try {
+    const raw = localStorage.getItem(PREFERENCES_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      const locId = parsed.locationId
+      if (locId && LOCATION_COORDINATES[locId]) {
+        const item = LOCATION_COORDINATES[locId]
+        return {
+          id: item.id,
+          latitude: item.lat,
+          longitude: item.lng,
+          label: item.name
+        }
+      }
+    }
+  } catch {
+    // Ignore parse error
+  }
+  const defaultLoc = LOCATION_COORDINATES.visakhapatnam
+  return {
+    id: defaultLoc.id,
+    latitude: defaultLoc.lat,
+    longitude: defaultLoc.lng,
+    label: defaultLoc.name
+  }
+}
 
 export default function AskOrca({ navigate }) {
   // Parse URL Parameters for query, latitude, longitude, and label
@@ -27,7 +57,7 @@ export default function AskOrca({ navigate }) {
   const [isLocationOpen, setIsLocationOpen] = useState(false)
   const [browserLocation, setBrowserLocation] = useState(null)
 
-  // Active Location state
+  // Active Location state synced with Dashboard preference
   const [location, setLocation] = useState(() => {
     if (initialLat != null && initialLon != null) {
       const lat = Number(initialLat)
@@ -40,8 +70,25 @@ export default function AskOrca({ navigate }) {
         }
       }
     }
-    return null
+    return loadSavedLocation()
   })
+
+  // Synchronize location changes with Dashboard preference in localStorage
+  useEffect(() => {
+    if (!location) return
+    const matchedId = location.id || Object.keys(LOCATION_COORDINATES).find(
+      (key) => LOCATION_COORDINATES[key].name.toLowerCase() === location.label?.toLowerCase()
+    )
+    if (matchedId && LOCATION_COORDINATES[matchedId]) {
+      try {
+        const raw = localStorage.getItem(PREFERENCES_KEY)
+        const existing = raw ? JSON.parse(raw) : {}
+        localStorage.setItem(PREFERENCES_KEY, JSON.stringify({ ...existing, locationId: matchedId }))
+      } catch {
+        // Ignore storage error
+      }
+    }
+  }, [location])
 
   const requestBrowserLocation = () => {
     if (!navigator.geolocation) { setError('Browser location is not supported on this device.'); return }
@@ -162,8 +209,8 @@ export default function AskOrca({ navigate }) {
         onNavigateMap={(path) => navigate && navigate(path)}
         isOpen={isLocationOpen}
         onClose={() => setIsLocationOpen(false)}
+        onRequestBrowserLocation={requestBrowserLocation}
       />
-      {!location && !browserLocation && <button type="button" className="orca-btn secondary outline" onClick={requestBrowserLocation}>Use current location</button>}
 
       {/* 3. CHAT VIEWPORT & WELCOME SCREEN */}
       <ChatWindow

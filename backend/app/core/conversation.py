@@ -17,6 +17,7 @@ def synthesize_answer(
     """Create a deterministic answer using only workflow outputs and context."""
 
     parts: list[str] = []
+    decision = decision or results.get("decision")
 
     level = assessment.get("level", "unknown")
 
@@ -40,7 +41,9 @@ def synthesize_answer(
     # Overall assessment
     # ---------------------------------------------------------
 
-    if incomplete:
+    if context.get("decision_type") == "pfz" and isinstance(decision, dict):
+        parts.append(str(decision.get("assessment", "No current PFZ advisory was returned.")))
+    elif incomplete:
         parts.append(
             f"ORCA cannot make a complete safety assessment{subject} "
             f"because required evidence is unavailable or pending: "
@@ -158,7 +161,7 @@ def synthesize_answer(
 
     if "pfz" in pending:
         parts.append(
-            "PFZ information is unavailable because no PFZ data source is configured."
+            "PFZ information is unavailable because no current authorized advisory is loaded. Ask ORCA can refresh the official INCOIS source when network access is available."
         )
 
     # ---------------------------------------------------------
@@ -200,7 +203,7 @@ def synthesize_answer(
     # Decision intelligence
     # ---------------------------------------------------------
 
-    if isinstance(decision, dict):
+    if isinstance(decision, dict) and not (context.get("decision_type") == "pfz" and decision.get("assessment")):
         parts.append(
             "Decision intelligence: "
             + str(

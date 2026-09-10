@@ -49,9 +49,11 @@ class PFZFeatureResponse(BaseModel):
     geometry: dict[str, Any] | None
     distance_km: float
     source: str
+    source_identifier: str | None = None
     source_url: str | None = None
     observed_at: datetime | None = None
     freshness: str
+    properties: dict[str, Any] = Field(default_factory=dict)
     suitability: Suitability = "unavailable"
 
 
@@ -59,6 +61,7 @@ class PFZDecisionResponse(BaseModel):
     status: DecisionStatus
     assessment: str
     suitability: Suitability
+    risk_level: RiskLevel = "unavailable"
     features: list[PFZFeatureResponse] = Field(default_factory=list)
     evidence: list[DecisionEvidence] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)

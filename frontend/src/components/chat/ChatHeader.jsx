@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import orcaLogo from '../../assets/orcologo.jpeg'
 
 export default function ChatHeader({
   language,
@@ -23,31 +24,31 @@ export default function ChatHeader({
   }, [])
 
   return (
-    <header className="ask-orca-header-bar font-sans">
+    <header className="ask-orca-header-bar font-inter">
       <div className="header-identity">
         <div className="orca-logo-badge">
-          <span className="logo-symbol">🐋</span>
+          <img src={orcaLogo} alt="ORCA Logo" className="logo-img" />
           <span className="logo-pulse"></span>
         </div>
         <div className="header-titles">
           <div className="title-row">
-            <h1>ASK ORCA</h1>
-            <span className="system-status-chip">
+            <h1 className="font-sora">ASK ORCA</h1>
+            <span className="system-status-chip font-inter">
               <span className={`status-dot ${systemOnline ? 'online' : 'offline'}`}></span>
               {systemOnline ? 'ORCA Systems Online' : 'Offline Mode'}
             </span>
           </div>
-          <p className="subtitle">
+          <p className="subtitle font-inter">
             Marine Intelligence Assistant • Evidence-Grounded Decision Support
           </p>
         </div>
       </div>
 
-      <div className="header-actions">
+      <div className="header-actions font-inter">
         {/* Location Context Toggle Button */}
         <button
           type="button"
-          className={`location-badge-btn ${isLocationOpen ? 'active' : ''}`}
+          className={`location-badge-btn font-inter ${isLocationOpen ? 'active' : ''}`}
           onClick={onToggleLocation}
           title="Toggle Location Context Panel"
         >
@@ -57,12 +58,12 @@ export default function ChatHeader({
         </button>
 
         {/* Language Selector */}
-        <label className="language-selector-wrap" title="Select response language">
+        <label className="language-selector-wrap font-inter" title="Select response language">
           <span className="lang-icon">🌐</span>
           <select
             value={language}
             onChange={(e) => onLanguageChange(e.target.value)}
-            className="language-select"
+            className="language-select font-inter"
             aria-label="Select AI language"
           >
             <option value="en">English (EN)</option>
@@ -73,11 +74,11 @@ export default function ChatHeader({
         {/* New Session Button */}
         <button
           type="button"
-          className="header-action-btn clear-btn"
+          className="header-action-btn clear-btn font-inter"
           onClick={onClearSession}
           title="Start new analysis session"
         >
-          <span>🔄</span>
+          <span className="icon">↻</span>
           <span className="btn-label">New Session</span>
         </button>
       </div>

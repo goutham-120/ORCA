@@ -14,10 +14,11 @@ def provider(obs, name="Test provider"):
     return {"available": True, "source_status":"live", "provider":name, "source_url":"https://fixture.invalid", "observation":obs}
 
 class Feature:
-    def __init__(self, ident=1, dataset="pfz", layer="pfz", geometry=None):
+    def __init__(self, ident=1, dataset="pfz", layer="pfz", geometry=None, valid_from=None, valid_to=None):
         self.id, self.dataset, self.layer = ident, dataset, layer
         self.geometry = geometry or {"type":"Point","coordinates":[80.28,13.09]}
         self.source, self.source_url, self.observed_at, self.freshness_status = "Synthetic test fixture", None, datetime(2026,1,1,tzinfo=timezone.utc), "live"
+        self.valid_from, self.valid_to = valid_from, valid_to
         self.properties, self.source_identifier = {"name":"fixture"}, "fixture"
 
 class Spatial:
@@ -46,6 +47,15 @@ class DecisionServiceTests(unittest.IsolatedAsyncioTestCase):
     async def test_nearby_pfz_uses_spatial_results(self):
         result=await self.service(provider({}),provider({}),[Feature()]).nearby_pfz(LOC,50)
         self.assertEqual(result["features"][0]["distance_km"],2.0)
+    async def test_expired_pfz_is_not_returned(self):
+        expired = Feature(valid_to=datetime(2025, 12, 31, tzinfo=timezone.utc))
+        result=await self.service(provider({}),provider({}),[expired]).nearby_pfz(LOC,50,datetime(2026,1,1,tzinfo=timezone.utc))
+        self.assertEqual((result["status"], result["features"]), ("unavailable", []))
+    async def test_valid_pfz_combines_with_safe_conditions(self):
+        weather = provider({"wind_speed_mps":4,"precipitation_mm":0,"timestamp":NOW})
+        ocean = provider({"wave_height_m":.5,"timestamp":NOW})
+        result=await self.service(weather,ocean,[Feature()]).fishing(LOC)
+        self.assertEqual((result["status"], result["suitability"]), ("available", "favorable"))
     async def test_fishing_partial_without_pfz(self):
         service=self.service(provider({"wind_speed_mps":4,"precipitation_mm":0,"timestamp":NOW}),provider({"wave_height_m":.5,"timestamp":NOW}))
         self.assertEqual((await service.fishing(LOC))["status"],"partial")

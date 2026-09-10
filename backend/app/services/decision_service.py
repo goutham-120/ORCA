@@ -6,7 +6,7 @@ highest evidenced factor, never a fabricated probability. Missing inputs make
 an assessment partial (or unavailable when no required evidence exists).
 """
 from __future__ import annotations
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Awaitable, Callable, Mapping
 from app.gis.geometry import distance_km, point
 from app.services.spatial_query_service import SpatialQueryService
@@ -60,33 +60,62 @@ class DecisionService:
         assessment = f"Marine safety risk is {risk}." if status == "available" else ("Marine safety assessment is incomplete because " + ", ".join(missing) + " data is unavailable." if status == "partial" else "Marine safety assessment is unavailable because weather and marine observations are unavailable.")
         return {"status": status, "risk_level": risk, "assessment": assessment, "factors": factors, "evidence": evidence, "warnings": ["Do not treat a partial assessment as a complete safety clearance."] if status != "available" else [], "unavailable_data": missing, "time": at}
 
-    def _records(self, names: tuple[str, ...]) -> list[Any]:
+    def _records(self, names: tuple[str, ...], at: datetime | None = None) -> list[Any]:
         try:
             records = self.spatial.filter()
-        # A missing/migrating spatial store is an unavailable source, never a
-        # decision-service 500 or an implied "no hazard/PFZ" conclusion.
         except Exception:
+            # A missing/migrating spatial store is an unavailable source, never a
+            # decision-service 500 or an implied "no hazard/PFZ" conclusion.
             return []
-        return [r for r in records if (r.dataset or "").lower() in names or (r.layer or "").lower() in names]
+        reference_time = at or datetime.now(timezone.utc)
+        return [
+            record
+            for record in records
+            if (record.dataset or "").lower() in names or (record.layer or "").lower() in names
+            if self._is_active(record, reference_time)
+        ]
+
+    @staticmethod
+    def _is_active(record: Any, at: datetime) -> bool:
+        """Exclude PFZ or hazard records outside their declared validity window."""
+        valid_from = getattr(record, "valid_from", None)
+        valid_to = getattr(record, "valid_to", None)
+        if valid_from and valid_from > at:
+            return False
+        if valid_to and valid_to < at:
+            return False
+        return True
 
     async def nearby_pfz(self, location: dict[str, Any], radius_km: float, at: datetime | None = None) -> dict[str, Any]:
-        records = self._records(("pfz", "potential_fishing_zone"))
+        records = self._records(("pfz", "potential_fishing_zone"), at)
         if not records:
-            return {"status":"unavailable", "assessment":"PFZ data is unavailable: no authorized PFZ features are loaded.", "suitability":"unavailable", "warnings":["ORCA does not create synthetic PFZ geometry."], "unavailable_data":["authorized PFZ source"], "features":[], "evidence":[]}
+            return {"status":"unavailable", "assessment":"PFZ data is unavailable because no current authorized advisory is loaded. Ask ORCA can refresh the official INCOIS source when network access is available.", "suitability":"unavailable", "warnings":["ORCA does not create synthetic PFZ geometry."], "unavailable_data":["authorized PFZ source"], "features":[], "evidence":[]}
         allowed_ids = {record.id for record in records}
         found = [item for item in self.spatial.nearby(location["latitude"], location["longitude"], radius_km) if item["feature"].id in allowed_ids]
-        features = [{"id":x["feature"].id,"geometry":x["feature"].geometry,"distance_km":round(x["distance_km"],2),"source":x["feature"].source,"source_url":str(x["feature"].source_url) if x["feature"].source_url else None,"observed_at":x["feature"].observed_at,"freshness":x["feature"].freshness_status,"suitability":"unavailable"} for x in found]
-        return {"status":"available", "assessment":f"Found {len(features)} authorized PFZ feature(s) within {radius_km:g} km.","suitability":"unavailable","features":features,"evidence":[{"source":f["source"],"data_type":"pfz_feature","timestamp":f["observed_at"],"location":location,"value":f["id"],"freshness":f["freshness"]} for f in features],"warnings":["PFZ presence alone is not a fishing safety clearance."],"unavailable_data":[]}
+        features = [{"id":x["feature"].id,"geometry":x["feature"].geometry,"distance_km":round(x["distance_km"],2),"source":x["feature"].source,"source_identifier":x["feature"].source_identifier,"source_url":str(x["feature"].source_url) if x["feature"].source_url else None,"observed_at":x["feature"].observed_at,"freshness":x["feature"].freshness_status,"properties":x["feature"].properties,"suitability":"unavailable"} for x in found]
+        return {"status":"available", "assessment":f"Found {len(features)} authorized PFZ feature(s) within {radius_km:g} km.","suitability":"unavailable","risk_level":"unavailable","features":features,"evidence":[{"source":f["source"],"data_type":"pfz_feature","timestamp":f["observed_at"],"location":location,"value":f["id"],"freshness":f["freshness"]} for f in features],"warnings":["PFZ presence alone is not a fishing safety clearance."],"unavailable_data":[]}
 
     async def fishing(self, location: dict[str, Any], at: datetime | None = None) -> dict[str, Any]:
         pfz = await self.nearby_pfz(location, 50, at); safety = await self.safety(location, at)
         if pfz["status"] == "unavailable":
             return {**pfz, "status":"partial" if safety["status"] != "unavailable" else "unavailable", "risk_level": safety["risk_level"], "assessment":"Fishing suitability cannot be completed because authorized PFZ data is unavailable. " + safety["assessment"], "evidence": safety["evidence"], "unavailable_data": list(set(pfz["unavailable_data"] + safety["unavailable_data"]))}
-        suitability = "unfavorable" if safety["risk_level"] in {"high","critical"} else "moderate" if safety["status"] != "available" or safety["risk_level"] == "moderate" else "favorable"
-        return {**pfz, "status":"available" if safety["status"] == "available" else "partial", "risk_level": safety["risk_level"], "suitability":suitability, "assessment":f"Fishing suitability is {suitability}; {safety['assessment']}", "evidence":pfz["evidence"] + safety["evidence"], "warnings":pfz["warnings"] + safety["warnings"], "unavailable_data":safety["unavailable_data"]}
+        suitability = self._pfz_suitability(pfz, safety)
+        features = [{**feature, "suitability": suitability} for feature in pfz["features"]]
+        return {**pfz, "status":"available" if safety["status"] == "available" else "partial", "risk_level": safety["risk_level"], "suitability":suitability, "features":features, "assessment":f"Fishing suitability is {suitability}; {safety['assessment']}", "evidence":pfz["evidence"] + safety["evidence"], "warnings":pfz["warnings"] + safety["warnings"], "unavailable_data":safety["unavailable_data"]}
+
+    @staticmethod
+    def _pfz_suitability(pfz: Mapping[str, Any], safety: Mapping[str, Any]) -> str:
+        """Combine authorized PFZ evidence with safety evidence without overclaiming."""
+        if not pfz.get("features"):
+            return "unavailable"
+        if safety.get("risk_level") in {"high", "critical"}:
+            return "unfavorable"
+        if safety.get("status") != "available" or safety.get("risk_level") == "moderate":
+            return "moderate"
+        return "favorable"
 
     async def hazard(self, location: dict[str, Any], at: datetime | None = None) -> dict[str, Any]:
-        records = self._records(("ibtracs", "cyclone", "cyclones"))
+        records = self._records(("ibtracs", "cyclone", "cyclones"), at)
         if not records: return {"status":"unavailable","hazard_status":"source_unavailable","risk_level":"unavailable","assessment":"Cyclone source is unavailable; absence cannot be concluded.","cyclones":[],"evidence":[],"warnings":[],"unavailable_data":["NOAA/IBTrACS cyclone data"]}
         origin = point(location["latitude"], location["longitude"]); cyclones=[]
         for r in records:

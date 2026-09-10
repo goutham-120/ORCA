@@ -11,6 +11,8 @@ from app.llm.client import LLMClient, OpenAICompatibleLLM
 from app.schemas.ai import QueryPlan, Subtask
 from app.services.data_coordinator import DataCoordinator
 from app.services.decision_service import DecisionService
+from app.models.spatial_feature import spatial_features
+from app.providers.incois_pfz import incois_pfz_provider
 from app.tools.ocean_tools import OceanTool
 from app.tools.weather_tools import WeatherTool
 
@@ -29,11 +31,11 @@ class OrcaState(TypedDict, total=False):
 
 class OrcaWorkflow:
     stages=("context_preparation","query_understanding","planning","agent_selection","agent_execution","evidence_collection","evidence_validation","grounded_synthesis","final_response")
-    def __init__(self, coordinator: DataCoordinator | None=None, llm: LLMClient | None=None, decision_service: DecisionService | None=None) -> None:
+    def __init__(self, coordinator: DataCoordinator | None=None, llm: LLMClient | None=None, decision_service: DecisionService | None=None, auto_sync_pfz: bool = False) -> None:
         self.coordinator=coordinator or DataCoordinator()
         if "weather" not in self.coordinator._sources: self.coordinator.register("weather", WeatherTool())
         if "ocean" not in self.coordinator._sources: self.coordinator.register("ocean", OceanTool())
-        self._agents={"weather":WeatherAgent(),"ocean":OceanAgent(),"gis":GISAgent()}; self.llm=llm or OpenAICompatibleLLM(); self.decision_service=decision_service or DecisionService(weather=self.coordinator._sources["weather"], ocean=self.coordinator._sources["ocean"]); self.graph=self.build_langgraph()
+        self._agents={"weather":WeatherAgent(),"ocean":OceanAgent(),"gis":GISAgent()}; self.llm=llm or OpenAICompatibleLLM(); self.decision_service=decision_service or DecisionService(weather=self.coordinator._sources["weather"], ocean=self.coordinator._sources["ocean"]); self.auto_sync_pfz=auto_sync_pfz; self.graph=self.build_langgraph()
     def build_langgraph(self) -> Any:
         graph=StateGraph(OrcaState)
         for name, node in (("context_preparation",self._prepare),("query_understanding",self._understand),("planning",self._plan),("agent_execution",self._execute),("evidence_collection",self._evidence),("evidence_validation",self._validate),("decision",self._decision),("grounded_synthesis",self._synthesize),("final_response",self._final)): graph.add_node(name,node)
@@ -46,7 +48,7 @@ class OrcaWorkflow:
     async def _understand(self,state: OrcaState)->dict[str,Any]: return {}
     async def _plan(self,state: OrcaState)->dict[str,Any]:
         ctx=state["context"]; p=ctx.parsed_query; domains=[d for d in p.requested_domains if d in {"ocean","weather","gis","pfz"}]
-        fallback=QueryPlan(intent=p.intent,requested_domains=domains,location_required=bool(domains),time_expression=p.time_expression,decision_type=p.decision_type if p.decision_type in {"safety", "fishing", "hazard", "route", "anomaly"} else None,subtasks=[Subtask(id=f"{d}-evidence",domain=d,purpose=f"retrieve {d} evidence",evidence_required=[f"{d} evidence"]) for d in domains if d in self._agents],response_focus=self._persona_focus(str(ctx.metadata.get("persona","general_user"))))
+        fallback=QueryPlan(intent=p.intent,requested_domains=domains,location_required=bool(domains),time_expression=p.time_expression,decision_type=p.decision_type if p.decision_type in {"safety", "fishing", "pfz", "hazard", "route", "anomaly"} else None,subtasks=[Subtask(id=f"{d}-evidence",domain=d,purpose=f"retrieve {d} evidence",evidence_required=[f"{d} evidence"]) for d in domains if d in self._agents],response_focus=self._persona_focus(str(ctx.metadata.get("persona","general_user"))))
         llm_plan=await self.llm.plan(p.normalized,fallback,str(ctx.metadata.get("persona","general_user")))
         plan=fallback
         if llm_plan and set(llm_plan.requested_domains) == set(domains):
@@ -61,11 +63,25 @@ class OrcaWorkflow:
         return {"plan":plan,"selected":selected,"agents_used":selected,"pending_domains":pending,"llm_mode":"llm" if llm_plan else "deterministic_fallback"}
     def _route(self,state: OrcaState)->str: return "agents" if state.get("selected") else "no_agents"
     async def _execute(self,state: OrcaState)->dict[str,Any]:
-        ctx=state["context"]; selected=state.get("selected",[]); collected=await self.coordinator.collect([d for d in selected if d in {"ocean","weather"}],ctx.as_dict()); results={}
+        ctx=state["context"]; selected=state.get("selected",[])
+        if "gis" in selected and not ctx.metadata.get("gis_layers"):
+            ctx.metadata["gis_layers"] = self._persisted_gis_layers()
+        collected=await self.coordinator.collect([d for d in selected if d in {"ocean","weather"}],ctx.as_dict()); results={}
         for d in selected:
             try: results[d]=self._agents[d].interpret(ctx.as_dict() if d=="gis" else collected.get(d,{}))
             except Exception as exc: results[d]={"summary":f"{d.title()} analysis failed.","data_status":"unavailable","error":str(exc),"concerns":[],"risk_score":None}
         ctx.agent_results.update(results); return {"collected":collected,"analysis_results":results}
+
+    @staticmethod
+    def _persisted_gis_layers() -> dict[str, dict[str, Any]]:
+        layers: dict[str, dict[str, Any]] = {}
+        for record in spatial_features.list():
+            layer_id = record.layer or record.dataset
+            if not layer_id or not record.geometry:
+                continue
+            layer = layers.setdefault(layer_id, {"source_status": record.freshness_status, "source": record.source, "features": []})
+            layer["features"].append({"id": str(record.id), "geometry": record.geometry, "properties": record.properties})
+        return layers
     async def _evidence(self,state: OrcaState)->dict[str,Any]:
         out=[]
         for name,data in state.get("collected",{}).items(): out.append({"source":data.get("provider","unavailable provider"),"summary":f"{name.title()} data status: {data.get('source_status','unavailable')}","url":data.get("source_url"),"observed_at":(data.get("observation") or {}).get("timestamp"),"metadata":{"domain":name,"data_status":data.get("source_status","unavailable"),"error":data.get("error"),"measurements":data.get("observation") or {}}})
@@ -91,8 +107,17 @@ class OrcaWorkflow:
                     at=datetime.fromisoformat(expression[:10]).replace(tzinfo=timezone.utc)
                 except ValueError:
                     pass
+        pfz_records_loaded = bool(spatial_features.list(dataset="PFZ", valid_at=at or datetime.now(timezone.utc)))
         if decision_type == "fishing":
+            if self.auto_sync_pfz and not pfz_records_loaded:
+                await incois_pfz_provider.sync()
             decision=await self.decision_service.fishing(location, at)
+        elif decision_type == "pfz":
+            if self.auto_sync_pfz and not pfz_records_loaded:
+                # Explicit PFZ questions may refresh the authorized source on demand.
+                # Provider failures are returned as unavailable evidence below.
+                await incois_pfz_provider.sync()
+            decision=await self.decision_service.nearby_pfz(location, 50, at)
         elif decision_type == "safety":
             decision=await self.decision_service.safety(location, at)
         elif decision_type == "hazard":

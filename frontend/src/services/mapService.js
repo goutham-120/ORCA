@@ -11,12 +11,33 @@ export async function getMapLayers(options) {
   return response.layers
 }
 
+export async function getMapFeatures(layerIds = [], { latitude, longitude, radiusKm = 50, ...options } = {}) {
+  const params = new URLSearchParams()
+  layerIds.forEach((layerId) => params.append('layer', layerId))
+  if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+    params.set('latitude', latitude)
+    params.set('longitude', longitude)
+    params.set('radius_km', radiusKm)
+  }
+  const response = ensureObject(await api(`/map/features${params.toString() ? `?${params}` : ''}`, options), 'map features')
+  if (!Array.isArray(response.features)) throw new Error('Malformed map features response.')
+  return response.features
+}
+
 export async function analyzeLocation(payload, options) {
   return ensureObject(await api('/map/analyze', { method: 'POST', body: payload, ...options }), 'map analysis')
 }
 
 export async function analyzeRoute(payload, options) {
   return ensureObject(await api('/map/route', { method: 'POST', body: payload, ...options }), 'route analysis')
+}
+
+export async function analyzePFZ(payload, options) {
+  return ensureObject(await api('/decisions/pfz/suitability', { method: 'POST', body: payload, ...options }), 'PFZ analysis')
+}
+
+export async function syncPFZ(options) {
+  return ensureObject(await api('/map/pfz/sync', { method: 'POST', ...options }), 'PFZ sync')
 }
 
 export function mapErrorMessage(error) {

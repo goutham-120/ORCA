@@ -81,75 +81,75 @@ export function Reports({ onNavigate }) {
   return (
     <div className="reports-page-wrapper page-container">
       {/* Top Banner */}
-      <div className="page-header-bar">
+      <div className="page-header-bar font-inter">
         <div className="header-left">
-          <h1 className="page-title font-sans">📄 Marine Reports & Analysis Workspace</h1>
-          <p className="page-subtitle font-sans">
+          <h1 className="page-title font-sora">Marine Reports & Analysis Workspace</h1>
+          <p className="page-subtitle font-inter">
             Generate, customize, export, and persist comprehensive coastal safety & meteorological report documents.
           </p>
         </div>
-        <div className="header-stats-row">
+        <div className="header-stats-row font-inter">
           <div className="header-stat-pill">
-            <span className="stat-num">6</span>
-            <span className="stat-lbl">Templates</span>
+            <span className="stat-num font-sora">6</span>
+            <span className="stat-lbl font-inter">Templates</span>
           </div>
           <div className="header-stat-pill">
-            <span className="stat-num">{savedReports.length}</span>
-            <span className="stat-lbl">Saved</span>
+            <span className="stat-num font-sora">{savedReports.length}</span>
+            <span className="stat-lbl font-inter">Saved</span>
           </div>
           {activeReport && (
             <button
               type="button"
-              className="orca-btn secondary outline text-sm"
+              className="orca-btn secondary outline text-sm font-inter"
               onClick={() => setActiveTab('view')}
             >
-              📄 Return to Current Document
+              Return to Current Document
             </button>
           )}
         </div>
       </div>
 
       {/* Main Tab Navigation */}
-      <div className="reports-tab-nav no-print">
+      <div className="reports-tab-nav no-print font-inter">
         <button
           type="button"
-          className={`tab-btn ${activeTab === 'templates' ? 'active' : ''}`}
+          className={`tab-btn font-inter ${activeTab === 'templates' ? 'active' : ''}`}
           onClick={() => setActiveTab('templates')}
         >
-          📋 Standard Templates
+          Standard Templates
         </button>
         <button
           type="button"
-          className={`tab-btn ${activeTab === 'custom' ? 'active' : ''}`}
+          className={`tab-btn font-inter ${activeTab === 'custom' ? 'active' : ''}`}
           onClick={() => setActiveTab('custom')}
         >
-          ⚙️ Custom Report Builder
+          Custom Report Builder
         </button>
         <button
           type="button"
-          className={`tab-btn ${activeTab === 'saved' ? 'active' : ''}`}
+          className={`tab-btn font-inter ${activeTab === 'saved' ? 'active' : ''}`}
           onClick={() => setActiveTab('saved')}
         >
-          📁 Saved Reports Workspace ({savedReports.length})
+          Saved Reports ({savedReports.length})
         </button>
         {activeReport && (
           <button
             type="button"
-            className={`tab-btn ${activeTab === 'view' ? 'active' : ''}`}
+            className={`tab-btn font-inter ${activeTab === 'view' ? 'active' : ''}`}
             onClick={() => setActiveTab('view')}
           >
-            📊 Active Document: {activeReport.typeTitle}
+            Active Document: {activeReport.typeTitle}
           </button>
         )}
       </div>
 
       {/* Progress Overlay when generating */}
       {isGenerating && (
-        <div className="generating-overlay">
-          <div className="generating-card">
+        <div className="generating-overlay font-inter">
+          <div className="generating-card font-inter">
             <div className="orca-spinner"></div>
-            <h3>Generating Marine Intelligence Report</h3>
-            <p className="step-text">{generationStep}</p>
+            <h3 className="font-sora">Generating Marine Intelligence Report</h3>
+            <p className="step-text font-inter">{generationStep}</p>
             <div className="generation-progress-bar">
               <div className="bar-fill"></div>
             </div>
@@ -159,13 +159,13 @@ export function Reports({ onNavigate }) {
 
       {/* Tab Contents */}
       {!isGenerating && (
-        <div className="reports-tab-content font-sans">
+        <div className="reports-tab-content font-inter">
           {/* TAB 1: Standard Templates */}
           {activeTab === 'templates' && (
-            <div className="templates-tab-pane">
-              <div className="pane-intro font-sans">
-                <h3>Select a Standard Marine Template</h3>
-                <p>Choose an automated report workflow optimized for daily harbor briefings, route clearance, or hazard warnings.</p>
+            <div className="templates-tab-pane font-inter">
+              <div className="pane-intro font-inter">
+                <h3 className="font-sora">Select a Standard Marine Template</h3>
+                <p className="font-inter">Choose an automated report workflow optimized for daily harbor briefings, route clearance, or hazard warnings.</p>
               </div>
 
               <div className="report-templates-grid">

@@ -13,7 +13,8 @@ export default function LocationContextPanel({
   onChangeLocation,
   onNavigateMap,
   isOpen,
-  onClose
+  onClose,
+  onRequestBrowserLocation
 }) {
   const [isEditing, setIsEditing] = useState(false)
   const [tempLabel, setTempLabel] = useState(location?.label || '')
@@ -76,24 +77,35 @@ export default function LocationContextPanel({
   if (!isOpen) return null
 
   return (
-    <div className="location-context-card panel no-print font-sans">
+    <div className="location-context-card panel no-print font-inter">
       <div className="card-header-row">
         <div className="header-meta">
-          <p className="eyebrow font-mono">ANALYSIS LOCATION</p>
-          <h3 className="location-name font-sans">
+          <p className="eyebrow font-sora">ANALYSIS LOCATION</p>
+          <h3 className="location-name font-sora">
             📍 {location?.label || (hasCoords ? `${location.latitude.toFixed(4)}°, ${location.longitude.toFixed(4)}°` : 'No location specified')}
           </h3>
           {hasCoords && (
-            <span className="location-coords font-mono">
+            <span className="location-coords font-inter">
               {Math.abs(location.latitude).toFixed(4)}° {location.latitude >= 0 ? 'N' : 'S'} · {Math.abs(location.longitude).toFixed(4)}° {location.longitude >= 0 ? 'E' : 'W'}
             </span>
           )}
         </div>
 
         <div className="header-actions-row">
+          {onRequestBrowserLocation && (
+            <button
+              type="button"
+              className="location-use-current-btn font-inter"
+              onClick={onRequestBrowserLocation}
+              title="Use current location from device"
+            >
+              📍 Use current location
+            </button>
+          )}
+
           <button
             type="button"
-            className="orca-btn secondary outline text-xs"
+            className="location-action-btn font-inter"
             onClick={() => setIsEditing((prev) => !prev)}
           >
             {isEditing ? 'Cancel' : 'Change Location'}
@@ -101,7 +113,7 @@ export default function LocationContextPanel({
 
           <button
             type="button"
-            className="orca-btn secondary outline text-xs"
+            className="location-action-btn font-inter"
             onClick={() => {
               if (hasCoords) {
                 onNavigateMap(`/map-explorer?lat=${location.latitude}&lon=${location.longitude}`)
