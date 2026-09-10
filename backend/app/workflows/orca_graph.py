@@ -58,30 +58,52 @@ class OrcaWorkflow:
         # GIS cannot operate without coordinates. Ocean/weather are still called
         # through their provider boundary so they can return their explicit
         # unavailable state (and no place name is ever geocoded here).
-        selected=[d for d in plan.requested_domains if d in self._agents and (d != "gis" or ctx.location is not None)]; pending=[d for d in p.requested_domains if d in {"ocean", "weather", "gis", "pfz"} and d not in selected]
+        # PFZ is spatial evidence, so it deliberately executes through the
+        # GIS agent rather than becoming a metadata-only domain.
+        selected=[]
+        for domain in plan.requested_domains:
+            # Fishing decisions keep PFZ evidence pending unless the user
+            # explicitly asks for a PFZ lookup; conditions still run through
+            # the ocean and weather agents.
+            if domain == "pfz" and p.decision_type != "pfz":
+                continue
+            agent_domain = "gis" if domain == "pfz" else domain
+            if agent_domain in self._agents and (agent_domain != "gis" or ctx.location is not None) and agent_domain not in selected:
+                selected.append(agent_domain)
+        pending=[d for d in p.requested_domains if d in {"ocean", "weather", "gis", "pfz"} and ("gis" if d == "pfz" else d) not in selected]
         ctx.metadata["plan"]=plan.model_dump(); ctx.metadata["pending_domains"]=pending
         return {"plan":plan,"selected":selected,"agents_used":selected,"pending_domains":pending,"llm_mode":"llm" if llm_plan else "deterministic_fallback"}
     def _route(self,state: OrcaState)->str: return "agents" if state.get("selected") else "no_agents"
     async def _execute(self,state: OrcaState)->dict[str,Any]:
         ctx=state["context"]; selected=state.get("selected",[])
+        if "pfz" in ctx.parsed_query.requested_domains and self.auto_sync_pfz:
+            # This attempts INCOIS first and only uses the explicit demo
+            # fallback when the official request fails.
+            await incois_pfz_provider.sync()
         if "gis" in selected and not ctx.metadata.get("gis_layers"):
-            ctx.metadata["gis_layers"] = self._persisted_gis_layers()
+            ctx.metadata["gis_layers"], gis_error = self._persisted_gis_layers(ctx)
+            if gis_error:
+                ctx.metadata["gis_error"] = gis_error
         collected=await self.coordinator.collect([d for d in selected if d in {"ocean","weather"}],ctx.as_dict()); results={}
         for d in selected:
             try: results[d]=self._agents[d].interpret(ctx.as_dict() if d=="gis" else collected.get(d,{}))
             except Exception as exc: results[d]={"summary":f"{d.title()} analysis failed.","data_status":"unavailable","error":str(exc),"concerns":[],"risk_score":None}
         ctx.agent_results.update(results); return {"collected":collected,"analysis_results":results}
 
-    @staticmethod
-    def _persisted_gis_layers() -> dict[str, dict[str, Any]]:
-        layers: dict[str, dict[str, Any]] = {}
-        for record in spatial_features.list():
-            layer_id = record.layer or record.dataset
-            if not layer_id or not record.geometry:
-                continue
-            layer = layers.setdefault(layer_id, {"source_status": record.freshness_status, "source": record.source, "features": []})
-            layer["features"].append({"id": str(record.id), "geometry": record.geometry, "properties": record.properties})
-        return layers
+    def _persisted_gis_layers(self, ctx: QueryContext | None = None) -> tuple[dict[str, dict[str, Any]], str | None]:
+        try:
+            layers: dict[str, dict[str, Any]] = {}
+            for record in spatial_features.list():
+                layer_id = record.layer or record.dataset
+                if not layer_id or not record.geometry:
+                    continue
+                layer = layers.setdefault(layer_id, {"source_status": record.freshness_status, "source": record.source, "features": []})
+                layer["features"].append({"id": str(record.id), "geometry": record.geometry, "properties": record.properties})
+            return layers, None
+        except Exception as exc:
+            if ctx is not None:
+                ctx.metadata["gis_error"] = str(exc)
+            return {}, str(exc)
     async def _evidence(self,state: OrcaState)->dict[str,Any]:
         out=[]
         for name,data in state.get("collected",{}).items(): out.append({"source":data.get("provider","unavailable provider"),"summary":f"{name.title()} data status: {data.get('source_status','unavailable')}","url":data.get("source_url"),"observed_at":(data.get("observation") or {}).get("timestamp"),"metadata":{"domain":name,"data_status":data.get("source_status","unavailable"),"error":data.get("error"),"measurements":data.get("observation") or {}}})
@@ -107,7 +129,14 @@ class OrcaWorkflow:
                     at=datetime.fromisoformat(expression[:10]).replace(tzinfo=timezone.utc)
                 except ValueError:
                     pass
-        pfz_records_loaded = bool(spatial_features.list(dataset="PFZ", valid_at=at or datetime.now(timezone.utc)))
+        pfz_records_loaded = False
+        if decision_type in {"fishing", "pfz"}:
+            pfz_records_loaded = bool(
+                spatial_features.list(
+                    dataset="PFZ",
+                    valid_at=at or datetime.now(timezone.utc),
+                )
+            )
         if decision_type == "fishing":
             if self.auto_sync_pfz and not pfz_records_loaded:
                 await incois_pfz_provider.sync()
@@ -128,7 +157,7 @@ class OrcaWorkflow:
             decision=None
         return {"decision": decision}
     async def _synthesize(self,state: OrcaState)->dict[str,Any]:
-        unavailable=[d for d,r in state.get("analysis_results",{}).items() if r.get("data_status") not in {"live","cached","static"}]
+        unavailable=[d for d,r in state.get("analysis_results",{}).items() if r.get("data_status") not in {"live","cached","demo","static"}]
         ctx=state["context"]
         payload={"query":ctx.parsed_query.original,"context":ctx.as_dict(),"selected_agents":state.get("selected",[]),"analysis_results":state.get("analysis_results",{}),"evidence":state.get("evidence",[]),"decision":state.get("decision"),"unavailable_domains":unavailable}
         synthesize=getattr(self.llm,"synthesize",None)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
+import os
 import sqlite3
 from pathlib import Path
 from typing import Iterator
@@ -13,6 +14,8 @@ class Database:
         self.url = url
         self.is_postgres = bool(url and url.startswith(("postgresql", "postgres://")))
         self.sqlite_path = Path(__file__).resolve().parents[2] / "orca.db"
+        self.last_error: Exception | None = None
+        self.connect_timeout = float(os.getenv("ORCA_DB_CONNECT_TIMEOUT_SECONDS", "2.5"))
 
     @contextmanager
     def connection(self) -> Iterator[object]:
@@ -22,7 +25,11 @@ class Database:
             except ImportError as exc:
                 raise RuntimeError("PostgreSQL is configured but psycopg is not installed. Install psycopg before starting ORCA.") from exc
             connection_url = f"postgresql://{self.url.split('://', 1)[1]}" if self.url.startswith("postgresql+") else self.url
-            connection = psycopg.connect(connection_url)
+            try:
+                connection = psycopg.connect(connection_url, connect_timeout=self.connect_timeout)
+            except Exception as exc:
+                self.last_error = exc
+                raise
         else:
             connection = sqlite3.connect(self.sqlite_path)
             connection.row_factory = sqlite3.Row
@@ -36,23 +43,29 @@ class Database:
         finally:
             connection.close()
 
-    def initialize(self) -> None:
-        id_column = "BIGSERIAL PRIMARY KEY" if self.is_postgres else "INTEGER PRIMARY KEY AUTOINCREMENT"
-        with self.connection() as connection:
-            cursor = connection.cursor()
-            cursor.execute(
-                f"""
-                CREATE TABLE IF NOT EXISTS users (
-                    id {id_column},
-                    email VARCHAR(255) NOT NULL UNIQUE,
-                    display_name VARCHAR(100) NOT NULL,
-                    password_hash TEXT NOT NULL,
-                    user_category VARCHAR(64),
-                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    def initialize(self) -> bool:
+        try:
+            id_column = "BIGSERIAL PRIMARY KEY" if self.is_postgres else "INTEGER PRIMARY KEY AUTOINCREMENT"
+            with self.connection() as connection:
+                cursor = connection.cursor()
+                cursor.execute(
+                    f"""
+                    CREATE TABLE IF NOT EXISTS users (
+                        id {id_column},
+                        email VARCHAR(255) NOT NULL UNIQUE,
+                        display_name VARCHAR(100) NOT NULL,
+                        password_hash TEXT NOT NULL,
+                        user_category VARCHAR(64),
+                        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """
                 )
-                """
-            )
-            self._initialize_spatial_schema(cursor)
+                self._initialize_spatial_schema(cursor)
+            self.last_error = None
+            return True
+        except Exception as exc:
+            self.last_error = exc
+            return False
 
     def _initialize_spatial_schema(self, cursor: object) -> None:
         """Create idempotent spatial storage without altering user persistence."""

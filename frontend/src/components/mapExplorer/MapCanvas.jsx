@@ -245,12 +245,23 @@ export default function MapCanvas({
             source: 'orca-pfz-markers',
             paint: {
               'circle-radius': 8,
-              'circle-color': '#14b8a6',
+              'circle-color': '#0ea5e9',
               'circle-stroke-width': 2,
               'circle-stroke-color': '#ffffff',
             },
           })
         }
+
+        map.on('click', 'orca-pfz-marker', (event) => {
+          const feature = event.features?.[0]
+          const coordinates = feature?.geometry?.coordinates
+          if (!Array.isArray(coordinates)) return
+          const properties = feature.properties || {}
+          new Popup({ offset: 12 })
+            .setLngLat(coordinates)
+            .setHTML(`<strong>PFZ${properties.data_status === 'demo' ? ' Demo Data' : ''}</strong><br/>Source: ${properties.source || 'INCOIS'}<br/>Status: ${properties.data_status || 'available'}<br/>${coordinates[1].toFixed(4)}, ${coordinates[0].toFixed(4)}`)
+            .addTo(map)
+        })
 
         styleReady = true
         setMapStatus('ready')
@@ -421,6 +432,7 @@ export default function MapCanvas({
           properties: {
             ...(feature.properties || {}),
             layer: 'PFZ',
+            source: feature.source || feature.properties?.source,
           },
         }
       })

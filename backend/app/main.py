@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.router import api_router
 from app.config import get_settings
 from app.database.session import database
+from app.providers.demo_spatial import ensure_demo_gis, replace_demo_pfz
 from app.schemas.common import HealthResponse
 
 settings = get_settings()
@@ -24,6 +25,11 @@ app.include_router(api_router, prefix=settings.api_prefix)
 def initialize_database() -> None:
     """Create the user table before handling authentication requests."""
     database.initialize()
+    ensure_demo_gis()
+    # A labelled PFZ fallback is available immediately.  /map/layers and PFZ
+    # chat queries still attempt the official INCOIS source before use.
+    if not database.fetchall("SELECT id FROM spatial_features WHERE dataset = ? LIMIT 1", ("PFZ",)):
+        replace_demo_pfz()
 
 
 @app.get("/health", response_model=HealthResponse, tags=["system"])

@@ -17,7 +17,9 @@ class GISAgent:
         """Perform the requested local spatial operation using supplied layer data only."""
         location = context.get("location")
         query = str(context.get("query", "")).lower()
+        metadata = context.get("metadata") if isinstance(context.get("metadata"), Mapping) else {}
         layers = self.tools.layers_from_context(context)
+        database_error = metadata.get("gis_error") if isinstance(metadata, Mapping) else None
         if not isinstance(location, Mapping):
             return self._unavailable("A valid location is required for GIS analysis.", layers)
         try:
@@ -25,6 +27,8 @@ class GISAgent:
         except ValueError as exc:
             return self._unavailable(str(exc), layers)
         latitude, longitude = coordinate["latitude"], coordinate["longitude"]
+        if database_error:
+            return self._unavailable(f"GIS database is unavailable: {database_error}", layers, coordinate)
         if not layers:
             return self._unavailable("No source-backed GIS layers are loaded for this request. Import or synchronize an authorized layer before relying on spatial results.", layers, coordinate)
         operations: dict[str, Any] = {"coordinate": coordinate["geometry"]}
@@ -58,13 +62,13 @@ class GISAgent:
     @staticmethod
     def _source_status(layers: Mapping[str, Any]) -> str:
         statuses = {layer.source_status for layer in layers.values() if layer.available}
-        for status in ("live", "cached", "static", "stale"):
+        for status in ("live", "cached", "demo", "static", "stale"):
             if status in statuses:
                 return status
         return "unavailable"
 
     def _unavailable(self, message: str, layers: Mapping[str, Any], coordinate: Mapping[str, Any] | None = None) -> dict[str, Any]:
-        return {"summary": message, "risk_score": None, "concerns": [], "data_status": "unavailable", "available": False, "operation": "unavailable", "results": {"coordinate": coordinate.get("geometry") if coordinate else None}, "layer_metadata": [{"id": layer.id, "source_status": layer.source_status, "source": layer.source, "available": layer.available} for layer in layers.values()]}
+        return {"summary": message, "risk_score": None, "concerns": [], "data_status": "unavailable", "available": False, "operation": "unavailable", "error": message, "results": {"coordinate": coordinate.get("geometry") if coordinate else None}, "layer_metadata": [{"id": layer.id, "source_status": layer.source_status, "source": layer.source, "available": layer.available} for layer in layers.values()]}
 
     @staticmethod
     def _operation_name(query: str) -> str:

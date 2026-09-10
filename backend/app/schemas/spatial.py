@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field, HttpUrl, field_validator
 
 from app.gis.geometry import normalize_geometry
 
-SpatialStatus = Literal["live", "cached", "stale", "unavailable"]
+SpatialStatus = Literal["live", "cached", "stale", "demo", "unavailable"]
 
 
 class SpatialProvenance(BaseModel):

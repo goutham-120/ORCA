@@ -16,6 +16,7 @@ from app.models.spatial_feature import (
     spatial_features,
 )
 from app.schemas.spatial import SpatialFeatureCreate
+from app.providers.demo_spatial import PFZ_DEMO_SOURCE, replace_demo_pfz
 
 
 PFZ_WFS_URL = (
@@ -115,11 +116,27 @@ class IncoisPFZProvider:
         result = await self.fetch()
 
         if result["status"] == "error":
-            return result
+            # The official WFS is always attempted first.  A labelled local
+            # fallback keeps the complete demo path usable without pretending
+            # that INCOIS supplied the coordinates.
+            persisted = replace_demo_pfz(repository)
+            return {
+                **result,
+                "status": "demo",
+                "source": PFZ_DEMO_SOURCE,
+                "source_type": "demo",
+                "data_status": "demo",
+                "persisted": persisted,
+                "live_error": result.get("error"),
+            }
 
         repository.delete_source_dataset(
             "PFZ",
             self.source,
+        )
+        repository.delete_source_dataset(
+            "PFZ",
+            PFZ_DEMO_SOURCE,
         )
 
         persisted = 0
