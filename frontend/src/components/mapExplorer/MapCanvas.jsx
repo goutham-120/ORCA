@@ -39,8 +39,6 @@ const DEFAULT_LOCATION = {
   label: 'Chennai',
 }
 
-const PFZ_RADIUS_KM = 50
-
 function flattenCoordinates(geometry) {
   if (!geometry || !Array.isArray(geometry.coordinates)) {
     return []
@@ -104,32 +102,6 @@ function distanceKm(first, second) {
   )
 }
 
-function nearestCoordinate(geometry, selectedLocation) {
-  const coordinates = flattenCoordinates(geometry)
-
-  const latitude = Number(selectedLocation?.latitude)
-  const longitude = Number(selectedLocation?.longitude)
-
-  if (
-    !coordinates.length ||
-    !Number.isFinite(latitude) ||
-    !Number.isFinite(longitude)
-  ) {
-    return null
-  }
-
-  const target = [longitude, latitude]
-
-  return coordinates.reduce(
-    (nearest, coordinate) =>
-      distanceKm(target, coordinate) <
-      distanceKm(target, nearest)
-        ? coordinate
-        : nearest,
-    coordinates[0]
-  )
-}
-
 export default function MapCanvas({
   selectedLocation,
   layers = [],
@@ -141,6 +113,7 @@ export default function MapCanvas({
   const containerRef = useRef(null)
   const mapRef = useRef(null)
   const markerRef = useRef(null)
+  const pfzMarkersRef = useRef([])
   const initialLocationRef = useRef(selectedLocation)
   const locationHandlerRef = useRef(onMapLocation)
 
@@ -202,16 +175,45 @@ export default function MapCanvas({
           })
         }
 
+        if (!map.getLayer('orca-line-casing')) {
+          map.addLayer({
+            id: 'orca-line-casing',
+            type: 'line',
+            source: 'orca-layers',
+            filter: ['all', ['==', '$type', 'LineString'], ['!=', ['get', 'kind'], 'route']],
+            paint: {
+              'line-color': '#0f766e',
+              'line-width': 7,
+              'line-opacity': 0.5,
+            },
+          })
+        }
+
         if (!map.getLayer('orca-line')) {
           map.addLayer({
             id: 'orca-line',
             type: 'line',
             source: 'orca-layers',
-            filter: ['==', '$type', 'LineString'],
+            filter: ['all', ['==', '$type', 'LineString'], ['!=', ['get', 'kind'], 'route']],
             paint: {
-              'line-color': '#14b8a6',
-              'line-width': 6,
-              'line-opacity': 1,
+              'line-color': '#06b6d4',
+              'line-width': 3.5,
+              'line-opacity': 0.95,
+            },
+          })
+        }
+
+        if (!map.getLayer('orca-route-line')) {
+          map.addLayer({
+            id: 'orca-route-line',
+            type: 'line',
+            source: 'orca-layers',
+            filter: ['==', ['get', 'kind'], 'route'],
+            paint: {
+              'line-color': '#2563eb',
+              'line-width': 5,
+              'line-dasharray': [2, 1],
+              'line-opacity': 0.95,
             },
           })
         }
@@ -231,26 +233,52 @@ export default function MapCanvas({
           })
         }
 
-        if (!map.getSource('orca-pfz-markers')) {
-          map.addSource('orca-pfz-markers', {
-            type: 'geojson',
-            data: featureCollection([]),
-          })
-        }
+        map.on('click', 'orca-line', (e) => {
+          const feature = e.features?.[0]
+          if (!feature) return
+          e.originalEvent.cancelBubble = true
+          const props = feature.properties || {}
+          const isPFZ = props.layer === 'pfz' || props.dataset === 'PFZ' || String(props.id).toLowerCase().includes('pfz')
+          new Popup({ offset: 12, maxWidth: '280px' })
+            .setLngLat(e.lngLat)
+            .setHTML(`
+              <div style="font-family: system-ui, sans-serif; color: #0f172a; padding: 4px;">
+                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                  <span style="font-size: 16px;">${isPFZ ? '🐟' : '📍'}</span>
+                  <strong style="color: ${isPFZ ? '#0891b2' : '#d97706'}; font-size: 13px;">
+                    ${isPFZ ? 'Potential Fishing Zone Track' : 'GIS Line Feature'}
+                  </strong>
+                </div>
+                <div style="font-size: 11px; line-height: 1.4; color: #334155;">
+                  <p style="margin: 2px 0;"><strong>ID:</strong> ${props.id || 'PFZ Feature'}</p>
+                  <p style="margin: 2px 0;"><strong>Source:</strong> ${props.source || 'INCOIS'} (${props.freshness_status || 'live'})</p>
+                  <p style="margin: 2px 0;"><strong>Position:</strong> ${e.lngLat.lat.toFixed(4)}°N, ${e.lngLat.lng.toFixed(4)}°E</p>
+                </div>
+              </div>
+            `)
+            .addTo(map)
+        })
 
-        if (!map.getLayer('orca-pfz-marker')) {
-          map.addLayer({
-            id: 'orca-pfz-marker',
-            type: 'circle',
-            source: 'orca-pfz-markers',
-            paint: {
-              'circle-radius': 8,
-              'circle-color': '#14b8a6',
-              'circle-stroke-width': 2,
-              'circle-stroke-color': '#ffffff',
-            },
-          })
-        }
+        map.on('click', 'orca-route-line', (e) => {
+          e.originalEvent.cancelBubble = true
+          new Popup({ offset: 12, maxWidth: '260px' })
+            .setLngLat(e.lngLat)
+            .setHTML(`
+              <div style="font-family: system-ui, sans-serif; color: #0f172a; padding: 4px;">
+                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                  <span style="font-size: 16px;">🧭</span>
+                  <strong style="color: #2563eb; font-size: 13px;">Calculated Navigation Route</strong>
+                </div>
+                <p style="margin: 2px 0; font-size: 11px; color: #334155;">Active computed marine voyage path between selected endpoints.</p>
+              </div>
+            `)
+            .addTo(map)
+        })
+
+        map.on('mouseenter', 'orca-line', () => { map.getCanvas().style.cursor = 'pointer' })
+        map.on('mouseleave', 'orca-line', () => { map.getCanvas().style.cursor = '' })
+        map.on('mouseenter', 'orca-route-line', () => { map.getCanvas().style.cursor = 'pointer' })
+        map.on('mouseleave', 'orca-route-line', () => { map.getCanvas().style.cursor = '' })
 
         styleReady = true
         setMapStatus('ready')
@@ -285,6 +313,11 @@ export default function MapCanvas({
       map.once('load', activateOverlay)
 
       map.on('click', (event) => {
+        const bbox = [[event.point.x - 4, event.point.y - 4], [event.point.x + 4, event.point.y + 4]]
+        const hits = map.queryRenderedFeatures(bbox, { layers: ['orca-line', 'orca-route-line', 'orca-fill'] })
+        if (hits.length > 0) {
+          return
+        }
         locationHandlerRef.current?.({
           latitude: event.lngLat.lat,
           longitude: event.lngLat.lng,
@@ -299,6 +332,8 @@ export default function MapCanvas({
 
     return () => {
       window.clearTimeout(timeoutId)
+      pfzMarkersRef.current.forEach((m) => m.remove())
+      pfzMarkersRef.current = []
       map?.remove()
       mapRef.current = null
     }
@@ -326,54 +361,16 @@ export default function MapCanvas({
 
     const target = [longitude, latitude]
 
-    const visibleLayers = layers
-      .filter(
-        (layer) =>
-          layer?.enabled !== false &&
-          Array.isArray(layer?.features)
-      )
-      .map((layer) => {
-        const isPFZ =
-          String(layer.id).toLowerCase() === 'pfz'
-
-        if (!isPFZ) {
-          return layer
-        }
-
-        /*
-         * Only display PFZ features whose nearest coordinate
-         * is within 50 km of the selected location.
-         */
-        const filteredFeatures = layer.features.filter(
-          (feature) => {
-            const geometry =
-              feature.geometry || feature
-
-            const nearest = nearestCoordinate(
-              geometry,
-              selectedLocation
-            )
-
-            return (
-              nearest &&
-              distanceKm(target, nearest) <=
-                PFZ_RADIUS_KM
-            )
-          }
-        )
-
-        return {
-          ...layer,
-          features: filteredFeatures,
-        }
-      })
+    const visibleLayers = layers.filter(
+      (layer) => layer?.enabled !== false && Array.isArray(layer?.features)
+    )
 
     const features = visibleLayers
       .flatMap((layer) => layer.features)
       .map((feature) => ({
         type: 'Feature',
         geometry: feature.geometry || feature,
-        properties: feature.properties || {},
+        properties: feature.properties || { id: feature.id, layer: feature.layer, source: feature.source, freshness_status: feature.freshness_status },
       }))
 
     /*
@@ -389,81 +386,75 @@ export default function MapCanvas({
       })
     }
 
-    /*
-     * PFZ marker at nearest PFZ coordinate.
-     */
-    const pfzMarkers = visibleLayers
-      .filter(
-        (layer) =>
-          String(layer.id).toLowerCase() === 'pfz'
-      )
-      .flatMap((layer) => layer.features)
-      .map((feature) => {
-        const geometry =
-          feature.geometry || feature
-
-        const coordinates =
-          nearestCoordinate(
-            geometry,
-            selectedLocation
-          ) || representativePoint(geometry)
-
-        if (!coordinates) {
-          return null
-        }
-
-        return {
-          type: 'Feature',
-          geometry: {
-            type: 'Point',
-            coordinates,
-          },
-          properties: {
-            ...(feature.properties || {}),
-            layer: 'PFZ',
-          },
-        }
-      })
-      .filter(Boolean)
-
-    map
-      .getSource('orca-layers')
-      ?.setData(featureCollection(features))
-
-    map
-      .getSource('orca-pfz-markers')
-      ?.setData(featureCollection(pfzMarkers))
+    map.getSource('orca-layers')?.setData(featureCollection(features))
 
     /*
-     * Fit map to visible GIS data.
+     * Remove existing PFZ DOM markers and create new interactive ones.
      */
-    const points = visibleLayers
-      .flatMap((layer) => layer.features)
-      .flatMap((feature) =>
-        flattenCoordinates(
-          feature.geometry || feature
-        )
+    pfzMarkersRef.current.forEach((marker) => marker.remove())
+    pfzMarkersRef.current = []
+
+    const pfzLayers = visibleLayers.filter((l) => String(l.id).toLowerCase() === 'pfz')
+    const pfzFeatures = pfzLayers.flatMap((l) => l.features)
+
+    pfzFeatures.forEach((feature) => {
+      const geometry = feature.geometry || feature
+      const repCoord = representativePoint(geometry)
+      if (!repCoord) return
+
+      const el = document.createElement('div')
+      el.className = 'pfz-interactive-marker'
+      el.innerHTML = '<div class="pfz-marker-bubble"><span>🐟</span><strong>PFZ</strong></div>'
+
+      const dist = Number.isFinite(latitude) && Number.isFinite(longitude)
+        ? distanceKm(target, repCoord).toFixed(1)
+        : null
+
+      const props = feature.properties || {}
+      const popup = new Popup({ offset: 15, maxWidth: '280px' }).setHTML(`
+        <div style="font-family: system-ui, sans-serif; color: #0f172a; padding: 4px;">
+          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+            <span style="font-size: 20px;">🐟</span>
+            <div>
+              <strong style="color: #0891b2; font-size: 13px; display: block;">Potential Fishing Zone</strong>
+              <small style="color: #64748b; font-size: 10px;">Official INCOIS Advisory</small>
+            </div>
+          </div>
+          <div style="font-size: 11px; line-height: 1.5; border-top: 1px solid #e2e8f0; padding-top: 6px; color: #334155;">
+            <p style="margin: 2px 0;"><strong>Feature ID:</strong> ${feature.id || 'INCOIS-PFZ'}</p>
+            <p style="margin: 2px 0;"><strong>Source:</strong> ${feature.source || props.source || 'INCOIS'} (${feature.freshness_status || props.freshness_status || 'live'})</p>
+            <p style="margin: 2px 0;"><strong>Coordinates:</strong> ${repCoord[1].toFixed(4)}°N, ${repCoord[0].toFixed(4)}°E</p>
+            ${dist ? `<p style="margin: 2px 0; color: #0284c7;"><strong>Distance:</strong> ${dist} km from center</p>` : ''}
+            ${props.depth_m ? `<p style="margin: 2px 0;"><strong>Target Depth:</strong> ${props.depth_m} m</p>` : ''}
+            ${props.bearing_deg ? `<p style="margin: 2px 0;"><strong>Bearing:</strong> ${props.bearing_deg}°</p>` : ''}
+          </div>
+          <div style="margin-top: 8px;">
+            <button style="background: #0891b2; color: #fff; border: none; border-radius: 4px; padding: 4px 8px; font-size: 10px; font-weight: 600; cursor: pointer;" onclick="window.dispatchEvent(new CustomEvent('orca-select-coord', {detail: {latitude: ${repCoord[1]}, longitude: ${repCoord[0]}, label: 'PFZ: ${feature.id || 'Zone'}'}}))">📍 Focus Here</button>
+          </div>
+        </div>
+      `)
+
+      const marker = new Marker({ element: el })
+        .setLngLat(repCoord)
+        .setPopup(popup)
+        .addTo(map)
+
+      pfzMarkersRef.current.push(marker)
+    })
+
+    /*
+     * If route geometry is active, zoom to route bounds.
+     */
+    if (routeGeometry?.coordinates?.length >= 2) {
+      const routeBounds = routeGeometry.coordinates.reduce(
+        (b, pt) => b.extend(pt),
+        new LngLatBounds(routeGeometry.coordinates[0], routeGeometry.coordinates[0])
       )
-
-    if (!points.length) {
-      points.push(target)
-    }
-
-    const bounds = points.reduce(
-      (result, point) => result.extend(point),
-      new LngLatBounds(points[0], points[0])
-    )
-
-    const frame = window.requestAnimationFrame(() => {
-      map.fitBounds(bounds, {
+      map.fitBounds(routeBounds, {
         padding: 80,
         maxZoom: 9,
         duration: 700,
       })
-    })
-
-    return () => {
-      window.cancelAnimationFrame(frame)
     }
   }, [
     layers,

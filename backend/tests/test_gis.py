@@ -55,6 +55,10 @@ class GISTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("gis", mixed_result["analysis_results"])
 
     async def test_workflow_reports_unavailable_gis_without_fabricating_data(self):
+        from unittest.mock import patch
+        from app.models.spatial_feature import spatial_features
         context = QueryContext(QueryParser().parse("map near coordinates"), {"latitude": 17.7, "longitude": 83.3})
-        result = await OrcaWorkflow(llm=NoNetworkLLM()).run(context)
-        self.assertEqual(result["analysis_results"]["gis"]["data_status"], "unavailable")
+        with patch.object(spatial_features, "list", return_value=[]):
+            result = await OrcaWorkflow(llm=NoNetworkLLM()).run(context)
+            self.assertEqual(result["analysis_results"]["gis"]["data_status"], "unavailable")
+

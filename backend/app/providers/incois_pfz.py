@@ -136,6 +136,62 @@ class IncoisPFZProvider:
             "persisted": persisted,
         }
 
+    def seed_demo_fallback(
+        self,
+        repository: SpatialFeatureRepository = spatial_features,
+    ) -> int:
+        """Seed realistic demo PFZ features explicitly labeled DEMO/STATIC if repository is empty."""
+        existing = repository.list(dataset="PFZ")
+        if existing:
+            return len(existing)
+        demo_features = [
+            SpatialFeatureCreate(
+                id="demo-pfz-chennai-1",
+                dataset="PFZ",
+                layer="pfz",
+                geometry={
+                    "type": "LineString",
+                    "coordinates": [
+                        [80.33, 12.45],
+                        [80.36, 12.55],
+                        [80.38, 12.65],
+                        [80.36, 12.75],
+                    ],
+                },
+                properties={"name": "Chennai Offshore PFZ Track", "depth_m": 45, "bearing_deg": 115, "note": "DEMO/STATIC"},
+                source="DEMO/STATIC",
+                source_identifier="DEMO-PFZ-01",
+                source_url="https://incois.gov.in",
+                observed_at=datetime.now(timezone.utc).isoformat(),
+                freshness_status="static",
+            ),
+            SpatialFeatureCreate(
+                id="demo-pfz-vizag-1",
+                dataset="PFZ",
+                layer="pfz",
+                geometry={
+                    "type": "LineString",
+                    "coordinates": [
+                        [83.35, 17.65],
+                        [83.42, 17.72],
+                        [83.48, 17.80],
+                    ],
+                },
+                properties={"name": "Visakhapatnam Shelf PFZ Track", "depth_m": 55, "bearing_deg": 90, "note": "DEMO/STATIC"},
+                source="DEMO/STATIC",
+                source_identifier="DEMO-PFZ-02",
+                source_url="https://incois.gov.in",
+                observed_at=datetime.now(timezone.utc).isoformat(),
+                freshness_status="static",
+            ),
+        ]
+        count = 0
+        for f in demo_features:
+            repository.create(f)
+            count += 1
+        return count
+
+
     @classmethod
     def normalize(
         cls,

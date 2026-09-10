@@ -37,18 +37,40 @@ export default function MapExplorer({ navigate }) {
   const fetchLayers = useCallback(async (signal) => {
     const availableLayers = await getMapLayers({ signal })
     const availableIds = availableLayers.filter((layer) => layer.available).map((layer) => layer.id)
-    const features = await getMapFeatures(availableIds, { latitude: selectedLocation.latitude, longitude: selectedLocation.longitude, radiusKm: 50, signal })
+    const features = await getMapFeatures(availableIds, { signal })
     return availableLayers.map((layer) => {
       const persistedFeatures = features.filter((feature) => (feature.layer || feature.dataset).toLowerCase() === layer.id.toLowerCase())
-      return { ...layer, available: persistedFeatures.length > 0, feature_count: persistedFeatures.length, enabled: layer.id.toLowerCase() === 'pfz' && persistedFeatures.length > 0, features: persistedFeatures }
+      const allFeatures = persistedFeatures.length > 0 ? persistedFeatures : (layer.features || [])
+      const count = allFeatures.length
+      return {
+        ...layer,
+        available: count > 0,
+        feature_count: count,
+        enabled: layer.id.toLowerCase() === 'pfz' ? count > 0 : Boolean(layer.enabled),
+        features: allFeatures,
+      }
     })
-  }, [selectedLocation.latitude, selectedLocation.longitude])
+  }, [])
 
   useEffect(() => {
     const controller = new AbortController()
     fetchLayers(controller.signal).then((nextLayers) => { setLayers(nextLayers); setLayersState({ loading: false, error: '' }) }).catch((error) => { if (error.name !== 'AbortError') setLayersState({ loading: false, error: mapErrorMessage(error) }) })
     return () => controller.abort()
   }, [fetchLayers])
+
+  useEffect(() => {
+    const handleCustomCoord = (event) => {
+      if (event.detail && Number.isFinite(event.detail.latitude) && Number.isFinite(event.detail.longitude)) {
+        setSelectedCoordinate({
+          latitude: event.detail.latitude,
+          longitude: event.detail.longitude,
+          label: event.detail.label || 'Selected map coordinate',
+        })
+      }
+    }
+    window.addEventListener('orca-select-coord', handleCustomCoord)
+    return () => window.removeEventListener('orca-select-coord', handleCustomCoord)
+  }, [])
 
   const handleMapLocation = useCallback((coordinate) => setSelectedCoordinate(coordinate), [])
   const handleSelectLocation = (id) => { setLocationId(id); setSelectedCoordinate(null) }
