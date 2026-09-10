@@ -388,6 +388,8 @@ export default function MapCanvas({
 
     map.getSource('orca-layers')?.setData(featureCollection(features))
 
+    map.getSource('orca-layers')?.setData(featureCollection(features))
+
     /*
      * Remove existing PFZ DOM markers and create new interactive ones.
      */
