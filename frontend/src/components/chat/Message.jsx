@@ -50,6 +50,8 @@ export default function Message({ message }) {
   const recommendations = response?.recommendations || []
   const hasLimitations = Boolean(response?.unavailable_domains?.length || response?.pending_domains?.length || decision?.unavailable_data?.length || decision?.warnings?.length)
   const answer = response?.answer || message.text
+  const mapFollowUp = response?.context?.map_follow_up
+  const mapUrl = mapFollowUp ? `/map?latitude=${encodeURIComponent(mapFollowUp.latitude)}&longitude=${encodeURIComponent(mapFollowUp.longitude)}&label=${encodeURIComponent(mapFollowUp.label || 'Selected map coordinate')}` : null
 
   return (
     <div className="chat-bubble-wrap orca-wrap font-sans">
@@ -106,6 +108,7 @@ export default function Message({ message }) {
 
         {/* Card Actions */}
         <div className="message-actions">
+          {mapUrl && <a className="action-btn copy-btn" href={mapUrl}>View on Map</a>}
           <button
             type="button"
             className={`action-btn copy-btn ${copied ? 'is-copied' : ''}`}

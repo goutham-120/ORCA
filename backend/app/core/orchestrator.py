@@ -77,21 +77,28 @@ class OrcaOrchestrator:
             "requested_location": metadata.get("requested_location"),
             "time_expression": metadata.get("time_expression"),
         }
-        unavailable_domains = [name for name, value in result.get("analysis_results", {}).items() if isinstance(value, dict) and value.get("data_status") not in {"live", "cached", "static"}]
+        unavailable_domains = [name for name, value in result.get("analysis_results", {}).items() if isinstance(value, dict) and value.get("data_status") not in {"live", "cached", "demo", "static"}]
         persona = metadata.get("persona") if metadata.get("persona") in {"fisher_marine_operator", "researcher_scientist", "coastal_authority", "general_user"} else "general_user"
         response_context["persona"] = persona
         response_context["llm_mode"] = result.get("llm_mode", "deterministic_fallback")
         response_context["llm_synthesis_attempted"] = bool(getattr(self.workflow.llm, "api_key", None) and getattr(self.workflow.llm, "synthesize", None))
         response_context["selected_agents"] = result.get("selected", result.get("agents_used", []))
+        selected_agents = result.get("selected", result.get("agents_used", []))
         decision = result.get("decision")
         if decision and parsed.decision_type == "pfz":
             pending_domains = [domain for domain in pending_domains if domain != "pfz"]
         response_context["decision_type"] = parsed.decision_type
+        if location and ("gis" in selected_agents or parsed.decision_type in {"pfz", "fishing", "hazard", "route"}):
+            response_context["map_follow_up"] = {
+                "path": "/map",
+                "latitude": location["latitude"],
+                "longitude": location["longitude"],
+                "label": location.get("label") or metadata.get("requested_location") or "Selected map coordinate",
+            }
         answer = result.get("answer") if result.get("llm_synthesis") else None
         answer = answer or synthesize_answer(request.query, assessment, result.get("analysis_results", {}), pending_domains, response_context, request.language, decision)
         conversation_id = request.conversation_id or str(uuid4())
         self.conversations.put(conversation_id, response_context)
-        selected_agents=result.get("selected", result.get("agents_used", []))
         return OrcaQueryResponse(query_id=str(uuid4()), answer=answer, intent=parsed.intent, agents_used=selected_agents, selected_agents=selected_agents, decision=decision, assessment=assessment, recommendations=recommendations, evidence=result.get("evidence", []), created_at=datetime.now(timezone.utc), conversation_id=conversation_id, language=self._response_language(request.language), context=response_context, pending_domains=pending_domains, unavailable_domains=unavailable_domains, response_kind="specialized")
 
     @staticmethod

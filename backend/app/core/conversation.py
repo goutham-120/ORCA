@@ -93,6 +93,7 @@ def synthesize_answer(
         if result.get("data_status") in {
             "live",
             "cached",
+            "demo",
             "static",
         }:
 
@@ -198,6 +199,9 @@ def synthesize_answer(
             + "; ".join(concerns)
             + "."
         )
+
+    if context.get("map_follow_up"):
+        parts.append("View the source-backed features in Map Explorer.")
 
     # ---------------------------------------------------------
     # Decision intelligence

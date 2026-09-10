@@ -33,22 +33,27 @@ class SpatialFeatureRepository:
     def __init__(self, db: Database | None = None) -> None:
         self.db = db or database
 
-    def initialize(self) -> None:
-        self.db.initialize()
+    def initialize(self) -> bool:
+        return self.db.initialize()
 
     def delete_source_dataset(self, dataset: str, source: str) -> None:
-        self.initialize()
-        self.db.execute(
-            "DELETE FROM spatial_features WHERE dataset = ? AND source = ?",
-            (dataset, source),
-        )
+        try:
+            if not self.initialize():
+                return
+            self.db.execute(
+                "DELETE FROM spatial_features WHERE dataset = ? AND source = ?",
+                (dataset, source),
+            )
+        except Exception as exc:
+            self.db.last_error = exc
 
     def create(
         self,
         feature: SpatialFeatureCreate,
     ) -> SpatialFeatureRecord:
 
-        self.initialize()
+        if not self.initialize():
+            raise RuntimeError(f"Spatial feature persistence unavailable because the configured database cannot be reached: {self.db.last_error}")
 
         geometry_type = (
             feature.geometry.get("type")
@@ -258,78 +263,83 @@ class SpatialFeatureRepository:
         valid_at: datetime | None = None,
     ) -> list[SpatialFeatureRecord]:
 
-        self.initialize()
+        try:
+            if not self.initialize():
+                return []
 
-        clauses = ["1=1"]
-        params: list[object] = []
+            clauses = ["1=1"]
+            params: list[object] = []
 
-        # Add normal filters only when a value was supplied.
-        for column, value in (
-            ("dataset", dataset),
-            ("layer", layer),
-            ("source", source),
-            ("freshness_status", status),
-        ):
-            if value is not None:
-                clauses.append(f"{column} = ?")
-                params.append(value)
+            # Add normal filters only when a value was supplied.
+            for column, value in (
+                ("dataset", dataset),
+                ("layer", layer),
+                ("source", source),
+                ("freshness_status", status),
+            ):
+                if value is not None:
+                    clauses.append(f"{column} = ?")
+                    params.append(value)
 
-        # Temporal filtering.
-        if valid_at is not None:
-            clauses.extend(
-                [
-                    "(valid_from IS NULL OR valid_from <= ?)",
-                    "(valid_to IS NULL OR valid_to >= ?)",
-                ]
+            # Temporal filtering.
+            if valid_at is not None:
+                clauses.extend(
+                    [
+                        "(valid_from IS NULL OR valid_from <= ?)",
+                        "(valid_to IS NULL OR valid_to >= ?)",
+                    ]
+                )
+
+                # SQLite stores these values as TEXT.
+                # PostgreSQL can receive datetime objects directly.
+                valid_at_value = (
+                    _time(valid_at)
+                    if not self.db.is_postgres
+                    else valid_at
+                )
+
+                params.extend(
+                    [
+                        valid_at_value,
+                        valid_at_value,
+                    ]
+                )
+
+            # SQLite and PostgreSQL have different column names.
+            columns = (
+                _POSTGRES_COLUMNS
+                if self.db.is_postgres
+                else _SQLITE_COLUMNS
             )
 
-            # SQLite stores these values as TEXT.
-            # PostgreSQL can receive datetime objects directly.
-            valid_at_value = (
-                _time(valid_at)
-                if not self.db.is_postgres
-                else valid_at
+            geometry_column = (
+                "ST_AsGeoJSON(geometry) AS geometry"
+                if self.db.is_postgres
+                else "geometry_json AS geometry"
             )
 
-            params.extend(
-                [
-                    valid_at_value,
-                    valid_at_value,
-                ]
+            query = (
+                f"SELECT {columns}, {geometry_column} "
+                f"FROM spatial_features "
+                f"WHERE {' AND '.join(clauses)} "
+                f"ORDER BY id"
             )
 
-        # SQLite and PostgreSQL have different column names.
-        columns = (
-            _POSTGRES_COLUMNS
-            if self.db.is_postgres
-            else _SQLITE_COLUMNS
-        )
-
-        geometry_column = (
-            "ST_AsGeoJSON(geometry) AS geometry"
-            if self.db.is_postgres
-            else "geometry_json AS geometry"
-        )
-
-        query = (
-            f"SELECT {columns}, {geometry_column} "
-            f"FROM spatial_features "
-            f"WHERE {' AND '.join(clauses)} "
-            f"ORDER BY id"
-        )
-
-        rows = self.db.fetchall(
-            query,
-            tuple(params),
-        )
-
-        return [
-            _record_from_row(
-                row,
-                self.db.is_postgres,
+            rows = self.db.fetchall(
+                query,
+                tuple(params),
             )
-            for row in rows
-        ]
+
+            return [
+                _record_from_row(
+                    row,
+                    self.db.is_postgres,
+                )
+                for row in rows
+            ]
+        except Exception as exc:
+            self.db.last_error = exc
+            return []
 
 
 def _time(value: datetime | None) -> str | None:

@@ -11,6 +11,7 @@ from app.gis.layers import (
     normalize_layers,
 )
 from app.models.spatial_feature import spatial_features
+from app.providers.demo_spatial import ensure_demo_gis
 from app.providers.incois_pfz import incois_pfz_provider
 from app.schemas.map import (
     MapAnalysisRequest,
@@ -35,10 +36,11 @@ def require_map_api_key(
 ) -> None:
     configured_key = get_settings().map_api_key
     if not configured_key:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="ORCA_MAP_API_KEY is not configured.",
-        )
+        # Local development has no secret to send from Vite.  Deployments set
+        # ORCA_MAP_API_KEY and retain the header check below.
+        if get_settings().environment.lower() == "development":
+            return
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="ORCA_MAP_API_KEY is not configured.")
     if api_key != configured_key:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -57,6 +59,8 @@ async def layers(
         description="Refresh PFZ data from INCOIS before returning layers.",
     ),
 ) -> MapLayersResponse:
+
+    ensure_demo_gis()
 
     if sync_pfz:
         try:
@@ -306,6 +310,7 @@ def _stored_layers() -> dict[str, GISLayer]:
     precedence = (
         "live",
         "cached",
+        "demo",
         "static",
         "stale",
         "unavailable",
@@ -424,13 +429,14 @@ async def route(
         else {}
     )
 
-    data_status = (
-        "static"
-        if any(
-            layer.available
-            for layer in layers.values()
-        )
-        else "unavailable"
+    statuses = {
+        layer.source_status
+        for layer in layers.values()
+        if layer.available
+    }
+    data_status = next(
+        (item for item in ("live", "cached", "demo", "static", "stale") if item in statuses),
+        "unavailable",
     )
 
     count = sum(
@@ -439,8 +445,8 @@ async def route(
     )
 
     message = (
-        f"Route intersects {count} supplied zone feature(s)."
-        if data_status == "static"
+        f"Route analysis intersects {count} loaded zone feature(s); this is not turn-by-turn navigation."
+        if data_status != "unavailable"
         else (
             "Route geometry is shown, but GIS data "
             "is unavailable; no safety conclusion "
@@ -451,7 +457,7 @@ async def route(
     return RouteResponse(
         status=(
             "completed"
-            if data_status == "static"
+            if data_status != "unavailable"
             else "unavailable"
         ),
         message=message,

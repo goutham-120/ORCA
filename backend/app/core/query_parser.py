@@ -45,6 +45,10 @@ class QueryParser:
         decision_type = "route" if "route" in matches else "pfz" if explicit_pfz and not safety else "fishing" if fishing else "safety" if safety else "hazard" if "hazard" in matches else None
         if decision_type in {"fishing", "safety"}:
             matches.extend(name for name in ("ocean", "weather") if name not in matches)
+        # Fishing suitability needs PFZ evidence as well as conditions.  The
+        # workflow maps this domain to the GIS agent and DecisionService.
+        if decision_type == "fishing" and "pfz" not in matches:
+            matches.append("pfz")
         if explicit_pfz:
             matches = [name for name in matches if name != "map"]
         # A place qualifier such as "near Visakhapatnam" is location context,
