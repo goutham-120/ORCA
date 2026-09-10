@@ -10,6 +10,7 @@ from app.gis.layers import (
     layer_catalog,
     normalize_layers,
 )
+
 from app.models.spatial_feature import spatial_features
 from app.providers.demo_spatial import ensure_demo_gis
 from app.providers.incois_pfz import incois_pfz_provider
@@ -25,6 +26,7 @@ from app.schemas.map import (
 )
 from app.tools.gis_tools import GISTool
 
+
 router = APIRouter(
     prefix="/map",
     tags=["map"],
@@ -35,22 +37,23 @@ def require_map_api_key(
     api_key: str | None = Header(default=None, alias="X-API-Key"),
 ) -> None:
     configured_key = get_settings().map_api_key
+
     if not configured_key:
-<<<<<<< HEAD
-        return
-=======
-        # Local development has no secret to send from Vite.  Deployments set
-        # ORCA_MAP_API_KEY and retain the header check below.
+        # Local development has no secret to send from Vite.
+        # Deployments set ORCA_MAP_API_KEY and retain the header check below.
         if get_settings().environment.lower() == "development":
             return
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="ORCA_MAP_API_KEY is not configured.")
->>>>>>> 1ca537f247a704b50ca171896fd9bfae0656d6c7
+
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="ORCA_MAP_API_KEY is not configured.",
+        )
+
     if api_key != configured_key:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="A valid X-API-Key is required.",
         )
-
 
 
 @router.get(
@@ -439,8 +442,19 @@ async def route(
         for layer in layers.values()
         if layer.available
     }
+
     data_status = next(
-        (item for item in ("live", "cached", "demo", "static", "stale") if item in statuses),
+        (
+            item
+            for item in (
+                "live",
+                "cached",
+                "demo",
+                "static",
+                "stale",
+            )
+            if item in statuses
+        ),
         "unavailable",
     )
 
