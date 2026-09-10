@@ -73,7 +73,8 @@ class AgentSelectionTests(unittest.IsolatedAsyncioTestCase):
     async def test_weather_and_ocean_only(self):
         orchestrator, _, _ = make_orchestrator()
         response = await orchestrator.handle(OrcaQueryRequest(query="What will the weather and wave conditions be near Visakhapatnam tomorrow?", location={"latitude": 17.7, "longitude": 83.3}))
-        self.assertEqual(set(response.selected_agents), {"weather", "ocean", "gis"})
+        self.assertEqual(set(response.selected_agents), {"weather", "ocean"})
+
 
     async def test_fishing_safety_invokes_decision_without_gis(self):
         decision = DecisionSpy()

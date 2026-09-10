@@ -118,7 +118,6 @@ export default function Message({ message }) {
 
         {/* Card Actions */}
         <div className="message-actions">
-          {mapUrl && <a className="action-btn copy-btn" href={mapUrl}>View on Map</a>}
           <button
             type="button"
             className={`action-btn copy-btn ${copied ? 'is-copied' : ''}`}
