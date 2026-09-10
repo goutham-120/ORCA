@@ -13,8 +13,8 @@ export default function Login({ navigate }) {
     setBusy(true)
     setError('')
     try {
-      const result = await login(form)
-      navigate(result.user.user_category ? '/dashboard' : '/personalization')
+      await login(form)
+      navigate('/personalization')
     } catch (err) {
       setError(err.message || 'Unable to sign in. Check that the API is available.')
     } finally {
