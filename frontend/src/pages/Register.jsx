@@ -13,8 +13,8 @@ export default function Register({ navigate }) {
     setBusy(true)
     setError('')
     try {
-      const result = await register(form)
-      navigate(result.user.user_category ? '/dashboard' : '/personalization')
+      await register(form)
+      navigate('/personalization')
     } catch (err) {
       setError(err.message || 'Unable to create your account.')
     } finally {

@@ -50,15 +50,13 @@ export default function App() {
   if (currentPath === '/') return <Home navigate={navigate} />
   if (currentPath === '/map') return <MapExplorer navigate={navigate} />
   if (!user) return <Login navigate={navigate} />
-  if (currentPath === '/personalization') {
-    return user.user_category ? <Dashboard navigate={navigate} /> : <Personalization navigate={navigate} />
-  }
-  if (!user.user_category) return <Personalization navigate={navigate} />
 
   return (
     <MainLayout path={currentPath} navigate={navigate}>
       {currentPath === '/dashboard' ? (
         <Dashboard navigate={navigate} />
+      ) : currentPath === '/personalization' ? (
+        <Personalization navigate={navigate} />
       ) : currentPath === '/ask-orca' ? (
         <AskOrca key={window.location.search} navigate={navigate} />
       ) : currentPath === '/map-explorer' || currentPath === '/map' ? (

@@ -8,7 +8,7 @@ function formatNow(value) {
   }
 }
 
-export default function Header() {
+export default function Header({ navigate }) {
   const { user } = useAuth()
   const [now, setNow] = useState(() => new Date())
   const initials = (user?.display_name || user?.email || 'OR').slice(0, 2).toUpperCase()
@@ -32,9 +32,15 @@ export default function Header() {
           <br />
           <small>{formatted.time}</small>
         </span>
-        <span className="avatar" title={`Signed in as ${user?.display_name || user?.email || 'Explorer'}`}>
+        <button
+          type="button"
+          className="avatar"
+          style={{ cursor: 'pointer', border: 'none', background: 'transparent', padding: 0 }}
+          onClick={() => navigate?.('/personalization')}
+          title={`Signed in as ${user?.display_name || user?.email || 'Explorer'} — Click for Personalization`}
+        >
           {initials}
-        </span>
+        </button>
       </div>
     </header>
   )
