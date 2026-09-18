@@ -65,6 +65,10 @@ class Database:
             return True
         except Exception as exc:
             self.last_error = exc
+            if self.is_postgres:
+                # PostgreSQL connection failed; fall back to local SQLite in development
+                self.is_postgres = False
+                return self.initialize()
             return False
 
     def _initialize_spatial_schema(self, cursor: object) -> None:

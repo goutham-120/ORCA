@@ -126,6 +126,7 @@ export function GeneratedReport({ report, onSave, onNavigate, isSaved = false })
             <div className="meta-row"><strong>Report Type:</strong> <span>{report.typeTitle}</span></div>
             <div className="meta-row"><strong>Target Area:</strong> <span>{report.locationName}, {report.region}</span></div>
             <div className="meta-row"><strong>Coordinates:</strong> <span>{report.coordinates}</span></div>
+            <div className="meta-row"><strong>Data Feed:</strong> <span>{report.isLive ? '🟢 Live Marine & Meteorological Feed (Open-Meteo API)' : 'ORCA Integrated Coastal Model'}</span></div>
             <div className="meta-row"><strong>Temporal Scope:</strong> <span>{report.timePeriod}</span></div>
             <div className="meta-row"><strong>Generated:</strong> <span>{report.generatedDate}</span></div>
           </div>

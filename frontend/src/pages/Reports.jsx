@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { standardReportTemplates, generateReportData } from '../data/dashboardData'
+import { fetchLiveLocationData } from '../services/openMeteoService'
 import { ReportCard } from '../components/reports/ReportCard'
 import { ReportConfigurator } from '../components/reports/ReportConfigurator'
 import { GeneratedReport } from '../components/reports/GeneratedReport'
@@ -53,20 +54,27 @@ export function Reports({ onNavigate }) {
     }
   }
 
-  const handleStartGeneration = ({ typeId = 'daily', locationId = 'visakhapatnam', timePeriod = 'Last 24 hours', customSections = null }) => {
+  const handleStartGeneration = async ({ typeId = 'daily', locationId = 'visakhapatnam', timePeriod = 'Last 24 hours', customSections = null }) => {
     setIsGenerating(true)
-    setGenerationStep('Synthesizing coastal oceanographic telemetry...')
+    setGenerationStep('Connecting to Live Open-Meteo & Oceanographic Satellite Feeds...')
+
+    let liveData = null
+    try {
+      liveData = await fetchLiveLocationData(locationId)
+    } catch (err) {
+      console.warn('Using standard coastal model as fallback:', err)
+    }
 
     setTimeout(() => {
-      setGenerationStep('Computing safety indices & wave vector models...')
+      setGenerationStep('Computing safety indices, wave vector models & hourly trends...')
     }, 400)
 
     setTimeout(() => {
-      setGenerationStep('Formatting executive advisories & visual trend graphs...')
+      setGenerationStep('Formatting executive advisories, alert matrices & visual SVG charts...')
     }, 800)
 
     setTimeout(() => {
-      const data = generateReportData(typeId, locationId, timePeriod, customSections)
+      const data = generateReportData(typeId, locationId, timePeriod, customSections, liveData)
       setActiveReport(data)
       setIsGenerating(false)
       setActiveTab('view')

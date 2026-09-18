@@ -103,7 +103,7 @@ export default function MapExplorer({ navigate }) {
         ...layer,
         available: count > 0,
         feature_count: count,
-        enabled: layer.id.toLowerCase() === 'pfz' ? count > 0 : Boolean(layer.enabled),
+        enabled: layer.enabled !== undefined ? Boolean(layer.enabled) : count > 0,
         features: allFeatures,
       }
     })

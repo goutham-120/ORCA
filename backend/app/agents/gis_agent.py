@@ -56,8 +56,13 @@ class GISAgent:
         restricted = len(zone_hits.get("restricted_zones", []))
         hazards = len(zone_hits.get("hazards", []))
         risk = max(0.7 if restricted else 0.0, 0.6 if hazards else 0.0)
+        summary_text = (
+            f"Clear waters: No intersecting hazards or restricted zones found across {len(layers)} checked GIS layer(s)."
+            if matches == 0
+            else f"GIS checked {len(layers)} source-backed layer(s); {matches} spatial feature(s) identified in area."
+        )
         source_status = self._source_status(layers)
-        return {"summary": f"GIS checked {len(layers)} source-backed layer(s); {matches} spatial match(es) found.", "risk_score": risk, "concerns": (["Location is inside a supplied restricted zone."] if restricted else []) + (["Location is inside a supplied hazard zone."] if hazards else []), "data_status": source_status, "available": source_status != "unavailable", "operation": self._operation_name(query), "results": operations, "layer_metadata": [{"id": layer.id, "source_status": layer.source_status, "source": layer.source, "available": layer.available} for layer in layers.values()]}
+        return {"summary": summary_text, "risk_score": risk, "concerns": (["Location is inside a supplied restricted zone."] if restricted else []) + (["Location is inside a supplied hazard zone."] if hazards else []), "data_status": source_status, "available": source_status != "unavailable", "operation": self._operation_name(query), "results": operations, "layer_metadata": [{"id": layer.id, "source_status": layer.source_status, "source": layer.source, "available": layer.available} for layer in layers.values()]}
 
     @staticmethod
     def _source_status(layers: Mapping[str, Any]) -> str:

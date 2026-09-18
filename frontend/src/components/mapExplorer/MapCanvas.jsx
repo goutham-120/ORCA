@@ -113,7 +113,7 @@ export default function MapCanvas({
   const containerRef = useRef(null)
   const mapRef = useRef(null)
   const markerRef = useRef(null)
-  const pfzMarkersRef = useRef([])
+  const gisMarkersRef = useRef([])
   const initialLocationRef = useRef(selectedLocation)
   const locationHandlerRef = useRef(onMapLocation)
 
@@ -162,19 +162,103 @@ export default function MapCanvas({
           })
         }
 
-        if (!map.getLayer('orca-fill')) {
+        // 1. Marine Areas (Green #10b981)
+        if (!map.getLayer('orca-fill-marine')) {
           map.addLayer({
-            id: 'orca-fill',
+            id: 'orca-fill-marine',
             type: 'fill',
             source: 'orca-layers',
-            filter: ['==', '$type', 'Polygon'],
+            filter: ['all', ['==', '$type', 'Polygon'], ['==', ['get', 'layer'], 'marine_areas']],
             paint: {
-              'fill-color': '#f59e0b',
-              'fill-opacity': 0.25,
+              'fill-color': '#10b981',
+              'fill-opacity': 0.22,
+            },
+          })
+        }
+        if (!map.getLayer('orca-line-marine')) {
+          map.addLayer({
+            id: 'orca-line-marine',
+            type: 'line',
+            source: 'orca-layers',
+            filter: ['all', ['==', '$type', 'Polygon'], ['==', ['get', 'layer'], 'marine_areas']],
+            paint: {
+              'line-color': '#059669',
+              'line-width': 2.5,
+              'line-opacity': 0.9,
             },
           })
         }
 
+        // 2. Restricted Zones (Orange #f59e0b with dashed border)
+        if (!map.getLayer('orca-fill-restricted')) {
+          map.addLayer({
+            id: 'orca-fill-restricted',
+            type: 'fill',
+            source: 'orca-layers',
+            filter: ['all', ['==', '$type', 'Polygon'], ['==', ['get', 'layer'], 'restricted_zones']],
+            paint: {
+              'fill-color': '#f59e0b',
+              'fill-opacity': 0.28,
+            },
+          })
+        }
+        if (!map.getLayer('orca-line-restricted')) {
+          map.addLayer({
+            id: 'orca-line-restricted',
+            type: 'line',
+            source: 'orca-layers',
+            filter: ['all', ['==', '$type', 'Polygon'], ['==', ['get', 'layer'], 'restricted_zones']],
+            paint: {
+              'line-color': '#d97706',
+              'line-width': 2.5,
+              'line-dasharray': [3, 1.5],
+              'line-opacity': 0.95,
+            },
+          })
+        }
+
+        // 3. Hazards (Red #ef4444 with high visibility crimson border)
+        if (!map.getLayer('orca-fill-hazards')) {
+          map.addLayer({
+            id: 'orca-fill-hazards',
+            type: 'fill',
+            source: 'orca-layers',
+            filter: ['all', ['==', '$type', 'Polygon'], ['==', ['get', 'layer'], 'hazards']],
+            paint: {
+              'fill-color': '#ef4444',
+              'fill-opacity': 0.32,
+            },
+          })
+        }
+        if (!map.getLayer('orca-line-hazards')) {
+          map.addLayer({
+            id: 'orca-line-hazards',
+            type: 'line',
+            source: 'orca-layers',
+            filter: ['all', ['==', '$type', 'Polygon'], ['==', ['get', 'layer'], 'hazards']],
+            paint: {
+              'line-color': '#dc2626',
+              'line-width': 2.8,
+              'line-opacity': 0.98,
+            },
+          })
+        }
+
+        // 4. Default Polygons Fallback
+        if (!map.getLayer('orca-fill-default')) {
+          map.addLayer({
+            id: 'orca-fill-default',
+            type: 'fill',
+            source: 'orca-layers',
+            filter: ['all', ['==', '$type', 'Polygon'], ['!=', ['get', 'layer'], 'marine_areas'], ['!=', ['get', 'layer'], 'restricted_zones'], ['!=', ['get', 'layer'], 'hazards']],
+            paint: {
+              'fill-color': '#0ea5e9',
+              'fill-opacity': 0.2,
+            },
+          })
+        }
+
+        // 5. Lines & Shipping Tracks
         if (!map.getLayer('orca-line-casing')) {
           map.addLayer({
             id: 'orca-line-casing',
@@ -183,7 +267,7 @@ export default function MapCanvas({
             filter: ['all', ['==', '$type', 'LineString'], ['!=', ['get', 'kind'], 'route']],
             paint: {
               'line-color': '#0f766e',
-              'line-width': 7,
+              'line-width': 6,
               'line-opacity': 0.5,
             },
           })
@@ -203,6 +287,7 @@ export default function MapCanvas({
           })
         }
 
+        // 6. Navigation Route Line
         if (!map.getLayer('orca-route-line')) {
           map.addLayer({
             id: 'orca-route-line',
@@ -232,6 +317,57 @@ export default function MapCanvas({
             },
           })
         }
+
+        // Click popups on polygon features
+        const handlePolygonClick = (e) => {
+          const feature = e.features?.[0]
+          if (!feature) return
+          e.originalEvent.cancelBubble = true
+          const props = feature.properties || {}
+          const layerId = (props.layer || '').toLowerCase()
+          const isHazard = layerId === 'hazards'
+          const isRestricted = layerId === 'restricted_zones'
+          const badgeColor = isHazard ? '#dc2626' : isRestricted ? '#d97706' : '#059669'
+          const icon = isHazard ? '⚠️' : isRestricted ? '🚫' : '⚓'
+          const title = isHazard ? 'Marine Hazard Area' : isRestricted ? 'Restricted Maritime Zone' : 'Marine Monitoring Area'
+
+          new Popup({ offset: 12, maxWidth: '290px' })
+            .setLngLat(e.lngLat)
+            .setHTML(`
+              <div style="font-family: system-ui, sans-serif; color: #0f172a; padding: 4px;">
+                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 5px;">
+                  <span style="font-size: 18px;">${icon}</span>
+                  <div>
+                    <strong style="color: ${badgeColor}; font-size: 13px; display: block;">${title}</strong>
+                    <small style="color: #64748b; font-size: 10px;">${props.name || props.id || 'GIS Feature'}</small>
+                  </div>
+                </div>
+                <div style="font-size: 11px; line-height: 1.4; border-top: 1px solid #e2e8f0; padding-top: 5px; color: #334155;">
+                  <p style="margin: 2px 0;"><strong>Source:</strong> ${props.source || 'ORCA GIS'}</p>
+                  <p style="margin: 2px 0;"><strong>Position:</strong> ${e.lngLat.lat.toFixed(4)}°N, ${e.lngLat.lng.toFixed(4)}°E</p>
+                  ${props.notice ? `<p style="margin: 4px 0 2px 0; color: #64748b; font-size: 10px;"><em>${props.notice}</em></p>` : ''}
+                </div>
+                <div style="margin-top: 8px;">
+                  <button style="background: ${badgeColor}; color: #fff; border: none; border-radius: 4px; padding: 4px 8px; font-size: 10px; font-weight: 600; cursor: pointer;" onclick="window.dispatchEvent(new CustomEvent('orca-select-coord', {detail: {latitude: ${e.lngLat.lat}, longitude: ${e.lngLat.lng}, label: '${props.name || title}'}}))">📍 Focus Here</button>
+                </div>
+              </div>
+            `)
+            .addTo(map)
+        }
+
+        map.on('click', 'orca-fill-marine', handlePolygonClick)
+        map.on('click', 'orca-fill-restricted', handlePolygonClick)
+        map.on('click', 'orca-fill-hazards', handlePolygonClick)
+        map.on('click', 'orca-fill-default', handlePolygonClick)
+
+        map.on('mouseenter', 'orca-fill-marine', () => { map.getCanvas().style.cursor = 'pointer' })
+        map.on('mouseleave', 'orca-fill-marine', () => { map.getCanvas().style.cursor = '' })
+        map.on('mouseenter', 'orca-fill-restricted', () => { map.getCanvas().style.cursor = 'pointer' })
+        map.on('mouseleave', 'orca-fill-restricted', () => { map.getCanvas().style.cursor = '' })
+        map.on('mouseenter', 'orca-fill-hazards', () => { map.getCanvas().style.cursor = 'pointer' })
+        map.on('mouseleave', 'orca-fill-hazards', () => { map.getCanvas().style.cursor = '' })
+        map.on('mouseenter', 'orca-fill-default', () => { map.getCanvas().style.cursor = 'pointer' })
+        map.on('mouseleave', 'orca-fill-default', () => { map.getCanvas().style.cursor = '' })
 
         map.on('click', 'orca-line', (e) => {
           const feature = e.features?.[0]
@@ -313,8 +449,18 @@ export default function MapCanvas({
       map.once('load', activateOverlay)
 
       map.on('click', (event) => {
-        const bbox = [[event.point.x - 4, event.point.y - 4], [event.point.x + 4, event.point.y + 4]]
-        const hits = map.queryRenderedFeatures(bbox, { layers: ['orca-line', 'orca-route-line', 'orca-fill'] })
+        const bbox = [[event.point.x - 6, event.point.y - 6], [event.point.x + 6, event.point.y + 6]]
+        const featureLayers = [
+          'orca-fill-hazards',
+          'orca-fill-restricted',
+          'orca-fill-marine',
+          'orca-fill-default',
+          'orca-line',
+          'orca-route-line',
+          'orca-point',
+        ].filter((id) => map.getLayer(id))
+
+        const hits = map.queryRenderedFeatures(bbox, { layers: featureLayers })
         if (hits.length > 0) {
           return
         }
@@ -332,8 +478,8 @@ export default function MapCanvas({
 
     return () => {
       window.clearTimeout(timeoutId)
-      pfzMarkersRef.current.forEach((m) => m.remove())
-      pfzMarkersRef.current = []
+      gisMarkersRef.current.forEach((m) => m.remove())
+      gisMarkersRef.current = []
       map?.remove()
       mapRef.current = null
     }
@@ -366,12 +512,25 @@ export default function MapCanvas({
     )
 
     const features = visibleLayers
-      .flatMap((layer) => layer.features)
-      .map((feature) => ({
-        type: 'Feature',
-        geometry: feature.geometry || feature,
-        properties: feature.properties || { id: feature.id, layer: feature.layer, source: feature.source, freshness_status: feature.freshness_status },
-      }))
+      .flatMap((layer) => {
+        const layerId = String(layer.id || '').toLowerCase()
+        return (layer.features || []).map((feature) => {
+          const geom = feature.geometry || feature
+          const props = {
+            id: feature.id || feature.source_identifier || 'GIS-feature',
+            name: feature.name || feature.properties?.name || feature.id || layer.name,
+            source: feature.source || feature.properties?.source || layer.source || 'ORCA GIS',
+            freshness_status: feature.freshness_status || feature.properties?.freshness_status || feature.source_status || 'live',
+            ...(feature.properties || {}),
+            layer: (feature.properties?.layer || feature.layer || layerId).toLowerCase(),
+          }
+          return {
+            type: 'Feature',
+            geometry: geom,
+            properties: props,
+          }
+        })
+      })
 
     /*
      * Add route to the same GeoJSON source.
@@ -388,60 +547,139 @@ export default function MapCanvas({
 
     map.getSource('orca-layers')?.setData(featureCollection(features))
 
-    map.getSource('orca-layers')?.setData(featureCollection(features))
-
     /*
-     * Remove existing PFZ DOM markers and create new interactive ones.
+     * Remove existing GIS & PFZ DOM markers and create new interactive ones.
      */
-    pfzMarkersRef.current.forEach((marker) => marker.remove())
-    pfzMarkersRef.current = []
+    gisMarkersRef.current.forEach((marker) => marker.remove())
+    gisMarkersRef.current = []
 
-    const pfzLayers = visibleLayers.filter((l) => String(l.id).toLowerCase() === 'pfz')
-    const pfzFeatures = pfzLayers.flatMap((l) => l.features)
+    visibleLayers.forEach((layer) => {
+      const layerId = String(layer.id || '').toLowerCase()
+      const layerFeatures = layer.features || []
 
-    pfzFeatures.forEach((feature) => {
-      const geometry = feature.geometry || feature
-      const repCoord = representativePoint(geometry)
-      if (!repCoord) return
+      layerFeatures.forEach((feature) => {
+        const geometry = feature.geometry || feature
+        const repCoord = representativePoint(geometry)
+        if (!repCoord) return
 
-      const el = document.createElement('div')
-      el.className = 'pfz-interactive-marker'
-      el.innerHTML = '<div class="pfz-marker-bubble"><span>🐟</span><strong>PFZ</strong></div>'
+        const props = feature.properties || {}
+        const name = props.name || feature.name || feature.id || layer.name
+        const dist = Number.isFinite(latitude) && Number.isFinite(longitude)
+          ? distanceKm(target, repCoord).toFixed(1)
+          : null
 
-      const dist = Number.isFinite(latitude) && Number.isFinite(longitude)
-        ? distanceKm(target, repCoord).toFixed(1)
-        : null
+        const el = document.createElement('div')
 
-      const props = feature.properties || {}
-      const popup = new Popup({ offset: 15, maxWidth: '280px' }).setHTML(`
-        <div style="font-family: system-ui, sans-serif; color: #0f172a; padding: 4px;">
-          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
-            <span style="font-size: 20px;">🐟</span>
-            <div>
-              <strong style="color: #0891b2; font-size: 13px; display: block;">Potential Fishing Zone</strong>
-              <small style="color: #64748b; font-size: 10px;">Official INCOIS Advisory</small>
+        if (layerId === 'hazards') {
+          el.className = 'gis-interactive-marker hazard-marker'
+          el.innerHTML = '<div class="gis-marker-bubble hazard-bubble"><span>⚠️</span><strong>HAZARD</strong></div>'
+
+          const popup = new Popup({ offset: 15, maxWidth: '290px' }).setHTML(`
+            <div style="font-family: system-ui, sans-serif; color: #0f172a; padding: 4px;">
+              <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                <span style="font-size: 20px;">⚠️</span>
+                <div>
+                  <strong style="color: #dc2626; font-size: 13px; display: block;">Marine Navigation Hazard</strong>
+                  <small style="color: #64748b; font-size: 10px;">${name}</small>
+                </div>
+              </div>
+              <div style="font-size: 11px; line-height: 1.5; border-top: 1px solid #e2e8f0; padding-top: 6px; color: #334155;">
+                <p style="margin: 2px 0;"><strong>Source:</strong> ${feature.source || props.source || 'ORCA GIS'}</p>
+                <p style="margin: 2px 0;"><strong>Coordinates:</strong> ${repCoord[1].toFixed(4)}°N, ${repCoord[0].toFixed(4)}°E</p>
+                ${dist ? `<p style="margin: 2px 0; color: #dc2626;"><strong>Distance:</strong> ${dist} km from center</p>` : ''}
+                ${props.notice ? `<p style="margin: 4px 0 2px 0; color: #64748b; font-size: 10px;"><em>${props.notice}</em></p>` : ''}
+              </div>
+              <div style="margin-top: 8px;">
+                <button style="background: #dc2626; color: #fff; border: none; border-radius: 4px; padding: 4px 8px; font-size: 10px; font-weight: 600; cursor: pointer;" onclick="window.dispatchEvent(new CustomEvent('orca-select-coord', {detail: {latitude: ${repCoord[1]}, longitude: ${repCoord[0]}, label: '${name}'}}))">📍 Focus Here</button>
+              </div>
             </div>
-          </div>
-          <div style="font-size: 11px; line-height: 1.5; border-top: 1px solid #e2e8f0; padding-top: 6px; color: #334155;">
-            <p style="margin: 2px 0;"><strong>Feature ID:</strong> ${feature.id || 'INCOIS-PFZ'}</p>
-            <p style="margin: 2px 0;"><strong>Source:</strong> ${feature.source || props.source || 'INCOIS'} (${feature.freshness_status || props.freshness_status || 'live'})</p>
-            <p style="margin: 2px 0;"><strong>Coordinates:</strong> ${repCoord[1].toFixed(4)}°N, ${repCoord[0].toFixed(4)}°E</p>
-            ${dist ? `<p style="margin: 2px 0; color: #0284c7;"><strong>Distance:</strong> ${dist} km from center</p>` : ''}
-            ${props.depth_m ? `<p style="margin: 2px 0;"><strong>Target Depth:</strong> ${props.depth_m} m</p>` : ''}
-            ${props.bearing_deg ? `<p style="margin: 2px 0;"><strong>Bearing:</strong> ${props.bearing_deg}°</p>` : ''}
-          </div>
-          <div style="margin-top: 8px;">
-            <button style="background: #0891b2; color: #fff; border: none; border-radius: 4px; padding: 4px 8px; font-size: 10px; font-weight: 600; cursor: pointer;" onclick="window.dispatchEvent(new CustomEvent('orca-select-coord', {detail: {latitude: ${repCoord[1]}, longitude: ${repCoord[0]}, label: 'PFZ: ${feature.id || 'Zone'}'}}))">📍 Focus Here</button>
-          </div>
-        </div>
-      `)
+          `)
+          const marker = new Marker({ element: el }).setLngLat(repCoord).setPopup(popup).addTo(map)
+          gisMarkersRef.current.push(marker)
 
-      const marker = new Marker({ element: el })
-        .setLngLat(repCoord)
-        .setPopup(popup)
-        .addTo(map)
+        } else if (layerId === 'restricted_zones') {
+          el.className = 'gis-interactive-marker restricted-marker'
+          el.innerHTML = '<div class="gis-marker-bubble restricted-bubble"><span>🚫</span><strong>RESTRICTED</strong></div>'
 
-      pfzMarkersRef.current.push(marker)
+          const popup = new Popup({ offset: 15, maxWidth: '290px' }).setHTML(`
+            <div style="font-family: system-ui, sans-serif; color: #0f172a; padding: 4px;">
+              <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                <span style="font-size: 20px;">🚫</span>
+                <div>
+                  <strong style="color: #d97706; font-size: 13px; display: block;">Restricted Maritime Zone</strong>
+                  <small style="color: #64748b; font-size: 10px;">${name}</small>
+                </div>
+              </div>
+              <div style="font-size: 11px; line-height: 1.5; border-top: 1px solid #e2e8f0; padding-top: 6px; color: #334155;">
+                <p style="margin: 2px 0;"><strong>Source:</strong> ${feature.source || props.source || 'ORCA GIS'}</p>
+                <p style="margin: 2px 0;"><strong>Coordinates:</strong> ${repCoord[1].toFixed(4)}°N, ${repCoord[0].toFixed(4)}°E</p>
+                ${dist ? `<p style="margin: 2px 0; color: #d97706;"><strong>Distance:</strong> ${dist} km from center</p>` : ''}
+                ${props.notice ? `<p style="margin: 4px 0 2px 0; color: #64748b; font-size: 10px;"><em>${props.notice}</em></p>` : ''}
+              </div>
+              <div style="margin-top: 8px;">
+                <button style="background: #d97706; color: #fff; border: none; border-radius: 4px; padding: 4px 8px; font-size: 10px; font-weight: 600; cursor: pointer;" onclick="window.dispatchEvent(new CustomEvent('orca-select-coord', {detail: {latitude: ${repCoord[1]}, longitude: ${repCoord[0]}, label: '${name}'}}))">📍 Focus Here</button>
+              </div>
+            </div>
+          `)
+          const marker = new Marker({ element: el }).setLngLat(repCoord).setPopup(popup).addTo(map)
+          gisMarkersRef.current.push(marker)
+
+        } else if (layerId === 'marine_areas') {
+          el.className = 'gis-interactive-marker marine-marker'
+          el.innerHTML = '<div class="gis-marker-bubble marine-bubble"><span>⚓</span><strong>MARINE ZONE</strong></div>'
+
+          const popup = new Popup({ offset: 15, maxWidth: '290px' }).setHTML(`
+            <div style="font-family: system-ui, sans-serif; color: #0f172a; padding: 4px;">
+              <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                <span style="font-size: 20px;">⚓</span>
+                <div>
+                  <strong style="color: #059669; font-size: 13px; display: block;">Marine Monitoring Area</strong>
+                  <small style="color: #64748b; font-size: 10px;">${name}</small>
+                </div>
+              </div>
+              <div style="font-size: 11px; line-height: 1.5; border-top: 1px solid #e2e8f0; padding-top: 6px; color: #334155;">
+                <p style="margin: 2px 0;"><strong>Source:</strong> ${feature.source || props.source || 'ORCA GIS'}</p>
+                <p style="margin: 2px 0;"><strong>Coordinates:</strong> ${repCoord[1].toFixed(4)}°N, ${repCoord[0].toFixed(4)}°E</p>
+                ${dist ? `<p style="margin: 2px 0; color: #059669;"><strong>Distance:</strong> ${dist} km from center</p>` : ''}
+              </div>
+              <div style="margin-top: 8px;">
+                <button style="background: #059669; color: #fff; border: none; border-radius: 4px; padding: 4px 8px; font-size: 10px; font-weight: 600; cursor: pointer;" onclick="window.dispatchEvent(new CustomEvent('orca-select-coord', {detail: {latitude: ${repCoord[1]}, longitude: ${repCoord[0]}, label: '${name}'}}))">📍 Focus Here</button>
+              </div>
+            </div>
+          `)
+          const marker = new Marker({ element: el }).setLngLat(repCoord).setPopup(popup).addTo(map)
+          gisMarkersRef.current.push(marker)
+
+        } else if (layerId === 'pfz') {
+          el.className = 'gis-interactive-marker pfz-marker'
+          el.innerHTML = '<div class="gis-marker-bubble pfz-bubble"><span>🐟</span><strong>PFZ</strong></div>'
+
+          const popup = new Popup({ offset: 15, maxWidth: '280px' }).setHTML(`
+            <div style="font-family: system-ui, sans-serif; color: #0f172a; padding: 4px;">
+              <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                <span style="font-size: 20px;">🐟</span>
+                <div>
+                  <strong style="color: #0891b2; font-size: 13px; display: block;">Potential Fishing Zone</strong>
+                  <small style="color: #64748b; font-size: 10px;">Official INCOIS Advisory</small>
+                </div>
+              </div>
+              <div style="font-size: 11px; line-height: 1.5; border-top: 1px solid #e2e8f0; padding-top: 6px; color: #334155;">
+                <p style="margin: 2px 0;"><strong>Feature ID:</strong> ${feature.id || 'INCOIS-PFZ'}</p>
+                <p style="margin: 2px 0;"><strong>Source:</strong> ${feature.source || props.source || 'INCOIS'} (${feature.freshness_status || props.freshness_status || 'live'})</p>
+                <p style="margin: 2px 0;"><strong>Coordinates:</strong> ${repCoord[1].toFixed(4)}°N, ${repCoord[0].toFixed(4)}°E</p>
+                ${dist ? `<p style="margin: 2px 0; color: #0284c7;"><strong>Distance:</strong> ${dist} km from center</p>` : ''}
+                ${props.depth_m ? `<p style="margin: 2px 0;"><strong>Target Depth:</strong> ${props.depth_m} m</p>` : ''}
+                ${props.bearing_deg ? `<p style="margin: 2px 0;"><strong>Bearing:</strong> ${props.bearing_deg}°</p>` : ''}
+              </div>
+              <div style="margin-top: 8px;">
+                <button style="background: #0891b2; color: #fff; border: none; border-radius: 4px; padding: 4px 8px; font-size: 10px; font-weight: 600; cursor: pointer;" onclick="window.dispatchEvent(new CustomEvent('orca-select-coord', {detail: {latitude: ${repCoord[1]}, longitude: ${repCoord[0]}, label: 'PFZ: ${feature.id || 'Zone'}'}}))">📍 Focus Here</button>
+              </div>
+            </div>
+          `)
+          const marker = new Marker({ element: el }).setLngLat(repCoord).setPopup(popup).addTo(map)
+          gisMarkersRef.current.push(marker)
+        }
+      })
     })
 
     /*
