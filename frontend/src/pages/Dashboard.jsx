@@ -10,6 +10,8 @@ import AlertSummary from '../components/dashboard/AlertSummary'
 import { dashboardLocations } from '../data/dashboardData'
 import { fetchLiveLocationData } from '../services/openMeteoService'
 import { useAuth } from '../hooks/useAuth'
+import LocationSelector from '../components/dashboard/LocationSelector'
+import { cacheActiveAlerts, markAlertAsRead } from '../services/alertService'
 
 const PREFERENCES_KEY = 'orca-dashboard-preferences'
 const defaults = {
@@ -63,6 +65,9 @@ export default function Dashboard({ navigate }) {
         const data = await fetchLiveLocationData(locationId)
         if (isMounted) {
           setLiveLocationData(data)
+          if (data?.alertsList) {
+            cacheActiveAlerts(data.alertsList)
+          }
           setIsLoading(false)
         }
       } catch {
@@ -119,28 +124,19 @@ export default function Dashboard({ navigate }) {
           </h1>
           <p className="font-sans">Integrated marine telemetry & spatial decision support overview.</p>
         </div>
-        <label className="location-select font-sans">
-          <span className="font-mono">MONITORING LOCATION</span>
-          <select
-            value={locationId}
-            onChange={(event) => selectLocation(event.target.value)}
-            aria-label="Select monitoring location"
-          >
-            {dashboardLocations.map((item) => (
-              <option value={item.id} key={item.id}>
-                📍 {item.name}
-              </option>
-            ))}
-          </select>
-          <small className="font-mono">{activeLocation.coordinates}</small>
-        </label>
+        <LocationSelector
+          locations={dashboardLocations}
+          selectedId={locationId}
+          onSelect={selectLocation}
+          coordinates={activeLocation.coordinates}
+        />
       </section>
 
       {/* Loading Indicator */}
       {isLoading && (
         <div style={{ padding: '0.75rem 1.25rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', background: '#0B2E49', color: '#22B9F2', borderRadius: '8px', border: '1px solid rgba(34, 185, 242, 0.3)' }}>
           <span style={{ display: 'inline-block', width: '10px', height: '10px', borderRadius: '50%', background: '#22B9F2', animation: 'pulse 1.5s infinite' }}></span>
-          <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>Loading live marine telemetry...</span>
+          <span style={{ fontWeight: 600, fontSize: 'var(--text-md, 14px)' }}>Loading live marine telemetry...</span>
         </div>
       )}
 
@@ -149,12 +145,12 @@ export default function Dashboard({ navigate }) {
         <div style={{ padding: '0.75rem 1.25rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#3D1518', color: '#FF7B7B', borderRadius: '8px', border: '1px solid rgba(255, 123, 123, 0.4)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <span>⚠️</span>
-            <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>Live telemetry unavailable</span>
+            <span style={{ fontWeight: 600, fontSize: 'var(--text-md, 14px)' }}>Live telemetry unavailable</span>
           </div>
           <button
             type="button"
             className="orca-btn"
-            style={{ padding: '0.35rem 0.85rem', fontSize: '0.8rem' }}
+            style={{ padding: '0.35rem 0.85rem', fontSize: 'var(--text-sm, 13px)', fontWeight: 600, lineHeight: 1.2 }}
             onClick={() => setRetryCount((c) => c + 1)}
           >
             Retry Connection
@@ -194,7 +190,10 @@ export default function Dashboard({ navigate }) {
           setExpandedAlert(null)
         }}
         expandedId={expandedAlert}
-        onToggleAlert={(id) => setExpandedAlert((current) => (current === id ? null : id))}
+        onToggleAlert={(id) => {
+          setExpandedAlert((current) => (current === id ? null : id))
+          markAlertAsRead(id)
+        }}
         onViewAlerts={() => navigate('/alerts')}
       />
 

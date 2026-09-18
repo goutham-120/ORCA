@@ -339,16 +339,16 @@ export default function MapCanvas({
                   <span style="font-size: 18px;">${icon}</span>
                   <div>
                     <strong style="color: ${badgeColor}; font-size: 13px; display: block;">${title}</strong>
-                    <small style="color: #64748b; font-size: 10px;">${props.name || props.id || 'GIS Feature'}</small>
+                    <small style="color: #64748b; font-size: 12px;">${props.name || props.id || 'GIS Feature'}</small>
                   </div>
                 </div>
-                <div style="font-size: 11px; line-height: 1.4; border-top: 1px solid #e2e8f0; padding-top: 5px; color: #334155;">
+                <div style="font-size: 12px; line-height: 1.4; border-top: 1px solid #e2e8f0; padding-top: 5px; color: #334155;">
                   <p style="margin: 2px 0;"><strong>Source:</strong> ${props.source || 'ORCA GIS'}</p>
                   <p style="margin: 2px 0;"><strong>Position:</strong> ${e.lngLat.lat.toFixed(4)}°N, ${e.lngLat.lng.toFixed(4)}°E</p>
-                  ${props.notice ? `<p style="margin: 4px 0 2px 0; color: #64748b; font-size: 10px;"><em>${props.notice}</em></p>` : ''}
+                  ${props.notice ? `<p style="margin: 4px 0 2px 0; color: #64748b; font-size: 12px;"><em>${props.notice}</em></p>` : ''}
                 </div>
                 <div style="margin-top: 8px;">
-                  <button style="background: ${badgeColor}; color: #fff; border: none; border-radius: 4px; padding: 4px 8px; font-size: 10px; font-weight: 600; cursor: pointer;" onclick="window.dispatchEvent(new CustomEvent('orca-select-coord', {detail: {latitude: ${e.lngLat.lat}, longitude: ${e.lngLat.lng}, label: '${props.name || title}'}}))">📍 Focus Here</button>
+                  <button style="background: ${badgeColor}; color: #fff; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; font-weight: 600; cursor: pointer;" onclick="window.dispatchEvent(new CustomEvent('orca-select-coord', {detail: {latitude: ${e.lngLat.lat}, longitude: ${e.lngLat.lng}, label: '${props.name || title}'}}))">📍 Focus Here</button>
                 </div>
               </div>
             `)
@@ -385,7 +385,7 @@ export default function MapCanvas({
                     ${isPFZ ? 'Potential Fishing Zone Track' : 'GIS Line Feature'}
                   </strong>
                 </div>
-                <div style="font-size: 11px; line-height: 1.4; color: #334155;">
+                <div style="font-size: 12px; line-height: 1.4; color: #334155;">
                   <p style="margin: 2px 0;"><strong>ID:</strong> ${props.id || 'PFZ Feature'}</p>
                   <p style="margin: 2px 0;"><strong>Source:</strong> ${props.source || 'INCOIS'} (${props.freshness_status || 'live'})</p>
                   <p style="margin: 2px 0;"><strong>Position:</strong> ${e.lngLat.lat.toFixed(4)}°N, ${e.lngLat.lng.toFixed(4)}°E</p>
@@ -405,7 +405,7 @@ export default function MapCanvas({
                   <span style="font-size: 16px;">🧭</span>
                   <strong style="color: #2563eb; font-size: 13px;">Calculated Navigation Route</strong>
                 </div>
-                <p style="margin: 2px 0; font-size: 11px; color: #334155;">Active computed marine voyage path between selected endpoints.</p>
+                <p style="margin: 2px 0; font-size: 12px; color: #334155;">Active computed marine voyage path between selected endpoints.</p>
               </div>
             `)
             .addTo(map)
@@ -580,17 +580,17 @@ export default function MapCanvas({
                 <span style="font-size: 20px;">⚠️</span>
                 <div>
                   <strong style="color: #dc2626; font-size: 13px; display: block;">Marine Navigation Hazard</strong>
-                  <small style="color: #64748b; font-size: 10px;">${name}</small>
+                  <small style="color: #64748b; font-size: 12px;">${name}</small>
                 </div>
               </div>
-              <div style="font-size: 11px; line-height: 1.5; border-top: 1px solid #e2e8f0; padding-top: 6px; color: #334155;">
+              <div style="font-size: 12px; line-height: 1.5; border-top: 1px solid #e2e8f0; padding-top: 6px; color: #334155;">
                 <p style="margin: 2px 0;"><strong>Source:</strong> ${feature.source || props.source || 'ORCA GIS'}</p>
                 <p style="margin: 2px 0;"><strong>Coordinates:</strong> ${repCoord[1].toFixed(4)}°N, ${repCoord[0].toFixed(4)}°E</p>
                 ${dist ? `<p style="margin: 2px 0; color: #dc2626;"><strong>Distance:</strong> ${dist} km from center</p>` : ''}
-                ${props.notice ? `<p style="margin: 4px 0 2px 0; color: #64748b; font-size: 10px;"><em>${props.notice}</em></p>` : ''}
+                ${props.notice ? `<p style="margin: 4px 0 2px 0; color: #64748b; font-size: 12px;"><em>${props.notice}</em></p>` : ''}
               </div>
               <div style="margin-top: 8px;">
-                <button style="background: #dc2626; color: #fff; border: none; border-radius: 4px; padding: 4px 8px; font-size: 10px; font-weight: 600; cursor: pointer;" onclick="window.dispatchEvent(new CustomEvent('orca-select-coord', {detail: {latitude: ${repCoord[1]}, longitude: ${repCoord[0]}, label: '${name}'}}))">📍 Focus Here</button>
+                <button style="background: #dc2626; color: #fff; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; font-weight: 600; cursor: pointer;" onclick="window.dispatchEvent(new CustomEvent('orca-select-coord', {detail: {latitude: ${repCoord[1]}, longitude: ${repCoord[0]}, label: '${name}'}}))">📍 Focus Here</button>
               </div>
             </div>
           `)
@@ -607,17 +607,17 @@ export default function MapCanvas({
                 <span style="font-size: 20px;">🚫</span>
                 <div>
                   <strong style="color: #d97706; font-size: 13px; display: block;">Restricted Maritime Zone</strong>
-                  <small style="color: #64748b; font-size: 10px;">${name}</small>
+                  <small style="color: #64748b; font-size: 12px;">${name}</small>
                 </div>
               </div>
-              <div style="font-size: 11px; line-height: 1.5; border-top: 1px solid #e2e8f0; padding-top: 6px; color: #334155;">
+              <div style="font-size: 12px; line-height: 1.5; border-top: 1px solid #e2e8f0; padding-top: 6px; color: #334155;">
                 <p style="margin: 2px 0;"><strong>Source:</strong> ${feature.source || props.source || 'ORCA GIS'}</p>
                 <p style="margin: 2px 0;"><strong>Coordinates:</strong> ${repCoord[1].toFixed(4)}°N, ${repCoord[0].toFixed(4)}°E</p>
                 ${dist ? `<p style="margin: 2px 0; color: #d97706;"><strong>Distance:</strong> ${dist} km from center</p>` : ''}
-                ${props.notice ? `<p style="margin: 4px 0 2px 0; color: #64748b; font-size: 10px;"><em>${props.notice}</em></p>` : ''}
+                ${props.notice ? `<p style="margin: 4px 0 2px 0; color: #64748b; font-size: 12px;"><em>${props.notice}</em></p>` : ''}
               </div>
               <div style="margin-top: 8px;">
-                <button style="background: #d97706; color: #fff; border: none; border-radius: 4px; padding: 4px 8px; font-size: 10px; font-weight: 600; cursor: pointer;" onclick="window.dispatchEvent(new CustomEvent('orca-select-coord', {detail: {latitude: ${repCoord[1]}, longitude: ${repCoord[0]}, label: '${name}'}}))">📍 Focus Here</button>
+                <button style="background: #d97706; color: #fff; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; font-weight: 600; cursor: pointer;" onclick="window.dispatchEvent(new CustomEvent('orca-select-coord', {detail: {latitude: ${repCoord[1]}, longitude: ${repCoord[0]}, label: '${name}'}}))">📍 Focus Here</button>
               </div>
             </div>
           `)
@@ -634,16 +634,16 @@ export default function MapCanvas({
                 <span style="font-size: 20px;">⚓</span>
                 <div>
                   <strong style="color: #059669; font-size: 13px; display: block;">Marine Monitoring Area</strong>
-                  <small style="color: #64748b; font-size: 10px;">${name}</small>
+                  <small style="color: #64748b; font-size: 12px;">${name}</small>
                 </div>
               </div>
-              <div style="font-size: 11px; line-height: 1.5; border-top: 1px solid #e2e8f0; padding-top: 6px; color: #334155;">
+              <div style="font-size: 12px; line-height: 1.5; border-top: 1px solid #e2e8f0; padding-top: 6px; color: #334155;">
                 <p style="margin: 2px 0;"><strong>Source:</strong> ${feature.source || props.source || 'ORCA GIS'}</p>
                 <p style="margin: 2px 0;"><strong>Coordinates:</strong> ${repCoord[1].toFixed(4)}°N, ${repCoord[0].toFixed(4)}°E</p>
                 ${dist ? `<p style="margin: 2px 0; color: #059669;"><strong>Distance:</strong> ${dist} km from center</p>` : ''}
               </div>
               <div style="margin-top: 8px;">
-                <button style="background: #059669; color: #fff; border: none; border-radius: 4px; padding: 4px 8px; font-size: 10px; font-weight: 600; cursor: pointer;" onclick="window.dispatchEvent(new CustomEvent('orca-select-coord', {detail: {latitude: ${repCoord[1]}, longitude: ${repCoord[0]}, label: '${name}'}}))">📍 Focus Here</button>
+                <button style="background: #059669; color: #fff; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; font-weight: 600; cursor: pointer;" onclick="window.dispatchEvent(new CustomEvent('orca-select-coord', {detail: {latitude: ${repCoord[1]}, longitude: ${repCoord[0]}, label: '${name}'}}))">📍 Focus Here</button>
               </div>
             </div>
           `)
@@ -660,10 +660,10 @@ export default function MapCanvas({
                 <span style="font-size: 20px;">🐟</span>
                 <div>
                   <strong style="color: #0891b2; font-size: 13px; display: block;">Potential Fishing Zone</strong>
-                  <small style="color: #64748b; font-size: 10px;">Official INCOIS Advisory</small>
+                  <small style="color: #64748b; font-size: 12px;">Official INCOIS Advisory</small>
                 </div>
               </div>
-              <div style="font-size: 11px; line-height: 1.5; border-top: 1px solid #e2e8f0; padding-top: 6px; color: #334155;">
+              <div style="font-size: 12px; line-height: 1.5; border-top: 1px solid #e2e8f0; padding-top: 6px; color: #334155;">
                 <p style="margin: 2px 0;"><strong>Feature ID:</strong> ${feature.id || 'INCOIS-PFZ'}</p>
                 <p style="margin: 2px 0;"><strong>Source:</strong> ${feature.source || props.source || 'INCOIS'} (${feature.freshness_status || props.freshness_status || 'live'})</p>
                 <p style="margin: 2px 0;"><strong>Coordinates:</strong> ${repCoord[1].toFixed(4)}°N, ${repCoord[0].toFixed(4)}°E</p>
@@ -672,7 +672,7 @@ export default function MapCanvas({
                 ${props.bearing_deg ? `<p style="margin: 2px 0;"><strong>Bearing:</strong> ${props.bearing_deg}°</p>` : ''}
               </div>
               <div style="margin-top: 8px;">
-                <button style="background: #0891b2; color: #fff; border: none; border-radius: 4px; padding: 4px 8px; font-size: 10px; font-weight: 600; cursor: pointer;" onclick="window.dispatchEvent(new CustomEvent('orca-select-coord', {detail: {latitude: ${repCoord[1]}, longitude: ${repCoord[0]}, label: 'PFZ: ${feature.id || 'Zone'}'}}))">📍 Focus Here</button>
+                <button style="background: #0891b2; color: #fff; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; font-weight: 600; cursor: pointer;" onclick="window.dispatchEvent(new CustomEvent('orca-select-coord', {detail: {latitude: ${repCoord[1]}, longitude: ${repCoord[0]}, label: 'PFZ: ${feature.id || 'Zone'}'}}))">📍 Focus Here</button>
               </div>
             </div>
           `)

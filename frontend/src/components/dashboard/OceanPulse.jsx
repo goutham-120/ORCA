@@ -28,7 +28,7 @@ export function OceanPulse({ location }) {
 
         <div className="live-status-badge">
           <span className="pulse-dot"></span>
-          <span className="live-text font-mono">● Live marine telemetry</span>
+          <span className="live-text font-mono">Live marine telemetry</span>
         </div>
       </div>
 
@@ -116,7 +116,7 @@ export function OceanPulse({ location }) {
             <span className="tile-label">Wind Direction</span>
           </div>
           <div className="tile-value-row">
-            <span className="tile-val font-mono" style={{ fontSize: '1.25rem' }}>{wind?.directionStr ?? 'NE'}</span>
+            <span className="tile-val font-mono">{wind?.directionStr ?? 'NE'}</span>
           </div>
           <div className="tile-footer">
             <span className="tile-status">{wind?.directionDeg ? `${wind.directionDeg}° bearing` : 'Compass'}</span>
