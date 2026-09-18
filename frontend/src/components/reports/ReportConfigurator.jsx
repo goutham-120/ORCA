@@ -97,10 +97,21 @@ export function ReportConfigurator({ initialTemplateId = 'daily', onGenerate, on
               onChange={(e) => setLocationId(e.target.value)}
               className="orca-select"
             >
-              {dashboardLocations.map((loc) => (
-                <option key={loc.id} value={loc.id}>
-                  📍 {loc.name} ({loc.region})
-                </option>
+              {Object.entries(
+                dashboardLocations.reduce((acc, loc) => {
+                  const st = loc.state || 'Other'
+                  if (!acc[st]) acc[st] = []
+                  acc[st].push(loc)
+                  return acc
+                }, {})
+              ).map(([stateName, locs]) => (
+                <optgroup key={stateName} label={stateName}>
+                  {locs.map((loc) => (
+                    <option key={loc.id} value={loc.id}>
+                      📍 {loc.name}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </select>
           </div>

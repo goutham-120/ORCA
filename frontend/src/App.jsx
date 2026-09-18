@@ -48,7 +48,6 @@ export default function App() {
   if (currentPath === '/login') return <Login navigate={navigate} />
   if (currentPath === '/register') return <Register navigate={navigate} />
   if (currentPath === '/') return <Home navigate={navigate} />
-  if (currentPath === '/map') return <MapExplorer navigate={navigate} />
   if (!user) return <Login navigate={navigate} />
 
   return (

@@ -4,10 +4,12 @@ export default function MapSearch({ locations, onSelectLocation }) {
   const [query, setQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
 
-  const matches = locations.filter(
+  const matches = (locations || []).filter(
     (loc) =>
-      loc.name.toLowerCase().includes(query.toLowerCase()) ||
-      loc.region.toLowerCase().includes(query.toLowerCase())
+      loc.name?.toLowerCase().includes(query.toLowerCase()) ||
+      loc.region?.toLowerCase().includes(query.toLowerCase()) ||
+      loc.state?.toLowerCase().includes(query.toLowerCase()) ||
+      loc.type?.toLowerCase().includes(query.toLowerCase())
   )
 
   const handleSelect = (id) => {

@@ -1,8 +1,22 @@
-export const LOCATION_COORDINATES = {
-  visakhapatnam: { id: 'visakhapatnam', name: 'Visakhapatnam', region: 'Andhra Pradesh, India', lat: 17.6868, lng: 83.2185, coordinatesStr: '17.6868 N · 83.2185 E', mapPosition: { x: 47, y: 43 } },
-  chennai: { id: 'chennai', name: 'Chennai', region: 'Tamil Nadu, India', lat: 13.0827, lng: 80.2707, coordinatesStr: '13.0827 N · 80.2707 E', mapPosition: { x: 38, y: 57 } },
-  mumbai: { id: 'mumbai', name: 'Mumbai', region: 'Maharashtra, India', lat: 19.0760, lng: 72.8777, coordinatesStr: '19.0760 N · 72.8777 E', mapPosition: { x: 61, y: 34 } }
-}
+import { COASTAL_LOCATIONS, COASTAL_LOCATIONS_MAP } from '../data/coastalLocations'
+
+export const LOCATION_COORDINATES = Object.fromEntries(
+  COASTAL_LOCATIONS.map((loc) => [
+    loc.id,
+    {
+      id: loc.id,
+      name: loc.name,
+      region: `${loc.state}, India`,
+      lat: loc.lat,
+      lng: loc.lng,
+      coordinatesStr: loc.coordinatesStr,
+      mapPosition: loc.mapPosition || { x: 50, y: 50 },
+      type: loc.type,
+      state: loc.state,
+      coast: loc.coast
+    }
+  ])
+)
 
 export function getWindCompassDirection(deg) {
   if (deg === undefined || deg === null) return 'N/A'

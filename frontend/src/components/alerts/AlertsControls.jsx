@@ -24,11 +24,22 @@ export default function AlertsControls({
               onChange={(e) => onSelectLocation(e.target.value)}
               aria-label="Filter alerts by location"
             >
-              <option value="all">📍 All Locations</option>
-              {dashboardLocations.map((loc) => (
-                <option key={loc.id} value={loc.id}>
-                  📍 {loc.name} ({loc.region})
-                </option>
+              <option value="all">📍 All Locations (84 Harbors)</option>
+              {Object.entries(
+                dashboardLocations.reduce((acc, loc) => {
+                  const st = loc.state || 'Other'
+                  if (!acc[st]) acc[st] = []
+                  acc[st].push(loc)
+                  return acc
+                }, {})
+              ).map(([stateName, locs]) => (
+                <optgroup key={stateName} label={stateName}>
+                  {locs.map((loc) => (
+                    <option key={loc.id} value={loc.id}>
+                      📍 {loc.name}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </select>
           </label>

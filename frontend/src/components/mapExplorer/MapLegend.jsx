@@ -6,8 +6,9 @@ const LAYER_META = {
   routes: { icon: '🧭', color: '#2563eb', bg: '#dbeafe', border: '#60a5fa', label: 'Navigation Route' },
 }
 
-export default function MapLegend({ layers, routeGeometry }) {
-  const active = layers.filter((layer) => layer.enabled)
+export default function MapLegend({ layers = [], routeGeometry }) {
+  const safeLayers = Array.isArray(layers) ? layers : []
+  const active = safeLayers.filter((layer) => layer && layer.enabled)
   return (
     <div className="map-legend-box panel">
       <div className="legend-header">
