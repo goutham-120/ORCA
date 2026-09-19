@@ -1,5 +1,10 @@
-import { useState, useEffect } from 'react'
-import orcaLogo from '../../assets/orcologo.jpeg'
+import { useState, useEffect, useRef } from 'react'
+import orcaLogo from '../../assets/orcalogo.png'
+
+const LANGUAGE_OPTIONS = [
+  { value: 'en', label: 'English (EN)' },
+  { value: 'hi', label: 'हिन्दी (HI MVP)' },
+]
 
 export default function ChatHeader({
   language,
@@ -10,6 +15,10 @@ export default function ChatHeader({
   isLocationOpen
 }) {
   const [systemOnline, setSystemOnline] = useState(true)
+  const [isLangOpen, setIsLangOpen] = useState(false)
+  const langRef = useRef(null)
+
+  const currentLang = LANGUAGE_OPTIONS.find((l) => l.value === language) || LANGUAGE_OPTIONS[0]
 
   useEffect(() => {
     const checkStatus = () => {
@@ -22,6 +31,29 @@ export default function ChatHeader({
       window.removeEventListener('offline', checkStatus)
     }
   }, [])
+
+  // Close dropdown on click outside or Escape
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (langRef.current && !langRef.current.contains(e.target)) {
+        setIsLangOpen(false)
+      }
+    }
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setIsLangOpen(false)
+      }
+    }
+
+    if (isLangOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener('keydown', handleKeyDown)
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isLangOpen])
 
   return (
     <header className="ask-orca-header-bar font-inter">
@@ -57,19 +89,67 @@ export default function ChatHeader({
           <span className="chevron">{isLocationOpen ? '▲' : '▼'}</span>
         </button>
 
-        {/* Language Selector */}
-        <label className="language-selector-wrap font-inter" title="Select response language">
-          <span className="lang-icon">🌐</span>
-          <select
-            value={language}
-            onChange={(e) => onLanguageChange(e.target.value)}
-            className="language-select font-inter"
-            aria-label="Select AI language"
+        {/* Clean & Natural Custom Language Dropdown */}
+        <div className="language-dropdown-container font-inter" ref={langRef}>
+          <button
+            type="button"
+            className={`language-dropdown-trigger font-inter ${isLangOpen ? 'is-open' : ''}`}
+            onClick={() => setIsLangOpen((prev) => !prev)}
+            aria-haspopup="listbox"
+            aria-expanded={isLangOpen}
+            title="Select response language"
           >
-            <option value="en">English (EN)</option>
-            <option value="hi">हिन्दी (HI MVP)</option>
-          </select>
-        </label>
+            <span className="lang-icon">🌐</span>
+            <span className="current-lang-text">{currentLang.label}</span>
+            <svg
+              className={`dropdown-chevron-svg ${isLangOpen ? 'rotated' : ''}`}
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+
+          {isLangOpen && (
+            <ul
+              className="custom-dropdown-menu font-inter"
+              role="listbox"
+              aria-label="Select response language"
+            >
+              {LANGUAGE_OPTIONS.map((option) => {
+                const isSelected = option.value === language
+                return (
+                  <li key={option.value} role="presentation">
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected={isSelected}
+                      className={`dropdown-item font-inter ${isSelected ? 'is-selected' : ''}`}
+                      onClick={() => {
+                        onLanguageChange(option.value)
+                        setIsLangOpen(false)
+                      }}
+                    >
+                      <span className="item-label">{option.label}</span>
+                      {isSelected && (
+                        <span className="dropdown-checkmark" aria-hidden="true">
+                          ✓
+                        </span>
+                      )}
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </div>
 
         {/* New Session Button */}
         <button

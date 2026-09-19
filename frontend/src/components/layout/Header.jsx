@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../hooks/useAuth'
+import orcaLogo from '../../assets/orcalogo.png'
 
 function formatNow(value) {
   return {
@@ -38,9 +39,8 @@ export default function Header({ navigate, onToggleSidebar, isSidebarOpen }) {
         </button>
 
         <div className="topbar-brand-indicator" onClick={() => navigate?.('/dashboard')} role="button" tabIndex={0}>
-          <span className="brand-pulse-dot" aria-hidden="true" />
+          <img src={orcaLogo} alt="ORCA Logo" className="topbar-brand-logo" />
           <strong className="topbar-brand-title font-sora">ORCA</strong>
-          <span className="topbar-brand-subhead font-mono">COMMAND CENTER</span>
         </div>
       </div>
 
