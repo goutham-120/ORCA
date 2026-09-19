@@ -23,7 +23,7 @@ class AssessmentResponse(BaseModel):
 class RecommendationResponse(BaseModel):
     action: str
     rationale: str
-    priority: Literal["low", "medium", "high", "urgent"] = "medium"
+    priority: Literal["low", "medium", "moderate", "high", "critical", "urgent", "advisory"] = "medium"
     confidence: float = Field(ge=0, le=1)
     next_steps: list[str] = Field(default_factory=list)
 

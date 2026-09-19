@@ -987,7 +987,7 @@
 .metric-chips-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
 }
 
 .metric-chip {
@@ -995,23 +995,56 @@
   flex-direction: column;
   background: #F7FBFC;
   border: 1px solid #DDEEF2;
-  border-radius: 6px;
-  padding: 4px 8px;
-  min-width: 80px;
+  border-radius: 8px;
+  padding: 6px 10px;
+  min-width: 110px;
+  flex: 1 1 calc(50% - 8px);
+  transition: all 0.2s ease;
+}
+
+.metric-chip.safe {
+  border-left: 3px solid #10b981;
+  background: #f0fdf4;
+}
+
+.metric-chip.moderate {
+  border-left: 3px solid #f59e0b;
+  background: #fffbeb;
+}
+
+.metric-chip.high {
+  border-left: 3px solid #ef4444;
+  background: #fef2f2;
+}
+
+.metric-chip.critical {
+  border-left: 3px solid #dc2626;
+  background: #fee2e2;
 }
 
 .metric-label {
   font-size: 9.5px;
   color: #64748b;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.4px;
 }
 
 .metric-value {
-  font-size: 12.5px;
+  font-size: 13.5px;
   color: #0f172a;
-  font-weight: 700;
+  font-weight: 800;
+  margin-top: 1px;
+}
+
+.metric-subtitle {
+  font-size: 11px;
+  color: #475569;
+  font-weight: 600;
+  line-height: 1.35;
+  margin-top: 3px;
+  padding-top: 3px;
+  border-top: 1px dashed rgba(58, 95, 110, 0.15);
 }
 
 .telemetry-text {
@@ -1137,14 +1170,14 @@
   display: flex;
   align-items: baseline;
   gap: 8px;
-  font-size: 13.5px;
+  font-size: 13px;
   color: #1e293b;
   font-weight: 500;
   line-height: 1.45;
 }
 
 .factor-bullet {
-  color: #d97706;
+  color: #0284c7;
   font-size: 11px;
   font-weight: 800;
   flex-shrink: 0;
@@ -1159,13 +1192,13 @@
   border: 1px solid #B7DCE4;
   border-radius: 10px;
   background: #F7FBFC;
-  padding: 12px 16px;
+  padding: 14px 18px;
   margin-bottom: 14px;
 }
 
 .response-supporting-details summary {
   color: #3A5F6E;
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 700;
   cursor: pointer;
   letter-spacing: 0.4px;
@@ -1263,13 +1296,37 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  margin-top: 10px;
 }
 
 .recommendation-item {
   background: #ffffff;
   border: 1px solid #B7DCE4;
-  border-radius: 8px;
-  padding: 12px 14px;
+  border-radius: 10px;
+  padding: 12px 16px;
+  box-shadow: 0 1px 4px rgba(58, 95, 110, 0.04);
+  transition: all 0.2s ease;
+}
+
+.recommendation-item.low {
+  border-left: 3px solid #10b981;
+}
+
+.recommendation-item.moderate {
+  border-left: 3px solid #f59e0b;
+}
+
+.recommendation-item.high {
+  border-left: 3px solid #ef4444;
+}
+
+.recommendation-item.critical {
+  border-left: 3px solid #dc2626;
+  background: #fff5f5;
+}
+
+.recommendation-item.advisory {
+  border-left: 3px solid #0284c7;
 }
 
 .rec-header {
@@ -1280,26 +1337,54 @@
 }
 
 .priority-badge {
-  font-size: 9px;
+  font-size: 9.5px;
   font-weight: 800;
-  padding: 2px 6px;
+  padding: 3px 8px;
   border-radius: 4px;
+  letter-spacing: 0.3px;
 }
 
 .priority-badge.high { color: #991b1b; background: #fee2e2; border: 1px solid #fca5a5; }
+.priority-badge.critical { color: #7f1d1d; background: #fecaca; border: 1px solid #f87171; }
+.priority-badge.moderate { color: #92400e; background: #fef3c7; border: 1px solid #fcd34d; }
+.priority-badge.low { color: #065f46; background: #ecfdf5; border: 1px solid #6ee7b7; }
+.priority-badge.advisory { color: #0369a1; background: #e0f2fe; border: 1px solid #7dd3fc; }
 .priority-badge.medium { color: #3A5F6E; background: #DDEEF2; border: 1px solid #B7DCE4; }
-.priority-badge.low { color: #065f46; background: #ecfdf5; border: 1px solid #a7f3d0; }
 
 .rec-action {
   color: #0f172a;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 700;
+  line-height: 1.4;
 }
 
 .rec-rationale {
   color: #475569;
   font-size: 12px;
+  line-height: 1.45;
   margin: 4px 0 0;
+}
+
+.rec-next-steps {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px dashed #E2EEF2;
+}
+
+.next-steps-tag {
+  font-size: 9.5px;
+  font-weight: 800;
+  color: #0284c7;
+  letter-spacing: 0.5px;
+}
+
+.next-steps-text {
+  font-size: 11.5px;
+  color: #334155;
+  font-weight: 500;
 }
 
 /* --------------------------------------------------------------------------

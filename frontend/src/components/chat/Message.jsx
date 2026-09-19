@@ -12,6 +12,60 @@ function renderMarkdownInline(text) {
   })
 }
 
+function enrichOceanMetric(label, value) {
+  const num = parseFloat(value)
+  if (label.toLowerCase().includes('wave height') && !isNaN(num)) {
+    if (num < 0.5) return { value: `${num} m`, subtitle: 'Calm / Smooth (Sea State 1-2 · Safe)', statusClass: 'safe' }
+    if (num < 1.25) return { value: `${num} m`, subtitle: 'Slight Sea (Sea State 3 · Safe for standard craft)', statusClass: 'safe' }
+    if (num < 2.2) return { value: `${num} m`, subtitle: 'Moderate Sea (Sea State 4 · Choppy / Caution for small craft)', statusClass: 'moderate' }
+    if (num < 3.5) return { value: `${num} m`, subtitle: 'Rough Sea (Sea State 5 · High wave hazard)', statusClass: 'high' }
+    return { value: `${num} m`, subtitle: 'Very Rough / High (Sea State 6+ · Severe danger)', statusClass: 'critical' }
+  }
+  if (label.toLowerCase().includes('wave period') && !isNaN(num)) {
+    if (num >= 12) return { value: `${num} s`, subtitle: 'Long-Period Swell (Heavy surf & breaker risk)', statusClass: 'moderate' }
+    if (num >= 10) return { value: `${num} s`, subtitle: 'Moderate Ocean Swell (Stable interval)', statusClass: 'safe' }
+    return { value: `${num} s`, subtitle: 'Standard Wind Chop (Normal interval)', statusClass: 'safe' }
+  }
+  if (label.toLowerCase().includes('temperature') && !isNaN(num)) {
+    return { value: `${num} °C`, subtitle: num >= 28 ? 'Tropical Warm Water' : 'Temperate Water', statusClass: 'safe' }
+  }
+  return { value, subtitle: '', statusClass: 'neutral' }
+}
+
+function enrichWeatherMetric(label, value) {
+  const num = parseFloat(value)
+  if (label.toLowerCase().includes('wind') && !isNaN(num)) {
+    const kts = Math.round(num * 1.94384 * 10) / 10
+    if (num < 5.5) return { value: `${num} m/s (${kts} kts)`, subtitle: 'Light/Gentle Breeze (Beaufort 2-3 · Ideal)', statusClass: 'safe' }
+    if (num < 8.0) return { value: `${num} m/s (${kts} kts)`, subtitle: 'Moderate Breeze (Beaufort 4 · Small waves)', statusClass: 'safe' }
+    if (num < 10.8) return { value: `${num} m/s (${kts} kts)`, subtitle: 'Fresh Breeze (Beaufort 5 · Small craft caution)', statusClass: 'moderate' }
+    if (num < 13.9) return { value: `${num} m/s (${kts} kts)`, subtitle: 'Strong Breeze (Beaufort 6 · Large waves)', statusClass: 'high' }
+    if (num < 17.2) return { value: `${num} m/s (${kts} kts)`, subtitle: 'Near Gale (Beaufort 7 · High wind hazard)', statusClass: 'high' }
+    return { value: `${num} m/s (${kts} kts)`, subtitle: 'Gale Force (Beaufort 8+ · Severe gale warning)', statusClass: 'critical' }
+  }
+  if (label.toLowerCase().includes('condition')) {
+    const str = String(value).toLowerCase()
+    if (str.includes('thunderstorm') || str.includes('squall')) {
+      return { value, subtitle: 'Convective Storm (Sudden gusts & lightning hazard)', statusClass: 'high' }
+    }
+    if (str.includes('heavy rain') || str.includes('violent')) {
+      return { value, subtitle: 'Heavy Precipitation (Poor navigational visibility)', statusClass: 'high' }
+    }
+    if (str.includes('fog')) {
+      return { value, subtitle: 'Dense Fog (Restricted visibility)', statusClass: 'moderate' }
+    }
+    if (str.includes('clear') || str.includes('cloudy')) {
+      return { value, subtitle: 'Good Navigational Visibility', statusClass: 'safe' }
+    }
+  }
+  if (label.toLowerCase().includes('precipitation') && !isNaN(num)) {
+    if (num >= 20) return { value: `${num} mm`, subtitle: 'Heavy Rainfall (Severe visibility reduction)', statusClass: 'high' }
+    if (num >= 5) return { value: `${num} mm`, subtitle: 'Moderate Rainfall', statusClass: 'moderate' }
+    return { value: `${num} mm`, subtitle: num === 0 ? 'No Precipitation' : 'Light Precipitation', statusClass: 'safe' }
+  }
+  return { value, subtitle: '', statusClass: 'neutral' }
+}
+
 function parseOrcaAnswer(rawText) {
   if (!rawText) return { summary: '', sections: [], remaining: '', hasStructuredEvidence: false }
 
@@ -36,16 +90,20 @@ function parseOrcaAnswer(rawText) {
     const metrics = rawMetrics.map((item) => {
       const match = item.match(/^(wave height|wave period|sea-surface temperature|sea surface temperature)\s+(.*)$/i)
       if (match) {
+        const label = match[1].replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+        const enriched = enrichOceanMetric(label, match[2])
         return {
-          label: match[1].replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
-          value: match[2]
+          label,
+          value: enriched.value,
+          subtitle: enriched.subtitle,
+          statusClass: enriched.statusClass,
         }
       }
-      return { label: 'Metric', value: item }
+      return { label: 'Metric', value: item, subtitle: '', statusClass: 'neutral' }
     })
     sections.push({
       id: 'ocean',
-      title: 'Ocean Conditions',
+      title: 'Ocean Conditions & Sea State',
       icon: '🌊',
       metrics,
       raw: oceanMatch[1]
@@ -59,16 +117,20 @@ function parseOrcaAnswer(rawText) {
     const metrics = rawMetrics.map((item) => {
       const match = item.match(/^(condition|wind|precipitation|air temperature)\s+(.*)$/i)
       if (match) {
+        const label = match[1].replace(/\b\w/g, (c) => c.toUpperCase())
+        const enriched = enrichWeatherMetric(label, match[2])
         return {
-          label: match[1].replace(/\b\w/g, (c) => c.toUpperCase()),
-          value: match[2]
+          label,
+          value: enriched.value,
+          subtitle: enriched.subtitle,
+          statusClass: enriched.statusClass,
         }
       }
-      return { label: 'Metric', value: item }
+      return { label: 'Metric', value: item, subtitle: '', statusClass: 'neutral' }
     })
     sections.push({
       id: 'weather',
-      title: 'Weather Conditions',
+      title: 'Atmospheric & Wind Conditions',
       icon: '⛅',
       metrics,
       raw: weatherMatch[1]
@@ -92,7 +154,7 @@ function parseOrcaAnswer(rawText) {
   if (decisionMatch) {
     sections.push({
       id: 'decision',
-      title: 'Decision Intelligence',
+      title: 'Operational Intelligence',
       icon: '🧠',
       text: decisionMatch[1].trim(),
       raw: decisionMatch[1]
@@ -105,7 +167,7 @@ function parseOrcaAnswer(rawText) {
     const factors = riskMatch[1].split(';').map((s) => s.trim()).filter(Boolean)
     sections.push({
       id: 'risk_factors',
-      title: 'Risk Concerns',
+      title: 'Risk Concerns & Hazards',
       icon: '⚠️',
       items: factors,
       raw: riskMatch[1]
@@ -206,7 +268,15 @@ export default function Message({ message }) {
 
   const assessment = response?.assessment
   const decision = response?.decision
-  const level = decision?.risk_level || assessment?.level
+
+  // Take the highest risk rank between assessment and decision
+  const riskRanks = { critical: 4, high: 3, moderate: 2, low: 1, unknown: 0 }
+  const assessmentLevel = assessment?.level || 'unknown'
+  const decisionLevel = decision?.risk_level && decision.risk_level !== 'unavailable' ? decision.risk_level : 'unknown'
+  const level = (riskRanks[assessmentLevel] || 0) >= (riskRanks[decisionLevel] || 0)
+    ? assessmentLevel
+    : decisionLevel
+
   const isPFZDiscovery = response?.context?.decision_type === 'pfz' && decision?.status === 'available' && decision?.features?.length > 0 && decision?.suitability === 'unavailable'
   const isFishingSuitability = Boolean(decision?.suitability && decision?.suitability !== 'unavailable')
   const levelBadgeClass = level === 'low' ? 'low' : level === 'moderate' ? 'moderate' : level === 'high' ? 'high' : level === 'critical' ? 'critical' : 'unknown'
@@ -235,6 +305,16 @@ export default function Message({ message }) {
     const path = `/map?latitude=${lat}&longitude=${lon}&label=${label}${isPFZMode ? '&layer=pfz' : ''}`
     window.history.pushState({}, '', path)
     window.dispatchEvent(new PopStateEvent('popstate'))
+  }
+
+  const getPriorityDisplay = (priority) => {
+    const p = (priority || 'medium').toLowerCase()
+    if (p === 'low' || p === 'routine') return { label: '✓ ROUTINE', class: 'low' }
+    if (p === 'moderate' || p === 'caution') return { label: '⚠️ CAUTION', class: 'moderate' }
+    if (p === 'high') return { label: '🚨 HIGH ALERT', class: 'high' }
+    if (p === 'critical' || p === 'urgent') return { label: '🛑 URGENT', class: 'critical' }
+    if (p === 'advisory') return { label: 'ℹ️ ADVISORY', class: 'advisory' }
+    return { label: p.toUpperCase(), class: 'medium' }
   }
 
   return (
@@ -294,14 +374,14 @@ export default function Message({ message }) {
                   <span className="reason-btn-icon">🧠</span>
                   <span>Reason & Breakdown</span>
                 </span>
-                <span className="reason-btn-chevron">{showReason ? '▲ Hide Reason' : '▼ Reason'}</span>
+                <span className="reason-btn-chevron">{showReason ? '▲ Hide Details' : '▼ View Sea State & Reasoning'}</span>
               </button>
             </div>
           </section>
         )}
 
         {/* 3. REASON BREAKDOWN SECTION (UNDER RISK BOX) */}
-        {showReason && isSpecialized && parsed.hasStructuredEvidence && (
+        {showReason && isSpecialized && (
           <div className="structured-reason-container font-sans">
             {parsed.summary && (
               <div className="reason-verdict-banner">
@@ -311,44 +391,62 @@ export default function Message({ message }) {
             )}
 
             {/* Structured Telemetry & Domain Grid */}
-            <div className="evidence-domain-grid">
-              {parsed.sections.map((sec) => (
-                <div key={sec.id} className={`domain-telemetry-card ${sec.id}`}>
-                  <div className="telemetry-card-header">
-                    <span className="telemetry-title">
-                      <span className="telemetry-icon">{sec.icon}</span>
-                      <strong>{sec.title}</strong>
-                    </span>
-                  </div>
-
-                  {sec.metrics && (
-                    <div className="metric-chips-row">
-                      {sec.metrics.map((m, mIdx) => (
-                        <div key={mIdx} className="metric-chip">
-                          <span className="metric-label">{m.label}</span>
-                          <span className="metric-value font-mono">{m.value}</span>
-                        </div>
-                      ))}
+            {parsed.sections.length > 0 && (
+              <div className="evidence-domain-grid">
+                {parsed.sections.map((sec) => (
+                  <div key={sec.id} className={`domain-telemetry-card ${sec.id}`}>
+                    <div className="telemetry-card-header">
+                      <span className="telemetry-title">
+                        <span className="telemetry-icon">{sec.icon}</span>
+                        <strong>{sec.title}</strong>
+                      </span>
                     </div>
-                  )}
 
-                  {sec.text && (
-                    <p className="telemetry-text font-sans">{sec.text}</p>
-                  )}
+                    {sec.metrics && (
+                      <div className="metric-chips-row">
+                        {sec.metrics.map((m, mIdx) => (
+                          <div key={mIdx} className={`metric-chip ${m.statusClass || ''}`}>
+                            <span className="metric-label">{m.label}</span>
+                            <span className="metric-value font-mono">{m.value}</span>
+                            {m.subtitle && <span className="metric-subtitle">{m.subtitle}</span>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
-                  {sec.items && (
-                    <ul className="telemetry-bullet-list">
-                      {sec.items.map((item, iIdx) => (
-                        <li key={iIdx} className="telemetry-bullet-item">
-                          <span className="bullet-dot">▸</span>
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              ))}
-            </div>
+                    {sec.text && (
+                      <p className="telemetry-text font-sans">{sec.text}</p>
+                    )}
+
+                    {sec.items && (
+                      <ul className="telemetry-bullet-list">
+                        {sec.items.map((item, iIdx) => (
+                          <li key={iIdx} className="telemetry-bullet-item">
+                            <span className="bullet-dot">▸</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Key Contributing Observation Factors */}
+            {factors.length > 0 && (
+              <div className="factors-breakdown-card font-sans">
+                <span className="factors-header-tag font-mono">KEY OBSERVED MARITIME PARAMETERS</span>
+                <ul className="factors-list">
+                  {factors.map((factor, index) => (
+                    <li key={index} className="factor-row">
+                      <span className="factor-bullet">▸</span>
+                      <span className="factor-text">{factor}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {/* Remaining notes if any */}
             {parsed.remaining && (
@@ -366,40 +464,39 @@ export default function Message({ message }) {
           </div>
         )}
 
-        {/* Key Contributing Observation Factors */}
-        {factors.length > 0 && showReason && (
-          <div className="factors-breakdown-card font-sans">
-            <span className="factors-header-tag font-mono">KEY OBSERVED FACTORS</span>
-            <ul className="factors-list">
-              {factors.map((factor, index) => (
-                <li key={index} className="factor-row">
-                  <span className="factor-bullet">▸</span>
-                  <span className="factor-text">{factor}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
         {/* 4. SUPPORTING RECOMMENDATIONS & WARNINGS */}
         {(recommendations.length > 0 || hasLimitations) && (
-          <details className="response-supporting-details font-sans">
-            <summary className="font-mono">Action recommendations & operational warnings ({recommendations.length})</summary>
-            {hasLimitations && <p className="supporting-note font-sans">Some location-specific evidence is incomplete, so this response should not be treated as a complete safety clearance.</p>}
-            {decision?.warnings?.map((warning, index) => <p key={index} className="supporting-note font-sans">⚠️ {warning}</p>)}
+          <details className="response-supporting-details font-sans" open={level === 'high' || level === 'critical'}>
+            <summary className="font-mono">
+              Action recommendations & operational warnings ({recommendations.length})
+            </summary>
+            {hasLimitations && (
+              <p className="supporting-note font-sans">
+                ⚠️ Some location-specific evidence is incomplete; this response should not be treated as a complete safety clearance.
+              </p>
+            )}
+            {decision?.warnings?.map((warning, index) => (
+              <p key={index} className="supporting-note font-sans">⚠️ {warning}</p>
+            ))}
             {recommendations.length > 0 && (
               <div className="recommendations-list font-sans">
                 {recommendations.map((item, index) => {
-                  const priorityClass = item.priority || 'medium'
+                  const prio = getPriorityDisplay(item.priority)
                   return (
-                    <div key={index} className="recommendation-item font-sans">
+                    <div key={index} className={`recommendation-item font-sans ${prio.class}`}>
                       <div className="rec-header">
-                        <span className={`priority-badge font-mono ${priorityClass}`}>
-                          {priorityClass.toUpperCase()}
+                        <span className={`priority-badge font-mono ${prio.class}`}>
+                          {prio.label}
                         </span>
                         <strong className="rec-action font-sans">{item.action}</strong>
                       </div>
                       {item.rationale && <p className="rec-rationale font-sans">{item.rationale}</p>}
+                      {item.next_steps && item.next_steps.length > 0 && (
+                        <div className="rec-next-steps">
+                          <span className="next-steps-tag font-mono">NEXT STEPS:</span>
+                          <span className="next-steps-text font-sans">{item.next_steps.join('  •  ')}</span>
+                        </div>
+                      )}
                     </div>
                   )
                 })}

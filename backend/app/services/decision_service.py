@@ -37,23 +37,47 @@ class DecisionService:
     async def safety(self, location: dict[str, Any], at: datetime | None = None) -> dict[str, Any]:
         weather, ocean = await self._conditions(location, at)
         factors, evidence, missing, levels = [], [], [], []
-        wave = (ocean.get("observation") or {}).get("wave_height_m")
+        ocean_obs = ocean.get("observation") if isinstance(ocean.get("observation"), Mapping) else {}
+        weather_obs = weather.get("observation") if isinstance(weather.get("observation"), Mapping) else {}
+
+        wave = ocean_obs.get("wave_height_m")
         if isinstance(wave, (int, float)):
             level = "critical" if wave >= 4 else "high" if wave >= 2.5 else "moderate" if wave >= 1.5 else "low"
             levels.append(level); factors.append(f"Wave height {wave:g} m is {level} under ORCA operational thresholds.")
             evidence.append(self._evidence(ocean, "wave_height", location, "wave_height_m", "m"))
         else: missing.append("wave height")
-        wind = (weather.get("observation") or {}).get("wind_speed_mps")
+
+        period = ocean_obs.get("wave_period_s")
+        if isinstance(period, (int, float)):
+            if period >= 12:
+                levels.append("moderate")
+                factors.append(f"Long-period swell ({period:g} s) introduces shoaling risk.")
+            evidence.append(self._evidence(ocean, "wave_period", location, "wave_period_s", "s"))
+
+        wind = weather_obs.get("wind_speed_mps")
         if isinstance(wind, (int, float)):
             level = "critical" if wind >= 20.8 else "high" if wind >= 13.9 else "moderate" if wind >= 8 else "low"
             levels.append(level); factors.append(f"Wind speed {wind:g} m/s is {level} under ORCA operational thresholds.")
             evidence.append(self._evidence(weather, "wind_speed", location, "wind_speed_mps", "m/s"))
         else: missing.append("wind")
-        rain = (weather.get("observation") or {}).get("precipitation_mm")
+
+        rain = weather_obs.get("precipitation_mm")
         if isinstance(rain, (int, float)):
             level = "high" if rain >= 20 else "moderate" if rain >= 5 else "low"; levels.append(level)
             evidence.append(self._evidence(weather, "precipitation", location, "precipitation_mm", "mm"))
         else: missing.append("precipitation")
+
+        condition = str(weather_obs.get("condition") or "").lower()
+        if "thunderstorm" in condition or "squall" in condition:
+            levels.append("high")
+            factors.append(f"Weather condition ({weather_obs.get('condition')}) presents high hazard.")
+        elif "heavy rain" in condition or "violent rain" in condition:
+            levels.append("high")
+            factors.append(f"Weather condition ({weather_obs.get('condition')}) causes severe visibility loss.")
+        elif "fog" in condition:
+            levels.append("moderate")
+            factors.append(f"Foggy conditions reduce navigational visibility.")
+
         evidence = [item for item in evidence if item]
         status = "available" if not missing else "partial" if evidence else "unavailable"
         risk = max(levels, key=lambda v: _ORDER[v]) if levels else "unavailable"

@@ -263,8 +263,9 @@ class PFZDiscoveryService:
             obs = res.get("observation") or {}
             wind = obs.get("wind_speed_mps")
             rain = obs.get("precipitation_mm")
+            condition = str(obs.get("condition") or "").lower()
 
-            if wind is None and rain is None:
+            if wind is None and rain is None and not condition:
                 return {"status": "unavailable", "summary": "Weather telemetry data unavailable."}
 
             issues = []
@@ -272,6 +273,8 @@ class PFZDiscoveryService:
                 issues.append(f"High wind speed ({wind:g} m/s)")
             if isinstance(rain, (int, float)) and rain >= 20.0:
                 issues.append(f"Heavy precipitation ({rain:g} mm)")
+            if "thunderstorm" in condition or "squall" in condition:
+                issues.append(f"Convective activity ({obs.get('condition')})")
 
             if issues:
                 return {"status": "unsuitable", "summary": "Weather unfavorable: " + ", ".join(issues)}
