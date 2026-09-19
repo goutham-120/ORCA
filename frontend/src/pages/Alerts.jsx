@@ -6,6 +6,7 @@ import AlertCard from '../components/alerts/AlertCard'
 import AlertTimeline from '../components/alerts/AlertTimeline'
 import { dashboardLocations } from '../data/dashboardData'
 import { fetchLiveLocationData, LOCATION_COORDINATES } from '../services/openMeteoService'
+import { broadcastAlertsUpdated, cacheActiveAlerts } from '../services/alertService'
 
 const READ_KEY = 'orca-alerts-read'
 const FILTER_KEY = 'orca-alerts-filter'
@@ -112,6 +113,7 @@ export default function Alerts({ navigate }) {
   useEffect(() => {
     try {
       localStorage.setItem(READ_KEY, JSON.stringify(Array.from(readAlertIds)))
+      broadcastAlertsUpdated()
     } catch {
       // Ignore quota errors
     }
@@ -160,6 +162,13 @@ export default function Alerts({ navigate }) {
     })
     return allAlerts
   }, [selectedLocationId, liveLocationMap])
+
+  // Cache alerts whenever live location alerts update
+  useEffect(() => {
+    if (rawLocationAlerts.length > 0) {
+      cacheActiveAlerts(rawLocationAlerts)
+    }
+  }, [rawLocationAlerts])
 
   // Location display title
   const locationName = useMemo(() => {

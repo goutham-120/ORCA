@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getAllAlerts } from '../../data/dashboardData'
+import { calculateCurrentUnreadCount, ALERTS_UPDATED_EVENT } from '../../services/alertService'
 import orcaLogo from '../../assets/orcologo.jpeg'
 
 const DashboardIcon = () => (
@@ -69,38 +69,69 @@ const mainNavigation = [
   ['reports', 'Reports', ReportsIcon],
 ]
 
-export default function Sidebar({ path, navigate, onLogout }) {
-  const [unreadCount, setUnreadCount] = useState(0)
+export default function Sidebar({ path, navigate, onLogout, isOpen, onClose }) {
+  const [unreadCount, setUnreadCount] = useState(() => calculateCurrentUnreadCount())
 
   useEffect(() => {
     const updateCount = () => {
-      const allAlerts = getAllAlerts()
-      try {
-        const stored = localStorage.getItem('orca-alerts-read')
-        const readIds = stored ? JSON.parse(stored) : []
-        const unread = allAlerts.filter((a) => !readIds.includes(a.id)).length
-        setUnreadCount(unread)
-      } catch {
-        setUnreadCount(allAlerts.length)
-      }
+      setUnreadCount(calculateCurrentUnreadCount())
     }
+
     updateCount()
     window.addEventListener('storage', updateCount)
-    return () => window.removeEventListener('storage', updateCount)
+    window.addEventListener(ALERTS_UPDATED_EVENT, updateCount)
+
+    return () => {
+      window.removeEventListener('storage', updateCount)
+      window.removeEventListener(ALERTS_UPDATED_EVENT, updateCount)
+    }
   }, [path])
 
+  const handleNavClick = (slug) => {
+    navigate(`/${slug}`)
+    onClose?.()
+  }
+
   return (
-    <aside className="sidebar font-inter">
-      {/* Brand Header */}
-      <button className="brand font-sora" onClick={() => navigate('/dashboard')} type="button" aria-label="Go to Dashboard">
-        <div className="brand-logo-badge">
-          <img src={orcaLogo} alt="ORCA Logo" className="brand-logo-img" />
-        </div>
-        <div className="brand-titles">
-          <strong className="brand-name font-sora">ORCA</strong>
-          <small className="brand-subhead font-inter">MARINE INTELLIGENCE</small>
-        </div>
-      </button>
+    <aside
+      className={`sidebar font-inter ${isOpen ? 'is-open' : 'is-closed'}`}
+      aria-label="Sidebar Navigation"
+      aria-hidden={!isOpen}
+    >
+      {/* Brand Header Row with 3-Line Menu Close/Toggle Button */}
+      <div className="sidebar-brand-row">
+        <button
+          className="brand font-sora"
+          onClick={() => {
+            navigate('/dashboard')
+            onClose?.()
+          }}
+          type="button"
+          aria-label="Go to Dashboard"
+        >
+          <div className="brand-logo-badge">
+            <img src={orcaLogo} alt="ORCA Logo" className="brand-logo-img" />
+          </div>
+          <div className="brand-titles">
+            <strong className="brand-name font-sora">ORCA</strong>
+            <small className="brand-subhead font-inter">MARINE INTELLIGENCE</small>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          className="sidebar-close-toggle-btn"
+          onClick={onClose}
+          aria-label="Close sidebar navigation menu"
+          title="Close menu"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="4" y1="6" x2="20" y2="6" />
+            <line x1="4" y1="12" x2="20" y2="12" />
+            <line x1="4" y1="18" x2="20" y2="18" />
+          </svg>
+        </button>
+      </div>
 
       {/* Main Navigation Section */}
       <div className="sidebar-nav-section">
@@ -113,11 +144,15 @@ export default function Sidebar({ path, navigate, onLogout }) {
                 key={slug}
                 type="button"
                 className={`nav-item font-inter ${isActive ? 'active' : ''}`}
-                onClick={() => navigate(`/${slug}`)}
+                onClick={() => handleNavClick(slug)}
               >
                 <span className="nav-icon"><Icon /></span>
                 <span className="nav-label">{label}</span>
-                {slug === 'alerts' && unreadCount > 0 && <b className="unread-badge font-inter">{unreadCount}</b>}
+                {slug === 'alerts' && unreadCount > 0 && (
+                  <b className="unread-badge font-inter" title={`${unreadCount} unread alerts`}>
+                    {unreadCount}
+                  </b>
+                )}
               </button>
             )
           })}
@@ -129,7 +164,14 @@ export default function Sidebar({ path, navigate, onLogout }) {
 
       {/* Sidebar Footer with Logout Button */}
       <div className="sidebar-footer font-inter">
-        <button className="nav-item logout font-inter" onClick={onLogout} type="button">
+        <button
+          className="nav-item logout font-inter"
+          onClick={() => {
+            onLogout()
+            onClose?.()
+          }}
+          type="button"
+        >
           <span className="nav-icon"><LogoutIcon /></span>
           <span>Log out</span>
         </button>
