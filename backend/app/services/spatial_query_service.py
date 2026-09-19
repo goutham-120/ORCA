@@ -85,6 +85,15 @@ def _distance_to_geojson_km(latitude: float, longitude: float, geometry: Mapping
     kind = geometry.get("type")
     if kind == "Point" and _coordinate(coordinates):
         return _point_distance_km(latitude, longitude, _coordinate(coordinates))
+    
+    if kind == "Polygon" and coordinates:
+        if _is_point_in_polygon_coords(longitude, latitude, coordinates):
+            return 0.0
+    elif kind == "MultiPolygon" and coordinates:
+        for poly_coords in coordinates:
+            if _is_point_in_polygon_coords(longitude, latitude, poly_coords):
+                return 0.0
+
     lines = _lines(kind, coordinates)
     if not lines:
         return None
@@ -93,6 +102,38 @@ def _distance_to_geojson_km(latitude: float, longitude: float, geometry: Mapping
         for line in lines
         for first, second in zip(line, line[1:])
     )
+
+
+def _is_point_in_ring(px: float, py: float, ring: list[tuple[float, float]]) -> bool:
+    n = len(ring)
+    if n < 3:
+        return False
+    inside = False
+    p1x, p1y = ring[0]
+    for i in range(n + 1):
+        p2x, p2y = ring[i % n]
+        if py > min(p1y, p2y):
+            if py <= max(p1y, p2y):
+                if px <= max(p1x, p2x):
+                    if p1y != p2y:
+                        xinters = (py - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
+                    if p1x == p2x or px <= xinters:
+                        inside = not inside
+        p1x, p1y = p2x, p2y
+    return inside
+
+
+def _is_point_in_polygon_coords(px: float, py: float, poly_coords: Any) -> bool:
+    if not poly_coords or not isinstance(poly_coords, (list, tuple)):
+        return False
+    exterior = _coordinates(poly_coords[0])
+    if not _is_point_in_ring(px, py, exterior):
+        return False
+    for hole_raw in poly_coords[1:]:
+        hole = _coordinates(hole_raw)
+        if _is_point_in_ring(px, py, hole):
+            return False
+    return True
 
 
 def _lines(kind: Any, coordinates: Any) -> list[list[tuple[float, float]]]:

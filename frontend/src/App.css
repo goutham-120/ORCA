@@ -2099,6 +2099,59 @@
   box-shadow: 0 0 10px rgba(6, 182, 212, 0.2);
 }
 
+.pfz-discovery-section {
+  padding: 18px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+}
+
+.pfz-controls-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.radius-control-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 260px;
+}
+
+.radius-control-wrap label {
+  font-size: 13px;
+  color: #334155;
+}
+
+.find-pfz-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);
+}
+
+.find-pfz-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pfz-results-panel {
+  animation: fadeInPFZ 0.3s ease-out;
+}
+
+@keyframes fadeInPFZ {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 
 
 

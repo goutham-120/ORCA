@@ -168,6 +168,21 @@ async def sync_pfz(
     return await incois_pfz_provider.sync()
 
 
+@router.post("/pfz/nearest-suitable")
+async def nearest_suitable_pfz_map(
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    """
+    Identify nearest suitable PFZ considering Weather, Ocean, and GIS evidence.
+    """
+    from app.services.pfz_service import PFZDiscoveryService
+    lat = float(payload.get("latitude", 0))
+    lon = float(payload.get("longitude", 0))
+    radius_km = float(payload.get("radius_km", 50))
+    return await PFZDiscoveryService().find_nearest_suitable_pfz(lat, lon, radius_km)
+
+
+
 @router.get(
     "/features",
     response_model=MapFeaturesResponse,

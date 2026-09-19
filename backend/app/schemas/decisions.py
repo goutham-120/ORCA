@@ -44,6 +44,29 @@ class PFZNearbyRequest(BaseModel):
     at: datetime | None = None
 
 
+class NearestSuitablePFZRequest(BaseModel):
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
+    radius_km: float = Field(default=50.0, gt=0, le=500)
+
+
+class NearestSuitablePFZResponse(BaseModel):
+    selected_pfz: dict[str, Any] | None = None
+    selected_geometry: dict[str, Any] | None = None
+    distance_km: float | None = None
+    requested_radius_km: float
+    weather_status: str
+    weather_evidence: dict[str, Any] = Field(default_factory=dict)
+    ocean_status: str
+    ocean_evidence: dict[str, Any] = Field(default_factory=dict)
+    gis_status: str
+    gis_evidence: dict[str, Any] = Field(default_factory=dict)
+    overall_suitability: str
+    reason: str
+    candidate_pfzs: list[dict[str, Any]] = Field(default_factory=list)
+    route_geometry: dict[str, Any] | None = None
+
+
 class PFZFeatureResponse(BaseModel):
     id: int
     geometry: dict[str, Any] | None
@@ -66,6 +89,7 @@ class PFZDecisionResponse(BaseModel):
     evidence: list[DecisionEvidence] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     unavailable_data: list[str] = Field(default_factory=list)
+
 
 
 class HazardDecisionResponse(BaseModel):

@@ -1,13 +1,16 @@
 export default function LocationInfoPanel({ location, selectedCoordinate, navigate }) {
-  const coordinate = selectedCoordinate || location
-  const label = coordinate.label || location.name
+  const DEFAULT_LOC = { latitude: 13.0827, longitude: 80.2707, name: 'Chennai' }
+  const coordinate = selectedCoordinate || location || DEFAULT_LOC
+  const label = coordinate?.label || coordinate?.name || location?.name || 'Selected Location'
+  const latVal = Number(coordinate?.latitude)
+  const lonVal = Number(coordinate?.longitude)
+  const latStr = Number.isFinite(latVal) ? latVal.toFixed(4) : '0.0000'
+  const lonStr = Number.isFinite(lonVal) ? lonVal.toFixed(4) : '0.0000'
 
   const handleAskOrca = () => {
-    const lat = coordinate.latitude.toFixed(4)
-    const lon = coordinate.longitude.toFixed(4)
     const query = encodeURIComponent(`What are the current ocean conditions, weather, and marine safety risks near ${label}?`)
-    const targetUrl = `/ask-orca?latitude=${lat}&longitude=${lon}&label=${encodeURIComponent(label)}&query=${query}`
-    if (navigate) {
+    const targetUrl = `/ask-orca?latitude=${latStr}&longitude=${lonStr}&label=${encodeURIComponent(label)}&query=${query}`
+    if (typeof navigate === 'function') {
       navigate(targetUrl)
     }
   }
@@ -19,7 +22,7 @@ export default function LocationInfoPanel({ location, selectedCoordinate, naviga
           <p className="eyebrow font-mono">SELECTED LOCATION</p>
           <h2 className="font-sans">📍 {label}</h2>
           <small className="location-coords font-mono">
-            {coordinate.latitude.toFixed(4)}° N · {coordinate.longitude.toFixed(4)}° E
+            {latStr}° N · {lonStr}° E
           </small>
         </div>
       </div>
@@ -39,3 +42,4 @@ export default function LocationInfoPanel({ location, selectedCoordinate, naviga
     </div>
   )
 }
+

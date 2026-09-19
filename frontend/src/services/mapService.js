@@ -40,6 +40,17 @@ export async function syncPFZ(options) {
   return ensureObject(await api('/map/pfz/sync', { method: 'POST', ...options }), 'PFZ sync')
 }
 
+export async function findNearestSuitablePFZ({ latitude, longitude, radiusKm = 50 }, options) {
+  return ensureObject(
+    await api('/map/pfz/nearest-suitable', {
+      method: 'POST',
+      body: { latitude, longitude, radius_km: radiusKm },
+      ...options,
+    }),
+    'nearest suitable PFZ'
+  )
+}
+
 export function mapErrorMessage(error) {
   if (error instanceof ApiError) return error.message
   if (error?.name === 'AbortError') return 'Request cancelled.'

@@ -48,7 +48,16 @@ export default function App() {
   if (currentPath === '/login') return <Login navigate={navigate} />
   if (currentPath === '/register') return <Register navigate={navigate} />
   if (currentPath === '/') return <Home navigate={navigate} />
-  if (currentPath === '/map') return <MapExplorer navigate={navigate} />
+  if (currentPath === '/map' || currentPath === '/map-explorer') {
+    if (user) {
+      return (
+        <MainLayout path={currentPath} navigate={navigate}>
+          <MapExplorer navigate={navigate} />
+        </MainLayout>
+      )
+    }
+    return <MapExplorer navigate={navigate} />
+  }
   if (!user) return <Login navigate={navigate} />
 
   return (
@@ -59,8 +68,6 @@ export default function App() {
         <Personalization navigate={navigate} />
       ) : currentPath === '/ask-orca' ? (
         <AskOrca key={window.location.search} navigate={navigate} />
-      ) : currentPath === '/map-explorer' || currentPath === '/map' ? (
-        <MapExplorer navigate={navigate} />
       ) : currentPath === '/alerts' ? (
         <Alerts navigate={navigate} />
       ) : currentPath === '/reports' ? (
@@ -71,3 +78,4 @@ export default function App() {
     </MainLayout>
   )
 }
+
