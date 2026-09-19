@@ -36,4 +36,3 @@ export default function MapLayersControl({ layers = [], loading = false, error =
     </div>
   )
 }
-

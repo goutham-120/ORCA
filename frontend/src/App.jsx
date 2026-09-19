@@ -48,6 +48,7 @@ export default function App() {
   if (currentPath === '/login') return <Login navigate={navigate} />
   if (currentPath === '/register') return <Register navigate={navigate} />
   if (currentPath === '/') return <Home navigate={navigate} />
+
   if (currentPath === '/map' || currentPath === '/map-explorer') {
     if (user) {
       return (
@@ -58,6 +59,7 @@ export default function App() {
     }
     return <MapExplorer navigate={navigate} />
   }
+
   if (!user) return <Login navigate={navigate} />
 
   return (
@@ -78,4 +80,3 @@ export default function App() {
     </MainLayout>
   )
 }
-

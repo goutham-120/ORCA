@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { dashboardLocations } from '../../data/dashboardData'
 
 export function SavedReports({ savedReports, onViewReport, onDeleteReport, onClearAll }) {
   const [searchTerm, setSearchTerm] = useState('')
@@ -49,10 +50,23 @@ export function SavedReports({ savedReports, onViewReport, onDeleteReport, onCle
           onChange={(e) => setSelectedLocation(e.target.value)}
           className="orca-select location-filter"
         >
-          <option value="all">All Sector Locations</option>
-          <option value="visakhapatnam">Visakhapatnam</option>
-          <option value="chennai">Chennai</option>
-          <option value="mumbai">Mumbai</option>
+          <option value="all">All Sector Locations (84 Harbors)</option>
+          {Object.entries(
+            dashboardLocations.reduce((acc, loc) => {
+              const st = loc.state || 'Other'
+              if (!acc[st]) acc[st] = []
+              acc[st].push(loc)
+              return acc
+            }, {})
+          ).map(([stateName, locs]) => (
+            <optgroup key={stateName} label={stateName}>
+              {locs.map((loc) => (
+                <option key={loc.id} value={loc.id}>
+                  {loc.name}
+                </option>
+              ))}
+            </optgroup>
+          ))}
         </select>
       </div>
 

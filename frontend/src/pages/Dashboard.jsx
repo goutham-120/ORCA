@@ -8,6 +8,8 @@ import IntelligenceBrief from '../components/dashboard/IntelligenceBrief'
 import ConditionsChart from '../components/dashboard/ConditionsChart'
 import AlertSummary from '../components/dashboard/AlertSummary'
 import { dashboardLocations } from '../data/dashboardData'
+import { COASTAL_STATES, COASTAL_LOCATIONS } from '../data/coastalLocations'
+import CoastalLocationPicker from '../components/common/CoastalLocationPicker'
 import { fetchLiveLocationData } from '../services/openMeteoService'
 import { useAuth } from '../hooks/useAuth'
 
@@ -98,6 +100,19 @@ export default function Dashboard({ navigate }) {
     localStorage.setItem(PREFERENCES_KEY, JSON.stringify({ locationId, layers, trend, alertFilter }))
   }, [locationId, layers, trend, alertFilter])
 
+  const [isPickerOpen, setIsPickerOpen] = useState(false)
+
+  // Group locations by state for structured selection
+  const locationsByState = useMemo(() => {
+    const map = {}
+    dashboardLocations.forEach((loc) => {
+      const st = loc.state || 'Other'
+      if (!map[st]) map[st] = []
+      map[st].push(loc)
+    })
+    return map
+  }, [])
+
   const selectLocation = (id) => {
     setLocationId(id)
     setExpandedAlert(null)
@@ -117,24 +132,63 @@ export default function Dashboard({ navigate }) {
           <h1 className="font-sans">
             {greeting}, {name}
           </h1>
-          <p className="font-sans">Integrated marine telemetry & spatial decision support overview.</p>
+          <p className="font-sans">Integrated marine telemetry & spatial decision support across 84 coastal landing centers.</p>
         </div>
-        <label className="location-select font-sans">
-          <span className="font-mono">MONITORING LOCATION</span>
-          <select
-            value={locationId}
-            onChange={(event) => selectLocation(event.target.value)}
-            aria-label="Select monitoring location"
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button
+            type="button"
+            className="coastal-picker-btn"
+            onClick={() => setIsPickerOpen(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '9px 14px',
+              background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+              color: '#ffffff',
+              border: '1px solid rgba(56, 189, 248, 0.4)',
+              borderRadius: '7px',
+              fontWeight: 700,
+              fontSize: '12px',
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(2, 132, 199, 0.3)',
+              whiteSpace: 'nowrap'
+            }}
+            title="Browse all 84 Indian fishing harbors and landing centers by state"
           >
-            {dashboardLocations.map((item) => (
-              <option value={item.id} key={item.id}>
-                📍 {item.name}
-              </option>
-            ))}
-          </select>
-          <small className="font-mono">{activeLocation.coordinates}</small>
-        </label>
+            <span>🌊</span> Select Harbor (84)
+          </button>
+          <label className="location-select font-sans">
+            <span className="font-mono">MONITORING LOCATION</span>
+            <select
+              value={locationId}
+              onChange={(event) => selectLocation(event.target.value)}
+              aria-label="Select monitoring location"
+            >
+              {Object.entries(locationsByState).map(([st, locs]) => (
+                <optgroup key={st} label={st}>
+                  {locs.map((item) => (
+                    <option value={item.id} key={item.id}>
+                      📍 {item.name}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+            <small className="font-mono">{activeLocation.coordinates}</small>
+          </label>
+        </div>
       </section>
+
+      {/* Coastal Location Modal Picker */}
+      <CoastalLocationPicker
+        isOpen={isPickerOpen}
+        onClose={() => setIsPickerOpen(false)}
+        selectedId={locationId}
+        onSelectLocation={(newId) => {
+          selectLocation(newId)
+        }}
+      />
 
       {/* Loading Indicator */}
       {isLoading && (

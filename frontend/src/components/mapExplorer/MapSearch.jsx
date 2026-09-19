@@ -9,7 +9,9 @@ export default function MapSearch({ locations = [], onSelectLocation }) {
   const matches = safeLocations.filter(
     (loc) =>
       (loc?.name || '').toLowerCase().includes(query.toLowerCase()) ||
-      (loc?.region || '').toLowerCase().includes(query.toLowerCase())
+      (loc?.region || '').toLowerCase().includes(query.toLowerCase()) ||
+      (loc?.state || '').toLowerCase().includes(query.toLowerCase()) ||
+      (loc?.type || '').toLowerCase().includes(query.toLowerCase())
   )
 
   const handleSelect = (id) => {
@@ -52,13 +54,13 @@ export default function MapSearch({ locations = [], onSelectLocation }) {
           {matches.length > 0 ? (
             matches.map((item) => (
               <button
-                key={item.id}
+                key={item?.id || Math.random()}
                 type="button"
                 className="search-item"
-                onClick={() => handleSelect(item.id)}
+                onClick={() => handleSelect(item?.id)}
               >
-                📍 <strong>{item.name}</strong>
-                <small>{item.region}</small>
+                📍 <strong>{item?.name}</strong>
+                <small>{item?.region || item?.state || ''}</small>
               </button>
             ))
           ) : (
@@ -69,4 +71,3 @@ export default function MapSearch({ locations = [], onSelectLocation }) {
     </div>
   )
 }
-

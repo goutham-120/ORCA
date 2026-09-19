@@ -1,11 +1,18 @@
 import { useState } from 'react'
+import { COASTAL_LOCATIONS } from '../../data/coastalLocations'
+import CoastalLocationPicker from '../common/CoastalLocationPicker'
 
 const PRESET_LOCATIONS = [
-  { id: 'visakhapatnam', name: 'Visakhapatnam', latitude: 17.6868, longitude: 83.2185, region: 'East Coast' },
-  { id: 'chennai', name: 'Chennai', latitude: 13.0827, longitude: 80.2707, region: 'Southeast Coast' },
-  { id: 'mumbai', name: 'Mumbai', latitude: 19.0760, longitude: 72.8777, region: 'West Coast' },
-  { id: 'kochi', name: 'Kochi', latitude: 9.9312, longitude: 76.2673, region: 'Southwest Coast' },
-  { id: 'port_blair', name: 'Port Blair', latitude: 11.6233, longitude: 92.7265, region: 'Andaman Sea' },
+  { id: 'visakhapatnam', name: 'Visakhapatnam', latitude: 17.6868, longitude: 83.2185, region: 'Andhra Pradesh' },
+  { id: 'chennai', name: 'Chennai / Kasimedu', latitude: 13.1256, longitude: 80.2978, region: 'Tamil Nadu' },
+  { id: 'mumbai', name: 'Mumbai / Sassoon Dock', latitude: 18.9167, longitude: 72.8222, region: 'Maharashtra' },
+  { id: 'veraval', name: 'Veraval', latitude: 20.9077, longitude: 70.3679, region: 'Gujarat' },
+  { id: 'kochi', name: 'Kochi', latitude: 9.9312, longitude: 76.2673, region: 'Kerala' },
+  { id: 'malpe', name: 'Malpe', latitude: 13.3524, longitude: 74.7042, region: 'Karnataka' },
+  { id: 'paradip', name: 'Paradip', latitude: 20.3165, longitude: 86.6115, region: 'Odisha' },
+  { id: 'digha', name: 'Digha', latitude: 21.6266, longitude: 87.5074, region: 'West Bengal' },
+  { id: 'port_blair', name: 'Port Blair', latitude: 11.6233, longitude: 92.7265, region: 'Andaman & Nicobar' },
+  { id: 'kavaratti', name: 'Kavaratti', latitude: 10.5667, longitude: 72.6417, region: 'Lakshadweep' }
 ]
 
 export default function LocationContextPanel({
@@ -23,6 +30,19 @@ export default function LocationContextPanel({
   const [inputError, setInputError] = useState('')
 
   const hasCoords = location?.latitude != null && location?.longitude != null
+
+  const [isFullPickerOpen, setIsFullPickerOpen] = useState(false)
+
+  const handleFullPickerSelect = (id, loc) => {
+    setInputError('')
+    onChangeLocation({
+      latitude: loc.lat,
+      longitude: loc.lng,
+      label: loc.name
+    })
+    setIsEditing(false)
+    setIsFullPickerOpen(false)
+  }
 
   const handleApplyPreset = (preset) => {
     setInputError('')
@@ -158,7 +178,25 @@ export default function LocationContextPanel({
       {isEditing && (
         <div className="location-picker-drawer">
           <div className="presets-section">
-            <span className="picker-title font-mono">PRESET MONITORING AREAS</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <span className="picker-title font-mono">PRESET MONITORING AREAS</span>
+              <button
+                type="button"
+                onClick={() => setIsFullPickerOpen(true)}
+                style={{
+                  background: 'rgba(56, 189, 248, 0.15)',
+                  border: '1px solid rgba(56, 189, 248, 0.4)',
+                  color: '#38bdf8',
+                  padding: '3px 8px',
+                  borderRadius: '5px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                🌊 Browse All 84 Harbors by State
+              </button>
+            </div>
             <div className="presets-grid">
               {PRESET_LOCATIONS.map((preset) => (
                 <button
@@ -173,6 +211,13 @@ export default function LocationContextPanel({
               ))}
             </div>
           </div>
+
+          <CoastalLocationPicker
+            isOpen={isFullPickerOpen}
+            onClose={() => setIsFullPickerOpen(false)}
+            selectedId={COASTAL_LOCATIONS.find(l => l.name.toLowerCase() === location?.label?.toLowerCase())?.id || 'visakhapatnam'}
+            onSelectLocation={handleFullPickerSelect}
+          />
 
           <form className="custom-coords-form" onSubmit={handleCustomSubmit}>
             <span className="picker-title font-mono">MANUAL COORDINATES</span>

@@ -5,6 +5,8 @@ import MapLegend from '../components/mapExplorer/MapLegend'
 import LocationInfoPanel from '../components/mapExplorer/LocationInfoPanel'
 import MapCanvas from '../components/mapExplorer/MapCanvas'
 import { dashboardLocations } from '../data/dashboardData'
+import { COASTAL_LOCATIONS, COASTAL_LOCATIONS_MAP, COASTAL_STATES } from '../data/coastalLocations'
+import CoastalLocationPicker from '../components/common/CoastalLocationPicker'
 import {
   analyzeLocation,
   analyzePFZ,
@@ -43,11 +45,7 @@ class ComponentErrorBoundary extends Component {
   }
 }
 
-const LOCATION_COORDINATES = {
-  visakhapatnam: { latitude: 17.6868, longitude: 83.2185 },
-  chennai: { latitude: 13.0827, longitude: 80.2707 },
-  mumbai: { latitude: 19.076, longitude: 72.8777 },
-}
+const LOCATION_COORDINATES = COASTAL_LOCATIONS_MAP
 
 function flattenCoordinates(geometry) {
   if (!geometry || !Array.isArray(geometry.coordinates)) return []
@@ -134,6 +132,7 @@ export default function MapExplorer({ navigate }) {
   )
   const [analysis, setAnalysis] = useState({ loading: false, error: '', data: null })
   const [route, setRoute] = useState({ loading: false, error: '', data: null })
+  const routeGeometry = route.data?.route?.geometry || null
   const [pfz, setPFZ] = useState({ loading: false, error: '', data: null })
   const [pfzSync, setPFZSync] = useState({ loading: false, error: '', message: '' })
 
@@ -143,6 +142,7 @@ export default function MapExplorer({ navigate }) {
 
   const [destinationId, setDestinationId] = useState('nearest_pfz')
   const [isExpanded, setIsExpanded] = useState(false)
+  const [isPickerOpen, setIsPickerOpen] = useState(false)
 
   const pfzEvaluations = useMemo(() => {
     const map = {}
@@ -160,21 +160,44 @@ export default function MapExplorer({ navigate }) {
     return map
   }, [nearestPFZ.data])
 
-  const curatedLocation = useMemo(() => {
-    const safeLocations = Array.isArray(dashboardLocations) ? dashboardLocations : []
-    const match = safeLocations.find((item) => item?.id === locationId) || safeLocations[0] || { id: 'chennai', name: 'Chennai', region: 'Tamil Nadu' }
-    const coords = LOCATION_COORDINATES[match.id] || LOCATION_COORDINATES.chennai
-    return {
-      id: match.id,
-      name: match.name,
-      region: match.region,
-      ...coords,
-      label: match.name,
-    }
-  }, [locationId])
+  const safeDashboardLocations = useMemo(() => {
+    return Array.isArray(dashboardLocations) ? dashboardLocations : []
+  }, [])
 
-  const selectedLocation = selectedCoordinate || curatedLocation
+  const locationsByState = useMemo(() => {
+    const map = {}
+    safeDashboardLocations.forEach((loc) => {
+      const st = loc.state || 'Other'
+      if (!map[st]) map[st] = []
+      map[st].push(loc)
+    })
+    return map
+  }, [safeDashboardLocations])
+
+  const curatedLocation = useMemo(() => {
+    const match = safeDashboardLocations.find((item) => item?.id === locationId) || safeDashboardLocations[0]
+    const coords = (match?.id && LOCATION_COORDINATES[match.id]) || COASTAL_LOCATIONS[0] || { latitude: 17.6868, longitude: 83.2185 }
+    return {
+      id: match?.id || 'visakhapatnam',
+      name: match?.name || 'Visakhapatnam',
+      region: match?.region || 'Andhra Pradesh, India',
+      state: match?.state || 'Andhra Pradesh',
+      latitude: Number(coords?.latitude ?? coords?.lat ?? 17.6868),
+      longitude: Number(coords?.longitude ?? coords?.lng ?? 83.2185),
+      label: match?.name || 'Visakhapatnam',
+    }
+  }, [locationId, safeDashboardLocations])
+
+  const selectedLocation = useMemo(() => {
+    if (selectedCoordinate && Number.isFinite(selectedCoordinate.latitude) && Number.isFinite(selectedCoordinate.longitude)) {
+      return selectedCoordinate
+    }
+    return curatedLocation
+  }, [selectedCoordinate, curatedLocation])
+
   const activeLocation = selectedLocation
+  const activeLat = Number(activeLocation?.latitude)
+  const activeLon = Number(activeLocation?.longitude)
 
   useEffect(() => {
     let isSubscribed = true
@@ -252,11 +275,14 @@ export default function MapExplorer({ navigate }) {
     const controller = new AbortController()
     fetchLayers(controller.signal)
       .then((nextLayers) => {
-        setLayers(nextLayers)
+        setLayers(Array.isArray(nextLayers) ? nextLayers : [])
         setLayersState({ loading: false, error: '' })
       })
       .catch((error) => {
-        if (error.name !== 'AbortError') setLayersState({ loading: false, error: mapErrorMessage(error) })
+        if (error?.name !== 'AbortError') {
+          setLayers([])
+          setLayersState({ loading: false, error: mapErrorMessage(error) })
+        }
       })
     return () => controller.abort()
   }, [fetchLayers])
@@ -318,10 +344,14 @@ export default function MapExplorer({ navigate }) {
             label: `${nearest.label} (${nearest.distance_km} km)`,
           }
         } else {
-          const safeLocations = Array.isArray(dashboardLocations) ? dashboardLocations : []
-          const destObj = safeLocations.find((item) => item.id === destinationId)
+          const destObj = safeDashboardLocations.find((item) => item.id === destinationId)
           if (destObj) {
-            destCoord = { ...LOCATION_COORDINATES[destObj.id], label: destObj.name }
+            const coords = LOCATION_COORDINATES[destObj.id] || { latitude: destObj.latitude, longitude: destObj.longitude }
+            destCoord = {
+              latitude: Number(coords?.latitude ?? coords?.lat ?? destObj.latitude),
+              longitude: Number(coords?.longitude ?? coords?.lng ?? destObj.longitude),
+              label: destObj.name,
+            }
           }
         }
       }
@@ -363,7 +393,7 @@ export default function MapExplorer({ navigate }) {
     try {
       const result = await syncPFZ()
       const nextLayers = await fetchLayers()
-      setLayers(nextLayers)
+      setLayers(Array.isArray(nextLayers) ? nextLayers : [])
       setPFZSync({
         loading: false,
         error: '',
@@ -374,28 +404,53 @@ export default function MapExplorer({ navigate }) {
     }
   }
 
-  const routeGeometry = route.data?.route?.geometry || null
-  const safeDashboardLocations = Array.isArray(dashboardLocations) ? dashboardLocations : []
-  const activeLat = Number(activeLocation?.latitude)
-  const activeLon = Number(activeLocation?.longitude)
-
   return (
     <div className={`map-explorer-page ${isExpanded ? 'page-is-expanded' : ''}`}>
+      <CoastalLocationPicker
+        isOpen={isPickerOpen}
+        onClose={() => setIsPickerOpen(false)}
+        selectedId={locationId}
+        onSelectLocation={(newId) => handleSelectLocation(newId)}
+      />
+
       <section className="map-explorer-header">
         <div>
           <p className="eyebrow">SPATIAL INTELLIGENCE</p>
           <h1>Map Explorer</h1>
-          <p className="subhead">Explore configured GIS overlays and run source-backed spatial checks.</p>
+          <p className="subhead">Explore configured GIS overlays, 84 coastal fishing harbors, and run source-backed spatial checks.</p>
         </div>
         <div className="map-header-controls">
+          <button
+            type="button"
+            className="coastal-picker-btn"
+            onClick={() => setIsPickerOpen(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 12px',
+              background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+              color: '#ffffff',
+              border: '1px solid rgba(56, 189, 248, 0.4)',
+              borderRadius: '6px',
+              fontWeight: 700,
+              fontSize: '12px',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            <span>🌊</span> Select Harbor (84)
+          </button>
           <MapSearch locations={safeDashboardLocations} onSelectLocation={handleSelectLocation} />
           <label className="location-dropdown-wrap">
             <span>MONITORING AREA</span>
             <select value={locationId} onChange={(event) => handleSelectLocation(event.target.value)}>
-              {safeDashboardLocations.map((item) => (
-                <option key={item.id} value={item.id}>
-                  📍 {item.name}
-                </option>
+              {Object.entries(locationsByState).map(([st, locs]) => (
+                <optgroup key={st} label={st}>
+                  {locs.map((item) => (
+                    <option key={item.id} value={item.id}>📍 {item.name}</option>
+                  ))}
+                </optgroup>
               ))}
             </select>
           </label>
@@ -747,13 +802,19 @@ export default function MapExplorer({ navigate }) {
                   onChange={(event) => setDestinationId(event.target.value)}
                 >
                   <option value="nearest_pfz">🐟 Nearest PFZ (Auto-detect)</option>
-                  {safeDashboardLocations
-                    .filter((item) => item.id !== locationId)
-                    .map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.name}
-                      </option>
-                    ))}
+                  {Object.entries(locationsByState).map(([st, locs]) => {
+                    const filtered = locs.filter((l) => l.id !== locationId)
+                    if (filtered.length === 0) return null
+                    return (
+                      <optgroup key={st} label={st}>
+                        {filtered.map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )
+                  })}
                 </select>
                 <button
                   type="button"
@@ -824,4 +885,3 @@ export default function MapExplorer({ navigate }) {
     </div>
   )
 }
-
