@@ -1,4 +1,4 @@
-import orcaLogo from '../../assets/orcologo.jpeg'
+import orcaLogo from '../../assets/orcalogo.png'
 
 const PROMPT_SUGGESTIONS = [
   {

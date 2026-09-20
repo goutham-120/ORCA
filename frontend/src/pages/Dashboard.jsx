@@ -14,6 +14,7 @@ import '../components/dashboard/LocationSelector.css'
 import { fetchLiveLocationData } from '../services/openMeteoService'
 import { useAuth } from '../hooks/useAuth'
 import { cacheActiveAlerts, markAlertAsRead } from '../services/alertService'
+import orcaLogo from '../assets/orcalogo.png'
 
 const PREFERENCES_KEY = 'orca-dashboard-preferences'
 const defaults = {
@@ -122,7 +123,10 @@ export default function Dashboard({ navigate }) {
       {/* 1. HEADER / LOCATION SELECTOR */}
       <section className="dashboard-intro">
         <div>
-          <p className="eyebrow font-mono">ORCA COMMAND CENTER</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+            <img src={orcaLogo} alt="ORCA Logo" style={{ width: '22px', height: '22px', objectFit: 'contain' }} />
+            <p className="eyebrow font-mono" style={{ margin: 0 }}>ORCA COMMAND CENTER</p>
+          </div>
           <h1 className="font-sans">
             {greeting}, {name}
           </h1>
