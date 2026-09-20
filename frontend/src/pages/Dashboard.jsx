@@ -19,7 +19,7 @@ const PREFERENCES_KEY = 'orca-dashboard-preferences'
 const defaults = {
   locationId: 'visakhapatnam',
   trend: 'waves',
-  layers: { waves: true, wind: true, temperature: false, currents: false },
+  layers: { temperature: true, sst: false, waves: false, pfz: false, currents: false },
   alertFilter: 'all',
 }
 

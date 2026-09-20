@@ -68,6 +68,7 @@ export default function ChatHeader({
           >
             <option value="en">English (EN)</option>
             <option value="hi">हिन्दी (HI MVP)</option>
+            <option value="te">తెలుగు (TE MVP)</option>
           </select>
         </label>
 

@@ -217,6 +217,7 @@ export default function AskOrca({ navigate }) {
         messages={messages}
         loading={loading}
         onSelectPrompt={handleSelectPrompt}
+        language={language}
       />
 
       {/* ERROR / RETRY BANNER */}

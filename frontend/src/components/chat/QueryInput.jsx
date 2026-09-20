@@ -32,7 +32,7 @@ export default function QueryInput({ value, onChange, onSend, loading, language 
     try {
       const instance = new Recognition()
       recognitionRef.current = instance
-      instance.lang = language === 'hi' ? 'hi-IN' : 'en-IN'
+      instance.lang = language === 'hi' ? 'hi-IN' : language === 'te' ? 'te-IN' : 'en-IN'
       instance.interimResults = true
       instance.continuous = false
 
@@ -52,11 +52,17 @@ export default function QueryInput({ value, onChange, onSend, loading, language 
 
       instance.onerror = (event) => {
         setVoiceState('error')
-        setVoiceError(
-          event.error === 'not-allowed'
-            ? 'Microphone permission was denied.'
-            : `Voice input failed: ${event.error}.`
-        )
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+          setVoiceError('Microphone permission was denied. Please click the camera/mic lock icon in your browser address bar and allow Microphone access.')
+        } else if (event.error === 'network') {
+          setVoiceError('Network connection issue. Voice recognition requires an active internet connection.')
+        } else if (event.error === 'no-speech') {
+          setVoiceError('No speech detected. Please check your microphone and try speaking again.')
+        } else if (event.error === 'audio-capture') {
+          setVoiceError('No microphone detected. Please plug in or select a valid microphone.')
+        } else {
+          setVoiceError(`Voice input issue (${event.error}). Ensure microphone permissions are allowed.`)
+        }
       }
 
       instance.onend = () => {
@@ -66,7 +72,7 @@ export default function QueryInput({ value, onChange, onSend, loading, language 
       instance.start()
     } catch (error) {
       setVoiceState('error')
-      setVoiceError(`Voice input could not start: ${error.message || 'unknown error'}.`)
+      setVoiceError(`Voice input could not start: ${error.message || 'Check browser permissions'}.`)
     }
   }
 
@@ -101,7 +107,13 @@ export default function QueryInput({ value, onChange, onSend, loading, language 
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask ORCA anything — general questions or marine intelligence..."
+          placeholder={
+            language === 'hi'
+              ? 'ORCA से कुछ भी पूछें — समुद्री सुरक्षा, मौसम या लहरों की स्थिति...'
+              : language === 'te'
+              ? 'ORCA ని ఏదైనా అడగండి — సముద్ర భద్రత, వాతావరణం లేదా అలల పరిస్థితి...'
+              : 'Ask ORCA anything — general questions or marine intelligence...'
+          }
           rows={1}
           disabled={loading}
           className="composer-textarea font-inter"

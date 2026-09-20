@@ -1,22 +1,40 @@
-import { COASTAL_LOCATIONS, COASTAL_LOCATIONS_MAP } from '../data/coastalLocations'
+import { COASTAL_LOCATIONS } from '../data/coastalLocations'
 
-export const LOCATION_COORDINATES = Object.fromEntries(
-  COASTAL_LOCATIONS.map((loc) => [
-    loc.id,
-    {
-      id: loc.id,
-      name: loc.name,
-      region: `${loc.state}, India`,
-      lat: loc.lat,
-      lng: loc.lng,
-      coordinatesStr: loc.coordinatesStr,
-      mapPosition: loc.mapPosition || { x: 50, y: 50 },
-      type: loc.type,
-      state: loc.state,
-      coast: loc.coast
+const defaultCoords = {
+  visakhapatnam: { id: 'visakhapatnam', name: 'Visakhapatnam', region: 'Andhra Pradesh, India', lat: 17.6868, lng: 83.2185, coordinatesStr: '17.6868 N · 83.2185 E', mapPosition: { x: 47, y: 43 } },
+  chennai: { id: 'chennai', name: 'Chennai', region: 'Tamil Nadu, India', lat: 13.0827, lng: 80.2707, coordinatesStr: '13.0827 N · 80.2707 E', mapPosition: { x: 38, y: 57 } },
+  mumbai: { id: 'mumbai', name: 'Mumbai', region: 'Maharashtra, India', lat: 19.0760, lng: 72.8777, coordinatesStr: '19.0760 N · 72.8777 E', mapPosition: { x: 61, y: 34 } },
+  kochi: { id: 'kochi', name: 'Kochi', region: 'Kerala, India', lat: 9.9312, lng: 76.2673, coordinatesStr: '9.9312 N · 76.2673 E', mapPosition: { x: 42, y: 72 } },
+  goa: { id: 'goa', name: 'Goa (Panaji)', region: 'Goa, India', lat: 15.4989, lng: 73.8278, coordinatesStr: '15.4989 N · 73.8278 E', mapPosition: { x: 50, y: 52 } },
+  mangalore: { id: 'mangalore', name: 'Mangalore', region: 'Karnataka, India', lat: 12.9141, lng: 74.8560, coordinatesStr: '12.9141 N · 74.8560 E', mapPosition: { x: 46, y: 62 } },
+  paradip: { id: 'paradip', name: 'Paradip', region: 'Odisha, India', lat: 20.3164, lng: 86.6105, coordinatesStr: '20.3164 N · 86.6105 E', mapPosition: { x: 62, y: 32 } },
+  kolkata: { id: 'kolkata', name: 'Kolkata / Haldia', region: 'West Bengal, India', lat: 22.0257, lng: 88.0583, coordinatesStr: '22.0257 N · 88.0583 E', mapPosition: { x: 70, y: 22 } },
+  portblair: { id: 'portblair', name: 'Port Blair', region: 'Andaman & Nicobar, India', lat: 11.6234, lng: 92.7265, coordinatesStr: '11.6234 N · 92.7265 E', mapPosition: { x: 80, y: 75 } },
+  surat: { id: 'surat', name: 'Surat (Hazira)', region: 'Gujarat, India', lat: 21.1702, lng: 72.8311, coordinatesStr: '21.1702 N · 72.8311 E', mapPosition: { x: 58, y: 38 } },
+}
+
+export const LOCATION_COORDINATES = (COASTAL_LOCATIONS && COASTAL_LOCATIONS.length > 0)
+  ? {
+      ...defaultCoords,
+      ...Object.fromEntries(
+        COASTAL_LOCATIONS.map((loc) => [
+          loc.id,
+          {
+            id: loc.id,
+            name: loc.name,
+            region: `${loc.state}, India`,
+            lat: loc.lat,
+            lng: loc.lng,
+            coordinatesStr: loc.coordinatesStr,
+            mapPosition: loc.mapPosition || { x: 50, y: 50 },
+            type: loc.type,
+            state: loc.state,
+            coast: loc.coast
+          }
+        ])
+      )
     }
-  ])
-)
+  : defaultCoords
 
 export function getWindCompassDirection(deg) {
   if (deg === undefined || deg === null) return 'N/A'
@@ -178,6 +196,8 @@ export async function fetchLiveLocationData(locationId) {
     id: locationId,
     name,
     region,
+    latitude: lat,
+    longitude: lng,
     coordinates: coordinatesStr,
     mapPosition: locDef.mapPosition,
     wave: {
