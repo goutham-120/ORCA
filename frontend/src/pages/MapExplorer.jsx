@@ -520,7 +520,7 @@ export default function MapExplorer({ navigate }) {
               whiteSpace: 'nowrap'
             }}
           >
-            <span>🌊</span> Select Harbor (84)
+            <span>🌊</span> Change Location (84)
           </button>
           <MapSearch locations={safeDashboardLocations} onSelectLocation={handleSelectLocation} />
           <label className="location-dropdown-wrap">

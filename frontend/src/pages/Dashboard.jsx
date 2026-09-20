@@ -10,7 +10,7 @@ import AlertSummary from '../components/dashboard/AlertSummary'
 import { dashboardLocations } from '../data/dashboardData'
 import { COASTAL_STATES, COASTAL_LOCATIONS } from '../data/coastalLocations'
 import CoastalLocationPicker from '../components/common/CoastalLocationPicker'
-import LocationSelector from '../components/dashboard/LocationSelector'
+import '../components/dashboard/LocationSelector.css'
 import { fetchLiveLocationData } from '../services/openMeteoService'
 import { useAuth } from '../hooks/useAuth'
 import { cacheActiveAlerts, markAlertAsRead } from '../services/alertService'
@@ -128,37 +128,42 @@ export default function Dashboard({ navigate }) {
           </h1>
           <p className="font-sans">Integrated marine telemetry & spatial decision support across 84 coastal landing centers.</p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <button
             type="button"
-            className="coastal-picker-btn"
+            className="dashboard-location-trigger-card font-sans"
             onClick={() => setIsPickerOpen(true)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '9px 14px',
-              background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-              color: '#ffffff',
-              border: '1px solid rgba(56, 189, 248, 0.4)',
-              borderRadius: '8px',
-              fontWeight: 700,
-              fontSize: '12px',
-              cursor: 'pointer',
-              boxShadow: '0 2px 8px rgba(2, 132, 199, 0.3)',
-              whiteSpace: 'nowrap',
-              height: '42px',
-            }}
-            title="Browse all 84 Indian fishing harbors and landing centers by state"
+            title="Click to change monitoring location or enter custom GPS coordinates"
+            aria-label="Change monitoring location"
           >
-            <span>🌊</span> Select Harbor (84)
+            <div className="location-trigger-content">
+              <div className="location-trigger-header">
+                <span className="location-label font-mono">MONITORING LOCATION</span>
+                <span className="change-location-badge">Change Location 📍</span>
+              </div>
+              <div className="location-selected-value">
+                <span className="location-name">{activeLocation.name || 'Visakhapatnam'}</span>
+              </div>
+              <small className="location-coords font-mono">
+                {activeLocation.coordinates || activeLocation.coordinatesStr || '17.6868° N · 83.2185° E'}
+              </small>
+            </div>
+            <div className="location-chevron-wrap" aria-hidden="true">
+              <svg
+                className="location-chevron-svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </div>
           </button>
-          <LocationSelector
-            locations={dashboardLocations}
-            selectedId={locationId}
-            onSelect={selectLocation}
-            coordinates={activeLocation.coordinates}
-          />
         </div>
       </section>
 
@@ -167,6 +172,7 @@ export default function Dashboard({ navigate }) {
         isOpen={isPickerOpen}
         onClose={() => setIsPickerOpen(false)}
         selectedId={locationId}
+        title="Change Monitoring Location"
         onSelectLocation={(newId) => {
           selectLocation(newId)
         }}
