@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import EvidencePanel from './EvidencePanel'
+import { speakResponse, stopSpeech } from '../../utils/speech'
+import { buildSpokenSummary } from '../../utils/speechSummary'
 
 function renderMarkdownInline(text) {
   if (!text) return ''
@@ -229,6 +231,7 @@ function FormattedAnswer({ text }) {
 export default function Message({ message }) {
   const [copied, setCopied] = useState(false)
   const [showReason, setShowReason] = useState(false)
+  const [isSpeakingThis, setIsSpeakingThis] = useState(false)
   const isUser = message.role === 'user'
   const response = message.response
   const isSpecialized = response?.response_kind === 'specialized'
@@ -249,6 +252,24 @@ export default function Message({ message }) {
       setTimeout(() => setCopied(false), 2000)
     } catch {
       // Silent catch
+    }
+  }
+
+  const handleToggleSpeech = () => {
+    if (isSpeakingThis) {
+      stopSpeech()
+      setIsSpeakingThis(false)
+    } else {
+      const textToSpeak = response?.answer || message.text || ''
+      const spokenLang = response?.language || 'en'
+      const spokenBriefing = buildSpokenSummary(response, textToSpeak, spokenLang)
+      setIsSpeakingThis(true)
+      speakResponse(
+        spokenBriefing,
+        spokenLang,
+        () => setIsSpeakingThis(false),
+        () => setIsSpeakingThis(false)
+      )
     }
   }
 
@@ -510,6 +531,16 @@ export default function Message({ message }) {
 
         {/* 6. BOTTOM ACTIONS */}
         <div className="message-actions">
+          <button
+            type="button"
+            className={`action-btn speak-btn ${isSpeakingThis ? 'is-speaking' : ''}`}
+            onClick={handleToggleSpeech}
+            title={isSpeakingThis ? 'Stop speech synthesis' : 'Replay spoken response in selected language'}
+          >
+            {isSpeakingThis
+              ? '⏹️ Stop Speech'
+              : `🔊 Listen (${(response?.language || 'en').toUpperCase()})`}
+          </button>
           <button
             type="button"
             className={`action-btn copy-btn ${copied ? 'is-copied' : ''}`}

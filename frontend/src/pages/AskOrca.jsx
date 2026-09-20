@@ -5,6 +5,8 @@ import ChatWindow from '../components/chat/ChatWindow'
 import QueryInput from '../components/chat/QueryInput'
 import { askOrca } from '../services/orcaService'
 import { LOCATION_COORDINATES } from '../services/openMeteoService'
+import { speakResponse, stopSpeech } from '../utils/speech'
+import { buildSpokenSummary } from '../utils/speechSummary'
 import './AskOrca.css'
 
 const PREFERENCES_KEY = 'orca-dashboard-preferences'
@@ -131,6 +133,7 @@ export default function AskOrca({ navigate }) {
     setError('')
     setFailedQuery('')
     setLoading(true)
+    stopSpeech()
 
     try {
       const response = await askOrca({
@@ -156,6 +159,8 @@ export default function AskOrca({ navigate }) {
       }
 
       setMessages((prev) => [...prev, assistantMessage])
+      const spokenBriefing = buildSpokenSummary(response, response.answer, response.language || language)
+      speakResponse(spokenBriefing, response.language || language)
     } catch (err) {
       setError(err.message || 'ORCA could not complete this analysis request.')
       setFailedQuery(text)
@@ -179,11 +184,13 @@ export default function AskOrca({ navigate }) {
     if (messages.length > 0 && !window.confirm('Start a new session? Conversation history will be cleared.')) {
       return
     }
+    stopSpeech()
     setMessages([])
     setError('')
     setFailedQuery('')
     setConversationId(newId())
   }
+    
 
   const handleSelectPrompt = (promptQuery) => {
     setQuery(promptQuery)

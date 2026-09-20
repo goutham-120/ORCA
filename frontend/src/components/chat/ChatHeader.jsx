@@ -67,8 +67,9 @@ export default function ChatHeader({
             aria-label="Select AI language"
           >
             <option value="en">English (EN)</option>
-            <option value="hi">हिन्दी (HI MVP)</option>
-            <option value="te">తెలుగు (TE MVP)</option>
+            <option value="hi">हिन्दी (HI)</option>
+            <option value="te">తెలుగు (TE)</option>
+            <option value="ta">தமிழ் (TA)</option>
           </select>
         </label>
 

@@ -61,7 +61,9 @@ def _make_circle_polygon(center_lon: float, center_lat: float, radius_km: float,
 def ensure_demo_gis(repository: SpatialFeatureRepository = spatial_features) -> int:
     """Seed comprehensive coastal and deep offshore GIS features with round geometries."""
     try:
-        repository.delete_source_dataset("ORCA_DEMO_GIS", DEMO_SOURCE)
+        existing = repository.list(source=DEMO_SOURCE)
+        if existing:
+            return 0
         records = (
             # 1. Visakhapatnam coastal & nearshore (Smooth round zones in marine waters)
             _feature(

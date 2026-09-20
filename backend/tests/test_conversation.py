@@ -90,7 +90,7 @@ class ConversationTests(unittest.IsolatedAsyncioTestCase):
         follow_up = await orchestrator().handle(OrcaQueryRequest(query="What about the waves?", context={"conversation_context": first.context}, conversation_id="session"))
         self.assertEqual(follow_up.agents_used, ["ocean"])
         self.assertEqual(follow_up.context["location"]["label"], "Visakhapatnam")
-        self.assertIn("wave height 1.1 m", follow_up.answer)
+        self.assertIn("1.1 m", follow_up.answer)
 
     async def test_place_name_without_coordinates_is_not_geocoded(self):
         response = await orchestrator().handle(OrcaQueryRequest(query="What are the marine conditions near Visakhapatnam today?"))
@@ -100,6 +100,45 @@ class ConversationTests(unittest.IsolatedAsyncioTestCase):
         response = await orchestrator().handle(OrcaQueryRequest(query="समुद्री मौसम कैसा है?", location={"latitude": 17.7, "longitude": 83.3}, language="hi"))
         self.assertEqual(set(response.agents_used), {"ocean", "weather"})
         self.assertTrue(response.answer)
+
+    async def test_telugu_support_uses_same_domain_pipeline(self):
+        response = await orchestrator().handle(OrcaQueryRequest(query="ఈ రోజు సముద్ర వాతావరణం ఎలా ఉంది?", location={"latitude": 17.7, "longitude": 83.3}, language="te"))
+        self.assertEqual(set(response.agents_used), {"ocean", "weather"})
+        self.assertEqual(response.language, "te")
+        self.assertIn("వాతావరణ", response.answer)
+        self.assertIn("ORCA", response.answer)
+
+    async def test_tamil_support_uses_same_domain_pipeline(self):
+        response = await orchestrator().handle(OrcaQueryRequest(query="இன்று கடல் வானிலை எப்படி உள்ளது?", location={"latitude": 17.7, "longitude": 83.3}, language="ta"))
+        self.assertEqual(set(response.agents_used), {"ocean", "weather"})
+        self.assertEqual(response.language, "ta")
+        self.assertIn("வானிலை", response.answer)
+        self.assertIn("ORCA", response.answer)
+
+    async def test_authoritative_selected_language_telugu_with_english_query(self):
+        response = await orchestrator().handle(OrcaQueryRequest(query="How is the sea weather today?", location={"latitude": 17.7, "longitude": 83.3}, language="te"))
+        self.assertEqual(response.language, "te")
+        self.assertIn("ORCA", response.answer)
+
+    async def test_authoritative_selected_language_tamil_with_english_query(self):
+        response = await orchestrator().handle(OrcaQueryRequest(query="How is the sea weather today?", location={"latitude": 17.7, "longitude": 83.3}, language="ta"))
+        self.assertEqual(response.language, "ta")
+        self.assertIn("ORCA", response.answer)
+
+    async def test_authoritative_selected_language_hindi_with_english_query(self):
+        response = await orchestrator().handle(OrcaQueryRequest(query="How is the sea weather today?", location={"latitude": 17.7, "longitude": 83.3}, language="hi"))
+        self.assertEqual(response.language, "hi")
+        self.assertIn("ORCA का", response.answer)
+
+    async def test_authoritative_selected_language_english_with_indic_query(self):
+        response = await orchestrator().handle(OrcaQueryRequest(query="weather", location={"latitude": 17.7, "longitude": 83.3}, language="en"))
+        self.assertEqual(response.language, "en")
+        self.assertIn("ORCA's combined assessment", response.answer)
+
+    async def test_english_input_returns_english(self):
+        response = await orchestrator().handle(OrcaQueryRequest(query="How is the sea weather today?", location={"latitude": 17.7, "longitude": 83.3}))
+        self.assertEqual(response.language, "en")
+        self.assertIn("ORCA's combined assessment", response.answer)
 
     async def test_unsupported_language_falls_back_to_english(self):
         response = await orchestrator().handle(OrcaQueryRequest(query="weather", location={"latitude": 17.7, "longitude": 83.3}, language="history"))

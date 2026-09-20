@@ -229,7 +229,8 @@ def synthesize_answer(
     # Telugu & Hindi response
     # ---------------------------------------------------------
 
-    if language.lower() in {"hi", "hi-in"}:
+    lang_lower = language.lower()
+    if lang_lower in {"hi", "hi-in"}:
         return _hindi_answer(
             level,
             results,
@@ -240,8 +241,19 @@ def synthesize_answer(
             decision=decision,
         )
 
-    if language.lower() in {"te", "te-in"}:
+    if lang_lower in {"te", "te-in"}:
         return _telugu_answer(
+            level,
+            results,
+            pending,
+            incomplete,
+            time_expression,
+            location_name=place,
+            decision=decision,
+        )
+
+    if lang_lower in {"ta", "ta-in"}:
+        return _tamil_answer(
             level,
             results,
             pending,
@@ -255,7 +267,7 @@ def synthesize_answer(
     # Unsupported language
     # ---------------------------------------------------------
 
-    if language.lower() not in {"en", "en-in"}:
+    if lang_lower not in {"en", "en-in"}:
         parts.append(
             "The requested response language is not supported; "
             "this evidence-grounded response is provided in English."
@@ -285,6 +297,20 @@ def _facts(
                 ("wind_speed_mps", "గాలి వేగం (Wind Speed)", "m/s"),
                 ("precipitation_mm", "వర్షపాతం", "mm"),
                 ("air_temperature_c", "గాలి ఉష్ణోగ్రత", "°C"),
+            ),
+        }
+    elif lang.lower() in {"ta", "ta-in"}:
+        fields = {
+            "ocean": (
+                ("wave_height_m", "அலை உயரம் (Wave Height)", "m"),
+                ("wave_period_s", "அலை காலம் (Wave Period)", "s"),
+                ("sea_surface_temperature_c", "கடல் மேற்பரப்பு வெப்பநிலை (SST)", "°C"),
+            ),
+            "weather": (
+                ("condition", "வானிலை நிலை", ""),
+                ("wind_speed_mps", "காற்று வேகம் (Wind Speed)", "m/s"),
+                ("precipitation_mm", "மழைப்பொழிவு", "mm"),
+                ("air_temperature_c", "காற்று வெப்பநிலை", "°C"),
             ),
         }
     elif lang.lower() in {"hi", "hi-in"}:
@@ -438,6 +464,72 @@ def _telugu_answer(
     limitations = []
     if incomplete:
         limitations.append("అవసరమైన సమాచారం ఇంకా పూర్తి స్థాయిలో అందుబాటులో లేదు.")
+    if "pfz" in pending:
+        limitations.append("PFZ సమాచారం అందుబాటులో లేదు.")
+
+    parts = [opening]
+    if facts:
+        parts.append(" ".join(facts))
+    if guidance:
+        parts.append(" ".join(guidance))
+    if limitations:
+        parts.append(" ".join(limitations))
+
+    return "\n\n".join(parts)
+
+
+def _tamil_answer(
+    level: str,
+    results: dict[str, Any],
+    pending: list[str],
+    incomplete: list[str],
+    time_expression: str | None,
+    location_name: str | None = None,
+    decision: dict[str, Any] | None = None,
+) -> str:
+    status_map = {
+        "low": "குறைந்த ஆபத்து (சாதகமான சூழல்)",
+        "moderate": "மிதமான ஆபத்து (எச்சரிக்கை தேவை)",
+        "high": "அதிக ஆபத்து (தீவிர எச்சரிக்கை)",
+        "critical": "அபாயகரமான நிலை",
+        "unknown": "தெரியவில்லை",
+    }
+
+    status = status_map.get(level, "தெரியவில்லை")
+    loc_suffix = f" [{location_name}]" if location_name else ""
+
+    opening = (
+        f"ORCA கடல்சார் இடர் மதிப்பீடு{loc_suffix}: {status}."
+        if not incomplete
+        else f"ORCA பாதுகாப்பு மதிப்பீடு{loc_suffix} வரம்பிற்குட்பட்டது."
+    )
+
+    facts = []
+    for domain, label in (("ocean", "🌊 கடல் விவரங்கள்"), ("weather", "🌤️ வானிலை விவரங்கள்")):
+        result = results.get(domain, {})
+        if result.get("data_status") in {"live", "cached", "demo", "static"}:
+            values = _facts(domain, result.get("observation") or {}, lang="ta")
+            if values:
+                facts.append(f"{label}: " + "; ".join(values) + ".")
+        elif domain in results:
+            facts.append(f"{label}: தரவு கிடைக்கவில்லை.")
+
+    guidance = []
+    if level == "low":
+        guidance.append("💡 ஆலோசனை: கடலோர நடவடிக்கைகள், படகு போக்குவரத்து மற்றும் மீன்பிடித்தலுக்கு கடல் சாதகமாக உள்ளது.")
+    elif level == "moderate":
+        guidance.append("💡 ஆலோசனை: கடலில் செயல்படும் போது எச்சரிக்கையுடன் இருக்கவும். சிறிய படகுகள் விழிப்புடன் செயல்படவும்.")
+    elif level in {"high", "critical"}:
+        guidance.append("⚠️ எச்சரிக்கை: கடலுக்குள் செல்ல வேண்டாம். கடுமையான காற்று மற்றும் உயர்ந்த அலைகள் உள்ளன.")
+
+    if isinstance(decision, dict) and decision.get("assessment"):
+        guidance.append(f"📌 முடிவு பகுப்பாய்வு: {decision.get('assessment')}")
+
+    limitations = []
+    if incomplete:
+        limitations.append("முழுமையான பாதுகாப்பு மதிப்பீட்டிற்கு தேவையான தகவல்கள் இன்னும் முழுமையாக கிடைக்கவில்லை.")
+    if "pfz" in pending:
+        limitations.append("PFZ தரவு தற்போது கிடைக்கவில்லை.")
 
     parts = [opening]
     if facts:
