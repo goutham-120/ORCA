@@ -32,7 +32,7 @@ export default function QueryInput({ value, onChange, onSend, loading, language 
     try {
       const instance = new Recognition()
       recognitionRef.current = instance
-      instance.lang = language === 'hi' ? 'hi-IN' : 'en-IN'
+      instance.lang = language === 'hi' ? 'hi-IN' : language === 'te' ? 'te-IN' : language === 'ta' ? 'ta-IN' : 'en-IN'
       instance.interimResults = true
       instance.continuous = false
 

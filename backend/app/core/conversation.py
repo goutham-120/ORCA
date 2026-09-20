@@ -229,8 +229,25 @@ def synthesize_answer(
     # Hindi response
     # ---------------------------------------------------------
 
-    if language.lower() in {"hi", "hi-in"}:
+    lang_lower = language.lower()
+    if lang_lower in {"hi", "hi-in"}:
         return _hindi_answer(
+            level,
+            results,
+            pending,
+            incomplete,
+            time_expression,
+        )
+    if lang_lower in {"te", "te-in"}:
+        return _telugu_answer(
+            level,
+            results,
+            pending,
+            incomplete,
+            time_expression,
+        )
+    if lang_lower in {"ta", "ta-in"}:
+        return _tamil_answer(
             level,
             results,
             pending,
@@ -242,7 +259,7 @@ def synthesize_answer(
     # Unsupported language
     # ---------------------------------------------------------
 
-    if language.lower() not in {"en", "en-in"}:
+    if lang_lower not in {"en", "en-in"}:
         parts.append(
             "The requested response language is not supported; "
             "this evidence-grounded response is provided in English."
@@ -425,3 +442,119 @@ def _hindi_answer(
         + " ".join(facts + limitations)
         + " निर्णय से पहले स्रोत प्रमाण और नवीनतम स्थितियों की समीक्षा करें।"
     )
+
+
+def _telugu_answer(
+    level: str,
+    results: dict[str, Any],
+    pending: list[str],
+    incomplete: list[str],
+    time_expression: str | None,
+) -> str:
+    status = {
+        "low": "తక్కువ",
+        "moderate": "మధ్యస్థం",
+        "high": "ఎక్కువ",
+        "critical": "తీవ్రమైన",
+        "unknown": "తెలియదు",
+    }.get(level, "తెలియదు")
+
+    facts = []
+    for domain, label in (("ocean", "సముద్ర"), ("weather", "వాతావరణ")):
+        result = results.get(domain, {})
+        if result.get("data_status") in {"live", "cached"}:
+            values = _facts(domain, result.get("observation") or {})
+            if values:
+                facts.append(f"{label} ఆధారాలు: " + "; ".join(values) + ".")
+        elif domain in results:
+            facts.append(f"{label} డేటా అందుబాటులో లేదు.")
+
+    limitations = []
+    if incomplete:
+        limitations.append(
+            "పూర్తి రక్షణ అంచనా అందుబాటులో లేదు; అవసరమైన ఆధారాలు అందుబాటులో లేవు లేదా పెండింగ్‌లో ఉన్నాయి: "
+            + ", ".join(incomplete)
+            + "."
+        )
+    if "pfz" in pending:
+        limitations.append("PFZ డేటా అందుబాటులో లేదు.")
+
+    other_pending = [name for name in pending if name not in {"pfz", "safety"}]
+    if other_pending:
+        limitations.append("పెండింగ్ సామర్థ్యం: " + ", ".join(other_pending) + ".")
+
+    if time_expression:
+        limitations.append(
+            f"మీరు {time_expression} గురించి అడిగారు; కాన్ఫిగర్ చేసిన ప్రదాతలు ప్రస్తుత పరిశీలనలను మాత్రమే ఇస్తారు."
+        )
+
+    opening = (
+        f"ORCA యొక్క కలిపి అంచనా వేసిన ముప్పు స్థాయి {status}."
+        if not incomplete
+        else "ORCA రక్షణ అంచనా పరిమితంగా ఉంది."
+    )
+
+    return (
+        opening
+        + " "
+        + " ".join(facts + limitations)
+        + " నిర్ణయం తీసుకునే ముందు అధికారిక సమాచారం మరియు తాజా పరిస్థితులను సరిచూసుకోండి."
+    ).strip()
+
+
+def _tamil_answer(
+    level: str,
+    results: dict[str, Any],
+    pending: list[str],
+    incomplete: list[str],
+    time_expression: str | None,
+) -> str:
+    status = {
+        "low": "குறைந்த",
+        "moderate": "மிதமான",
+        "high": "அதிக",
+        "critical": "ஆபத்தான",
+        "unknown": "தெரியவில்லை",
+    }.get(level, "தெரியவில்லை")
+
+    facts = []
+    for domain, label in (("ocean", "கடல்"), ("weather", "வானிலை")):
+        result = results.get(domain, {})
+        if result.get("data_status") in {"live", "cached"}:
+            values = _facts(domain, result.get("observation") or {})
+            if values:
+                facts.append(f"{label} சான்றுகள்: " + "; ".join(values) + ".")
+        elif domain in results:
+            facts.append(f"{label} தரவு கிடைக்கவில்லை.")
+
+    limitations = []
+    if incomplete:
+        limitations.append(
+            "முழுமையான பாதுகாப்பு மதிப்பீடு கிடைக்கவில்லை; தேவையான சான்றுகள் கிடைக்கவில்லை அல்லது நிலுவையில் உள்ளன: "
+            + ", ".join(incomplete)
+            + "."
+        )
+    if "pfz" in pending:
+        limitations.append("PFZ தரவு கிடைக்கவில்லை.")
+
+    other_pending = [name for name in pending if name not in {"pfz", "safety"}]
+    if other_pending:
+        limitations.append("நிலுவையில் உள்ள திறன்: " + ", ".join(other_pending) + ".")
+
+    if time_expression:
+        limitations.append(
+            f"நீங்கள் {time_expression} பற்றி கேட்டீர்கள்; உள்ளமைக்கப்பட்ட வழங்குநர்கள் தற்போதைய அவதானிப்புகளை மட்டுமே வழங்குகிறார்கள்."
+        )
+
+    opening = (
+        f"ORCA-வின் ஒருங்கிணைந்த ஆபத்து மதிப்பீடு {status}."
+        if not incomplete
+        else "ORCA-வின் பாதுகாப்பு மதிப்பீடு வரம்பிற்குட்பட்டது."
+    )
+
+    return (
+        opening
+        + " "
+        + " ".join(facts + limitations)
+        + " முடிவெடுப்பதற்கு முன் அதிகாரப்பூர்வ ஆதாரங்கள் மற்றும் அண்மைக்கால நிலவரங்களைச் சரிபார்க்கவும்."
+    ).strip()

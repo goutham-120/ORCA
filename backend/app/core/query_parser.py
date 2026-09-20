@@ -34,11 +34,28 @@ class QueryParser:
         "pfz": ("मछली", "मछली पकड़"),
     }
 
+    _telugu_terms = {
+        "weather": ("వాతావరణం", "గాలి", "వర్షం", "తుఫాను", "ఉష్ణోగ్రత"),
+        "ocean": ("సముద్రం", "సముద్రపు", "అలలు", "కెరటం", "అలల", "తరంగాలు"),
+        "safety": ("సురక్షితం", "సురక్షితమైన", "రక్షణ", "ప్రమాదం", "హాని"),
+        "gis": ("నిషిద్ధ", "ప్రాంతం", "దగ్గర", "పరిధి"),
+        "pfz": ("చేపలు", "చేపల వేట", "వేట"),
+    }
+
+    _tamil_terms = {
+        "weather": ("வானிலை", "காற்று", "மழை", "புயல்", "வெப்பநிலை"),
+        "ocean": ("கடல்", "அலைகள்", "அலை", "ஓட்டம்"),
+        "safety": ("பாதுகாப்பு", "பாதுகாப்பான", "ஆபத்து"),
+        "gis": ("தடுக்கப்பட்ட", "பகுதி", "அருகில்"),
+        "pfz": ("மீன்", "மீன்பிடி", "மீன்பிடித்தல்"),
+    }
+
     def parse(self, query: str) -> ParsedQuery:
         normalized = " ".join(query.strip().split())
         lowered = normalized.lower()
         matches = [name for name, terms in self._intent_terms.items() if any(term in lowered for term in terms)]
-        matches.extend(name for name, terms in self._hindi_terms.items() if any(term in normalized for term in terms) and name not in matches)
+        for lang_terms in (self._hindi_terms, self._telugu_terms, self._tamil_terms):
+            matches.extend(name for name, terms in lang_terms.items() if any(term in normalized for term in terms) and name not in matches)
         explicit_pfz = "pfz" in matches or any(term in lowered for term in ("fishing zone", "potential fishing zone", "potential fishing zones"))
         fishing = any(term in lowered for term in ("fish", "fishing")) or explicit_pfz
         safety = "safety" in matches
@@ -65,7 +82,10 @@ class QueryParser:
     def _location_mention(query: str) -> str | None:
         import re
         match = re.search(r"\b(?:near|at|around|off|in)\s+([A-Za-z][A-Za-z .'-]{1,60}?)(?=\s+(?:today|tomorrow|tonight|this|next|at|for|and|with)\b|[?.!,]|$)", query, re.IGNORECASE)
-        return match.group(1).strip() if match else None
+        if match:
+            return match.group(1).strip()
+        match_indic = re.search(r"([A-Za-z\u0900-\u097F\u0C00-\u0C7F\u0B80-\u0BFF][A-Za-z\u0900-\u097F\u0C00-\u0C7F\u0B80-\u0BFF .'-]{1,60}?)\s+(?:के\s+पास|दग्गर|దగ్గర|అరుగిల్|அருகில்)\b", query)
+        return match_indic.group(1).strip() if match_indic else None
 
     @staticmethod
     def _time_expression(lowered: str, original: str) -> str | None:
@@ -73,5 +93,8 @@ class QueryParser:
         match = re.search(r"\b(today|tomorrow(?:\s+(?:morning|afternoon|evening|night))?|tonight|this weekend|next week)\b", lowered)
         if match:
             return match.group(0)
+        for expr in ("आज", "कल", "ఈ రోజు", "నేడు", "రేపు", "ఈ రాత్రి", "இன்று", "நாளை", "இன்று இரவு"):
+            if expr in original:
+                return expr
         date = re.search(r"\b\d{4}-\d{1,2}-\d{1,2}(?:\s+\d{1,2}:\d{2})?\b", original)
         return date.group(0) if date else None

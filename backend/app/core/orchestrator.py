@@ -23,11 +23,12 @@ class OrcaOrchestrator:
 
     async def handle(self, request: OrcaQueryRequest) -> OrcaQueryResponse:
         parsed = self.parser.parse(request.query)
+        resp_lang = self._response_language(request.language, request.query)
         # Ordinary conversation deliberately bypasses marine assessment and stale
         # location context. The LLM has no tool access in this path.
         if not parsed.requested_domains:
             chat = getattr(self.workflow.llm, "chat", None)
-            llm_answer = await chat(request.query, self._response_language(request.language)) if chat else None
+            llm_answer = await chat(request.query, resp_lang) if chat else None
             answer = llm_answer
             if not llm_answer:
                 if not getattr(self.workflow.llm, "api_key", None):
@@ -36,7 +37,7 @@ class OrcaOrchestrator:
                     answer = "General conversation is unavailable because the configured LLM provider denied access. Check the API key, account permissions, and provider endpoint."
                 else:
                     answer = "General conversation is temporarily unavailable because the configured LLM provider request failed. Check the server log and your API key, model access, and account billing."
-            return OrcaQueryResponse(query_id=str(uuid4()), answer=answer, intent="general_chat", agents_used=[], selected_agents=[], assessment=None, recommendations=[], evidence=[], created_at=datetime.now(timezone.utc), conversation_id=request.conversation_id or str(uuid4()), language=self._response_language(request.language), context={"response_language": self._response_language(request.language), "llm_mode": "llm" if llm_answer else "deterministic_fallback", "llm_synthesis_attempted": False}, pending_domains=[], unavailable_domains=[], response_kind="general")
+            return OrcaQueryResponse(query_id=str(uuid4()), answer=answer, intent="general_chat", agents_used=[], selected_agents=[], assessment=None, recommendations=[], evidence=[], created_at=datetime.now(timezone.utc), conversation_id=request.conversation_id or str(uuid4()), language=resp_lang, context={"response_language": resp_lang, "llm_mode": "llm" if llm_answer else "deterministic_fallback", "llm_synthesis_attempted": False}, pending_domains=[], unavailable_domains=[], response_kind="general")
         metadata = dict(request.context)
         # Server state is authoritative; client context is only a backwards-compatible fallback.
         prior = self.conversations.get(request.conversation_id)
@@ -61,7 +62,7 @@ class OrcaOrchestrator:
             metadata["time_expression"] = parsed.time_expression
         elif prior.get("time_expression"):
             metadata["time_expression"] = prior["time_expression"]
-        metadata["response_language"] = self._response_language(request.language)
+        metadata["response_language"] = resp_lang
         context = QueryContext(parsed, location, time_range, metadata)
         result = await self.workflow.run(context)
         pending_domains = list(result.get("pending_domains", []))
@@ -96,10 +97,10 @@ class OrcaOrchestrator:
                 "label": location.get("label") or metadata.get("requested_location") or "Selected map coordinate",
             }
         answer = result.get("answer") if result.get("llm_synthesis") else None
-        answer = answer or synthesize_answer(request.query, assessment, result.get("analysis_results", {}), pending_domains, response_context, request.language, decision)
+        answer = answer or synthesize_answer(request.query, assessment, result.get("analysis_results", {}), pending_domains, response_context, resp_lang, decision)
         conversation_id = request.conversation_id or str(uuid4())
         self.conversations.put(conversation_id, response_context)
-        return OrcaQueryResponse(query_id=str(uuid4()), answer=answer, intent=parsed.intent, agents_used=selected_agents, selected_agents=selected_agents, decision=decision, assessment=assessment, recommendations=recommendations, evidence=result.get("evidence", []), created_at=datetime.now(timezone.utc), conversation_id=conversation_id, language=self._response_language(request.language), context=response_context, pending_domains=pending_domains, unavailable_domains=unavailable_domains, response_kind="specialized")
+        return OrcaQueryResponse(query_id=str(uuid4()), answer=answer, intent=parsed.intent, agents_used=selected_agents, selected_agents=selected_agents, decision=decision, assessment=assessment, recommendations=recommendations, evidence=result.get("evidence", []), created_at=datetime.now(timezone.utc), conversation_id=conversation_id, language=resp_lang, context=response_context, pending_domains=pending_domains, unavailable_domains=unavailable_domains, response_kind="specialized")
 
     @staticmethod
     def _safety_required_domains(parsed) -> list[str]:
@@ -136,5 +137,20 @@ class OrcaOrchestrator:
         return (parsed[0], parsed[1])
 
     @staticmethod
-    def _response_language(language: str) -> str:
-        return "hi" if language.lower() in {"hi", "hi-in"} else "en"
+    def _response_language(language: str, query: str = "") -> str:
+        lang_lower = (language or "").lower()
+        if lang_lower in {"ta", "ta-in"}:
+            return "ta"
+        if lang_lower in {"te", "te-in"}:
+            return "te"
+        if lang_lower in {"hi", "hi-in"}:
+            return "hi"
+        if lang_lower in {"en", "en-in"}:
+            return "en"
+        if any("\u0b80" <= c <= "\u0bff" for c in query):
+            return "ta"
+        if any("\u0c00" <= c <= "\u0c7f" for c in query):
+            return "te"
+        if any("\u0900" <= c <= "\u097f" for c in query):
+            return "hi"
+        return "en"
