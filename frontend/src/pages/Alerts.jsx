@@ -73,22 +73,31 @@ export default function Alerts({ navigate }) {
       setIsError(false)
       try {
         const locationKeys = selectedLocationId === 'all'
-          ? Object.keys(LOCATION_COORDINATES)
+          ? ['visakhapatnam', 'chennai', 'mumbai', 'kochi', 'goa', 'mangalore', 'paradip', 'kolkata', 'portblair', 'surat']
           : [selectedLocationId]
 
-        const fetchedResults = await Promise.all(
+        const settledResults = await Promise.allSettled(
           locationKeys.map((id) => fetchLiveLocationData(id))
         )
 
+        const fetchedResults = settledResults
+          .filter((r) => r.status === 'fulfilled' && r.value)
+          .map((r) => r.value)
+
         if (isMounted) {
-          setLiveLocationMap((prev) => {
-            const next = { ...prev }
-            fetchedResults.forEach((data) => {
-              next[data.id] = data
+          if (fetchedResults.length > 0) {
+            setLiveLocationMap((prev) => {
+              const next = { ...prev }
+              fetchedResults.forEach((data) => {
+                next[data.id] = data
+              })
+              return next
             })
-            return next
-          })
-          setIsLoading(false)
+            setIsLoading(false)
+          } else {
+            setIsError(true)
+            setIsLoading(false)
+          }
         }
       } catch {
         if (isMounted) {
