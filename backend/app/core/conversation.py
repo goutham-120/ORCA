@@ -226,7 +226,7 @@ def synthesize_answer(
             )
 
     # ---------------------------------------------------------
-    # Hindi response
+    # Telugu & Hindi response
     # ---------------------------------------------------------
 
     if language.lower() in {"hi", "hi-in"}:
@@ -236,6 +236,19 @@ def synthesize_answer(
             pending,
             incomplete,
             time_expression,
+            location_name=place,
+            decision=decision,
+        )
+
+    if language.lower() in {"te", "te-in"}:
+        return _telugu_answer(
+            level,
+            results,
+            pending,
+            incomplete,
+            time_expression,
+            location_name=place,
+            decision=decision,
         )
 
     # ---------------------------------------------------------
@@ -258,64 +271,57 @@ def synthesize_answer(
 def _facts(
     domain: str,
     observation: dict[str, Any],
+    lang: str = "en",
 ) -> list[str]:
-
-    fields = {
-        "ocean": (
-            (
-                "wave_height_m",
-                "wave height",
-                "m",
+    if lang.lower() in {"te", "te-in"}:
+        fields = {
+            "ocean": (
+                ("wave_height_m", "అలల ఎత్తు (Wave Height)", "m"),
+                ("wave_period_s", "అలల సమయం (Wave Period)", "s"),
+                ("sea_surface_temperature_c", "సముద్ర ఉపరితల ఉష్ణోగ్రత (SST)", "°C"),
             ),
-            (
-                "wave_period_s",
-                "wave period",
-                "s",
+            "weather": (
+                ("condition", "వాతావరణ పరిస్థితి", ""),
+                ("wind_speed_mps", "గాలి వేగం (Wind Speed)", "m/s"),
+                ("precipitation_mm", "వర్షపాతం", "mm"),
+                ("air_temperature_c", "గాలి ఉష్ణోగ్రత", "°C"),
             ),
-            (
-                "sea_surface_temperature_c",
-                "sea-surface temperature",
-                "°C",
+        }
+    elif lang.lower() in {"hi", "hi-in"}:
+        fields = {
+            "ocean": (
+                ("wave_height_m", "तरंग ऊंचाई (Wave Height)", "m"),
+                ("wave_period_s", "तरंग अवधि (Wave Period)", "s"),
+                ("sea_surface_temperature_c", "समुद्री सतह तापमान (SST)", "°C"),
             ),
-        ),
-        "weather": (
-            (
-                "condition",
-                "condition",
-                "",
+            "weather": (
+                ("condition", "मौसम स्थिति", ""),
+                ("wind_speed_mps", "हवा की गति (Wind Speed)", "m/s"),
+                ("precipitation_mm", "वर्षा", "mm"),
+                ("air_temperature_c", "वायु तापमान", "°C"),
             ),
-            (
-                "wind_speed_mps",
-                "wind",
-                "m/s",
+        }
+    else:
+        fields = {
+            "ocean": (
+                ("wave_height_m", "wave height", "m"),
+                ("wave_period_s", "wave period", "s"),
+                ("sea_surface_temperature_c", "sea-surface temperature", "°C"),
             ),
-            (
-                "precipitation_mm",
-                "precipitation",
-                "mm",
+            "weather": (
+                ("condition", "condition", ""),
+                ("wind_speed_mps", "wind", "m/s"),
+                ("precipitation_mm", "precipitation", "mm"),
+                ("air_temperature_c", "air temperature", "°C"),
             ),
-            (
-                "air_temperature_c",
-                "air temperature",
-                "°C",
-            ),
-        ),
-    }
+        }
 
     facts = []
 
     for key, label, unit in fields.get(domain, ()):
-
         value = observation.get(key)
-
-        if isinstance(
-            value,
-            (str, int, float),
-        ):
-            facts.append(
-                f"{label} {value}"
-                f"{(' ' + unit) if unit else ''}"
-            )
+        if isinstance(value, (str, int, float)):
+            facts.append(f"{label}: {value}{(' ' + unit) if unit else ''}")
 
     return facts
 
@@ -326,102 +332,119 @@ def _hindi_answer(
     pending: list[str],
     incomplete: list[str],
     time_expression: str | None,
+    location_name: str | None = None,
+    decision: dict[str, Any] | None = None,
 ) -> str:
-
-    # Controlled Hindi wrapper; all measurements below are copied from evidence.
-
-    status = {
-        "low": "कम",
-        "moderate": "मध्यम",
-        "high": "उच्च",
-        "critical": "गंभीर",
+    status_map = {
+        "low": "कम जोखिम (अनुकूल स्थिति)",
+        "moderate": "मध्यम जोखिम (सावधानी आवश्यक)",
+        "high": "उच्च जोखिम (गंभीर चेतावनी)",
+        "critical": "अत्यधिक गंभीर जोखिम",
         "unknown": "अज्ञात",
-    }.get(
-        level,
-        "अज्ञात",
+    }
+
+    status = status_map.get(level, "अज्ञात")
+    loc_suffix = f" [{location_name}]" if location_name else ""
+
+    opening = (
+        f"ORCA का संयुक्त समुद्री जोखिम आकलन{loc_suffix}: {status}।"
+        if not incomplete
+        else f"ORCA का सुरक्षा आकलन{loc_suffix} सीमित है।"
     )
 
     facts = []
-
-    for domain, label in (
-        ("ocean", "समुद्री"),
-        ("weather", "मौसम"),
-    ):
-
-        result = results.get(
-            domain,
-            {},
-        )
-
-        if result.get("data_status") in {
-            "live",
-            "cached",
-        }:
-
-            values = _facts(
-                domain,
-                result.get("observation") or {},
-            )
-
+    for domain, label in (("ocean", "🌊 समुद्री आंकड़े"), ("weather", "🌤️ मौसम आंकड़े")):
+        result = results.get(domain, {})
+        if result.get("data_status") in {"live", "cached", "demo", "static"}:
+            values = _facts(domain, result.get("observation") or {}, lang="hi")
             if values:
-                facts.append(
-                    f"{label} प्रमाण: "
-                    + "; ".join(values)
-                    + "."
-                )
-
+                facts.append(f"{label}: " + "; ".join(values) + "।")
         elif domain in results:
+            facts.append(f"{label}: डेटा उपलब्ध नहीं है।")
 
-            facts.append(
-                f"{label} डेटा उपलब्ध नहीं है।"
-            )
+    guidance = []
+    if level == "low":
+        guidance.append("💡 सलाह: तटीय गतिविधियां, नौकायन और मछली पकड़ने के लिए समुद्र अनुकूल है।")
+    elif level == "moderate":
+        guidance.append("💡 सलाह: समुद्र में गतिविधियां करते समय सावधानी बरतें और मौसम अपडेट पर नजर रखें।")
+    elif level in {"high", "critical"}:
+        guidance.append("⚠️ चेतावनी: समुद्र में जाने से बचें। तेज हवाएं और ऊंची लहरें सक्रिय हैं।")
+
+    if isinstance(decision, dict) and decision.get("assessment"):
+        guidance.append(f"📌 निर्णय विश्लेषण: {decision.get('assessment')}")
 
     limitations = []
-
     if incomplete:
-        limitations.append(
-            "पूर्ण सुरक्षा आकलन उपलब्ध नहीं है; "
-            "आवश्यक प्रमाण अनुपलब्ध या लंबित हैं: "
-            + ", ".join(incomplete)
-            + "।"
-        )
+        limitations.append("आवश्यक डेटा अभी पूरी तरह उपलब्ध नहीं है।")
 
-    if "pfz" in pending:
-        limitations.append(
-            "PFZ डेटा उपलब्ध नहीं है।"
-        )
+    parts = [opening]
+    if facts:
+        parts.append(" ".join(facts))
+    if guidance:
+        parts.append(" ".join(guidance))
+    if limitations:
+        parts.append(" ".join(limitations))
 
-    other_pending = [
-        name
-        for name in pending
-        if name not in {"pfz", "safety"}
-    ]
+    return "\n\n".join(parts)
 
-    if other_pending:
-        limitations.append(
-            "लंबित क्षमता: "
-            + ", ".join(other_pending)
-            + "।"
-        )
 
-    if time_expression:
-        limitations.append(
-            f"आपने {time_expression} के बारे में पूछा था; "
-            "कॉन्फ़िगर किए गए प्रदाता केवल वर्तमान अवलोकन देते हैं, "
-            "पूर्वानुमान नहीं।"
-        )
+def _telugu_answer(
+    level: str,
+    results: dict[str, Any],
+    pending: list[str],
+    incomplete: list[str],
+    time_expression: str | None,
+    location_name: str | None = None,
+    decision: dict[str, Any] | None = None,
+) -> str:
+    status_map = {
+        "low": "తక్కువ ప్రమాదం (అనుకూల పరిస్థితి)",
+        "moderate": "మధ్యస్థ ప్రమాదం (జాగ్రత్త అవసరం)",
+        "high": "అధిక ప్రమాదం (తీవ్రమైన హెచ్చరిక)",
+        "critical": "అత్యంత ప్రమాదకరం",
+        "unknown": "అజ్ఞాతం",
+    }
+
+    status = status_map.get(level, "అజ్ఞాతం")
+    loc_suffix = f" [{location_name}]" if location_name else ""
 
     opening = (
-        "ORCA का संयुक्त जोखिम आकलन "
-        + status
-        + " है।"
+        f"ORCA సముద్ర ప్రమాద అంచనా{loc_suffix}: {status}."
         if not incomplete
-        else "ORCA का सुरक्षा आकलन सीमित है।"
+        else f"ORCA భద్రతా అంచనా{loc_suffix} పరిమితంగా ఉంది."
     )
 
-    return (
-        opening
-        + " "
-        + " ".join(facts + limitations)
-        + " निर्णय से पहले स्रोत प्रमाण और नवीनतम स्थितियों की समीक्षा करें।"
-    )
+    facts = []
+    for domain, label in (("ocean", "🌊 సముద్ర వివరాలు"), ("weather", "🌤️ వాతావరణ వివరాలు")):
+        result = results.get(domain, {})
+        if result.get("data_status") in {"live", "cached", "demo", "static"}:
+            values = _facts(domain, result.get("observation") or {}, lang="te")
+            if values:
+                facts.append(f"{label}: " + "; ".join(values) + "।")
+        elif domain in results:
+            facts.append(f"{label}: సమాచారం అందుబాటులో లేదు.")
+
+    guidance = []
+    if level == "low":
+        guidance.append("💡 సలహా: తీరప్రాంత కార్యకలాపాలు, పడవ ప్రయాణం మరియు చేపల వేటకు సముద్రం అనుకూలంగా ఉంది.")
+    elif level == "moderate":
+        guidance.append("💡 సలహా: సముద్రంలో కార్యకలాపాలు నిర్వహించేటప్పుడు జాగ్రత్త వహించండి. చిన్న పడవలు అప్రమత్తంగా ఉండాలి.")
+    elif level in {"high", "critical"}:
+        guidance.append("⚠️ హెచ్చరిక: సముద్రంలోకి వెళ్లవద్దు. ఈదురు గాలులు మరియు ఎత్తైన అలలు ఉన్నాయి.")
+
+    if isinstance(decision, dict) and decision.get("assessment"):
+        guidance.append(f"📌 విశ్లేషణ: {decision.get('assessment')}")
+
+    limitations = []
+    if incomplete:
+        limitations.append("అవసరమైన సమాచారం ఇంకా పూర్తి స్థాయిలో అందుబాటులో లేదు.")
+
+    parts = [opening]
+    if facts:
+        parts.append(" ".join(facts))
+    if guidance:
+        parts.append(" ".join(guidance))
+    if limitations:
+        parts.append(" ".join(limitations))
+
+    return "\n\n".join(parts)

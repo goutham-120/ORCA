@@ -165,7 +165,6 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
   const [spatialGrid, setSpatialGrid] = useState(null)
   const [isLoadingData, setIsLoadingData] = useState(false)
   const [hasDataError, setHasDataError] = useState(false)
-  const [isDarkMode, setIsDarkMode] = useState(true)
   const [lastUpdatedTime, setLastUpdatedTime] = useState(null)
 
   // Independent Opacity Controls
@@ -355,7 +354,8 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
     map.on('click', handleMapClick)
 
     const handleMapMoveEnd = async () => {
-      const bounds = map.getBounds()
+      if (!mapRef.current) return
+      const bounds = mapRef.current.getBounds()
       if (!bounds) return
       const boundsObj = {
         west: bounds.getWest(),
@@ -375,6 +375,9 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
 
     map.on('moveend', handleMapMoveEnd)
 
+    // Trigger initial viewport load
+    handleMapMoveEnd()
+
     return () => {
       map.off('click', handleMapClick)
       map.off('moveend', handleMapMoveEnd)
@@ -383,7 +386,7 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
       mapRef.current = null
       markerRef.current = null
     }
-  }, [isDarkMode])
+  }, [])
 
   // Update MapLibre Weather & Marine Layers Visibility & Opacity dynamically
   useEffect(() => {
@@ -460,26 +463,10 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
               Connecting Open-Meteo...
             </span>
           )}
-          <button
-            type="button"
-            onClick={() => setIsDarkMode((prev) => !prev)}
-            style={{
-              background: isDarkMode ? 'rgba(30, 41, 59, 0.8)' : 'rgba(241, 245, 249, 0.9)',
-              border: isDarkMode ? '1px solid rgba(255,255,255,0.15)' : '1px solid #cbd5e1',
-              color: isDarkMode ? '#e2e8f0' : '#0f172a',
-              borderRadius: '6px',
-              padding: '4px 10px',
-              fontSize: '11px',
-              cursor: 'pointer',
-              fontWeight: 600,
-            }}
-          >
-            {isDarkMode ? '🌙 Dark Base' : '☀️ Light Base'}
-          </button>
         </div>
       </div>
 
-      <div className="map-canvas" style={{ position: 'relative', minHeight: '480px', background: isDarkMode ? '#09131d' : '#e2e8f0' }}>
+      <div className="map-canvas" style={{ position: 'relative', minHeight: '480px', background: '#09131d' }}>
         <div ref={mapContainerRef} style={{ width: '100%', height: '480px', borderRadius: '8px', overflow: 'hidden' }} />
 
         {/* Real-time Static Canvas Flow Overlay for Ocean Currents */}

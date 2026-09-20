@@ -3,7 +3,7 @@ import Message from './Message'
 import WelcomeScreen from './WelcomeScreen'
 import AnalysisIndicator from './AnalysisIndicator'
 
-export default function ChatWindow({ messages, loading, onSelectPrompt }) {
+export default function ChatWindow({ messages, loading, onSelectPrompt, language }) {
   const bottomRef = useRef(null)
 
   useEffect(() => {
@@ -13,7 +13,7 @@ export default function ChatWindow({ messages, loading, onSelectPrompt }) {
   return (
     <section className="chat-window-viewport" aria-live="polite">
       {messages.length === 0 ? (
-        <WelcomeScreen onSelectPrompt={onSelectPrompt} />
+        <WelcomeScreen onSelectPrompt={onSelectPrompt} language={language} />
       ) : (
         <div className="messages-stream font-sans">
           {messages.map((message) => (

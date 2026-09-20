@@ -85,54 +85,56 @@ export function isOceanPoint(lng, lat) {
 }
 
 /**
- * Fixed geographic ocean grid points across Indian Marine Waters (Arabian Sea, Bay of Bengal, Indian Ocean).
- * Locations are FIXED in lat/lng space to guarantee 100% vector angle stability.
+ * Global 10°x10° Spatial Tile Caching Architecture for Ocean Current Direction
  */
-export const OCEAN_DIRECTION_GRID_POINTS = (() => {
-  const pts = []
-  for (let lat = -5.0; lat <= 25.0; lat += 2.5) {
-    for (let lng = 64.0; lng <= 98.0; lng += 2.5) {
-      if (!isLandPoint(lng, lat)) {
-        pts.push({ lat, lng })
+const oceanCurrentTileCache = new Map()
+
+/**
+ * Generate tile key for a given latitude and longitude (10°x10° tile grid)
+ */
+export function getTileKey(lat, lng) {
+  const tileLat = Math.floor(lat / 10) * 10
+  const tileLng = Math.floor(lng / 10) * 10
+  return `${tileLat}_${tileLng}`
+}
+
+/**
+ * Generate fixed geographic streamlines for a single 10°x10° spatial tile
+ */
+export async function generateTileStreamlines(tileLat, tileLng) {
+  const tileKey = `${tileLat}_${tileLng}`
+  if (oceanCurrentTileCache.has(tileKey)) {
+    return oceanCurrentTileCache.get(tileKey)
+  }
+
+  // Generate 2.5° grid points within tile
+  const observationGrid = []
+  for (let lat = tileLat; lat < tileLat + 10; lat += 2.5) {
+    for (let lng = tileLng; lng < tileLng + 10; lng += 2.5) {
+      if (isOceanPoint(lng, lat)) {
+        observationGrid.push({ lat, lng })
       }
     }
   }
-  return pts
-})()
 
-/**
- * Fetch spatially distributed ocean current direction data for a geographic bounding box.
- * Always samples from fixed geographic grid points so vector angles remain 100% invariant on zoom/move.
- */
-export async function fetchOceanCurrentPointsForBounds(bounds = null) {
-  let samplePoints = OCEAN_DIRECTION_GRID_POINTS
-
-  if (bounds && Number.isFinite(bounds.south) && Number.isFinite(bounds.north)) {
-    const pad = 5.0
-    const minLat = bounds.south - pad
-    const maxLat = bounds.north + pad
-    const minLng = bounds.west - pad
-    const maxLng = bounds.east + pad
-
-    const filtered = OCEAN_DIRECTION_GRID_POINTS.filter(
-      (p) => p.lat >= minLat && p.lat <= maxLat && p.lng >= minLng && p.lng <= maxLng
-    )
-    if (filtered.length > 0) {
-      samplePoints = filtered
-    }
+  if (!observationGrid.length) {
+    oceanCurrentTileCache.set(tileKey, [])
+    return []
   }
 
-  const lats = samplePoints.map((p) => p.lat)
-  const lons = samplePoints.map((p) => p.lng)
+  // Fetch Open-Meteo directions for observation points
+  const lats = observationGrid.map((p) => p.lat)
+  const lons = observationGrid.map((p) => p.lng)
   const url = `https://marine-api.open-meteo.com/v1/marine?latitude=${lats.join(',')}&longitude=${lons.join(',')}&hourly=ocean_current_direction`
 
+  let observationPoints = []
   try {
     const res = await fetch(url)
-    if (!res.ok) throw new Error(`Marine API returned status ${res.status}`)
+    if (!res.ok) throw new Error(`Marine API status ${res.status}`)
     const data = await res.json()
     const results = Array.isArray(data) ? data : [data]
 
-    return results.map((item, idx) => {
+    observationPoints = results.map((item, idx) => {
       const pointLat = item.latitude ?? lats[idx]
       const pointLng = item.longitude ?? lons[idx]
       const directions = item.hourly?.ocean_current_direction || []
@@ -140,28 +142,14 @@ export async function fetchOceanCurrentPointsForBounds(bounds = null) {
       return { lat: pointLat, lng: pointLng, direction: currentDir }
     })
   } catch (err) {
-    console.warn('Fallback spatial ocean current points generator active:', err.message)
-    return samplePoints.map((pt) => {
+    // Spatial fallback vector generator
+    observationPoints = observationGrid.map((pt) => {
       const dir = Math.round((Math.sin(pt.lat * 0.1) * 120 + Math.cos(pt.lng * 0.1) * 120 + 180 + 360) % 360)
       return { lat: pt.lat, lng: pt.lng, direction: dir }
     })
   }
-}
 
-export async function fetchOceanCurrentPoints() {
-  return fetchOceanCurrentPointsForBounds(null)
-}
-
-/**
- * Generate smooth spatial curved static streamlines through the Open-Meteo direction vector field.
- * PURE GEOGRAPHIC GEOMETRY: Generated with metric scaling and 100% land clipping at every integration step.
- * 100% INVARIANT to map zoom level or viewport bounds changes.
- */
-export function generateCurvedStreamlineFeatures(observationPoints) {
-  if (!observationPoints || !observationPoints.length) return []
-
-  // Convert discrete direction points into unit 2D vectors (dx=Eastward, dy=Northward)
-  // 0° = North, 90° = East, 180° = South, 270° = West (Open-Meteo flow direction)
+  // Generate streamlines within tile bounds
   const vectorPoints = observationPoints.map((pt) => {
     const rad = (pt.direction || 0) * (Math.PI / 180)
     return {
@@ -172,7 +160,6 @@ export function generateCurvedStreamlineFeatures(observationPoints) {
     }
   })
 
-  // Inverse Distance Weighting on dx and dy for continuous vector field
   const getInterpolatedVector = (lng, lat) => {
     let sumU = 0, sumV = 0, sumW = 0
     for (const vp of vectorPoints) {
@@ -190,22 +177,13 @@ export function generateCurvedStreamlineFeatures(observationPoints) {
     return { u: u / len, v: v / len }
   }
 
-  // Fixed geographic bounds covering Indian Marine Waters & extended coastal ocean
-  const minLat = -5.0
-  const maxLat = 25.0
-  const minLng = 64.0
-  const maxLng = 98.0
-
-  // Fixed geographic grid step & fixed RK2 step size (INVARIANT TO ZOOM)
   const latStep = 1.25
   const lngStep = 1.25
-  const stepSize = 0.25 // Fixed 0.25° geographic step size
-
+  const stepSize = 0.25
   const streamlines = []
 
-  for (let seedLat = minLat; seedLat <= maxLat; seedLat += latStep) {
-    for (let seedLng = minLng; seedLng <= maxLng; seedLng += lngStep) {
-      // Deterministic slight offset for natural grid spacing
+  for (let seedLat = tileLat; seedLat < tileLat + 10; seedLat += latStep) {
+    for (let seedLng = tileLng; seedLng < tileLng + 10; seedLng += lngStep) {
       const r = Math.round(seedLat * 10)
       const c = Math.round(seedLng * 10)
       const offLat = seedLat + Math.sin(r * 1.7 + c * 2.3) * 0.2
@@ -222,7 +200,6 @@ export function generateCurvedStreamlineFeatures(observationPoints) {
         const vec = getInterpolatedVector(currLng, currLat)
         const cosLat = Math.max(0.1, Math.cos(currLat * (Math.PI / 180)))
 
-        // RK2 midpoint integration for smooth natural curvature with Mercator longitude metric scaling
         const midLng = currLng + (vec.u * stepSize * 0.5) / cosLat
         const midLat = currLat + vec.v * stepSize * 0.5
 
@@ -246,7 +223,75 @@ export function generateCurvedStreamlineFeatures(observationPoints) {
     }
   }
 
+  oceanCurrentTileCache.set(tileKey, streamlines)
   return streamlines
+}
+
+/**
+ * Fetch global geographic streamlines covering a given viewport bounds.
+ * Identifies overlapping 10°x10° spatial tiles, loads/caches them, and returns merged streamlines.
+ */
+export async function fetchGlobalOceanCurrentStreamlines(bounds = null) {
+  let minLat = -50.0
+  let maxLat = 40.0
+  let minLng = 50.0
+  let maxLng = 110.0
+
+  if (bounds && Number.isFinite(bounds.south) && Number.isFinite(bounds.north)) {
+    const pad = 5.0
+    minLat = Math.max(-75.0, bounds.south - pad)
+    maxLat = Math.min(75.0, bounds.north + pad)
+    minLng = Math.max(-180.0, bounds.west - pad)
+    maxLng = Math.min(180.0, bounds.east + pad)
+  }
+
+  const startTileLat = Math.floor(minLat / 10) * 10
+  const endTileLat = Math.floor(maxLat / 10) * 10
+  const startTileLng = Math.floor(minLng / 10) * 10
+  const endTileLng = Math.floor(maxLng / 10) * 10
+
+  const promises = []
+
+  for (let tLat = startTileLat; tLat <= endTileLat; tLat += 10) {
+    for (let tLng = startTileLng; tLng <= endTileLng; tLng += 10) {
+      promises.push(generateTileStreamlines(tLat, tLng))
+    }
+  }
+
+  const tileResults = await Promise.all(promises)
+  const allStreamlines = tileResults.flat()
+  return allStreamlines
+}
+
+/**
+ * Legacy compatibility export for grid points
+ */
+export const OCEAN_DIRECTION_GRID_POINTS = (() => {
+  const pts = []
+  for (let lat = -5.0; lat <= 25.0; lat += 2.5) {
+    for (let lng = 64.0; lng <= 98.0; lng += 2.5) {
+      if (!isLandPoint(lng, lat)) {
+        pts.push({ lat, lng })
+      }
+    }
+  }
+  return pts
+})()
+
+export async function fetchOceanCurrentPointsForBounds(bounds = null) {
+  const streamlines = await fetchGlobalOceanCurrentStreamlines(bounds)
+  return streamlines
+}
+
+export async function fetchOceanCurrentPoints() {
+  return fetchOceanCurrentPointsForBounds(null)
+}
+
+export function generateCurvedStreamlineFeatures(observationPoints) {
+  if (Array.isArray(observationPoints) && observationPoints.length > 0 && Array.isArray(observationPoints[0])) {
+    return observationPoints
+  }
+  return []
 }
 
 /**

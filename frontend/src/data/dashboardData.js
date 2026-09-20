@@ -1,6 +1,6 @@
 export const dashboardLocations = [
   {
-    id: 'visakhapatnam', name: 'Visakhapatnam', region: 'Andhra Pradesh, India', coordinates: '17.6868 N · 83.2185 E', mapPosition: { x: 47, y: 43 },
+    id: 'visakhapatnam', name: 'Visakhapatnam', region: 'Andhra Pradesh, India', latitude: 17.6868, longitude: 83.2185, coordinates: '17.6868 N · 83.2185 E', mapPosition: { x: 47, y: 43 },
     wave: { value: '1.8', unit: 'm', status: 'Moderate', trend: 'Up 0.2 m', tone: 'amber' }, wind: { value: '18', unit: 'km/h', status: 'NE direction', trend: 'Down 3 km/h', tone: 'mint' }, temperature: { value: '28.4', unit: 'C', status: 'Surface reading', trend: 'Up 0.4 C', tone: 'blue' }, visibility: 'Good, 8 km',
     currents: { speed: '1.4 knots', direction: 'SW', status: 'Moderate coastal drift' },
     safety: { score: 72, label: 'Moderate', note: 'Conditions are manageable near shore. Review wave activity before offshore travel.', wave: 76, wind: 58, visibility: 89 },
@@ -21,7 +21,7 @@ export const dashboardLocations = [
     trends: { waves: { label: 'Wave height (m)', values: [1.1, 1.2, 1.3, 1.25, 1.4, 1.5, 1.42, 1.55, 1.6, 1.72, 1.7, 1.8], current: '1.8 m', direction: 'Rising' }, wind: { label: 'Wind speed (km/h)', values: [12, 13, 14, 16, 14, 15, 17, 19, 17, 20, 19, 18], current: '18 km/h', direction: 'Easing' }, temperature: { label: 'Surface temperature (C)', values: [27.8, 27.9, 28, 28, 28.1, 28.15, 28.2, 28.15, 28.3, 28.35, 28.3, 28.4], current: '28.4 C', direction: 'Warming' } },
   },
   {
-    id: 'chennai', name: 'Chennai', region: 'Tamil Nadu, India', coordinates: '13.0827 N · 80.2707 E', mapPosition: { x: 38, y: 57 },
+    id: 'chennai', name: 'Chennai', region: 'Tamil Nadu, India', latitude: 13.0827, longitude: 80.2707, coordinates: '13.0827 N · 80.2707 E', mapPosition: { x: 38, y: 57 },
     wave: { value: '1.1', unit: 'm', status: 'Stable', trend: 'Down 0.1 m', tone: 'mint' }, wind: { value: '12', unit: 'km/h', status: 'ESE direction', trend: 'Up 2 km/h', tone: 'blue' }, temperature: { value: '29.1', unit: 'C', status: 'Surface reading', trend: 'Up 0.2 C', tone: 'blue' }, visibility: 'Excellent, 11 km',
     currents: { speed: '0.8 knots', direction: 'S', status: 'Gentle southerly drift' },
     safety: { score: 86, label: 'Favorable', note: 'Stable near-coast conditions support routine activity. Continue monitoring evening winds.', wave: 88, wind: 78, visibility: 92 },
@@ -40,7 +40,7 @@ export const dashboardLocations = [
     trends: { waves: { label: 'Wave height (m)', values: [1.35, 1.3, 1.25, 1.2, 1.18, 1.15, 1.12, 1.1, 1.05, 1.1, 1.08, 1.1], current: '1.1 m', direction: 'Settling' }, wind: { label: 'Wind speed (km/h)', values: [8, 9, 10, 9, 10, 11, 11, 12, 10, 11, 12, 12], current: '12 km/h', direction: 'Building' }, temperature: { label: 'Surface temperature (C)', values: [28.3, 28.4, 28.5, 28.6, 28.7, 28.8, 28.8, 28.9, 29, 29, 29, 29.1], current: '29.1 C', direction: 'Warming' } },
   },
   {
-    id: 'mumbai', name: 'Mumbai', region: 'Maharashtra, India', coordinates: '19.0760 N · 72.8777 E', mapPosition: { x: 61, y: 34 },
+    id: 'mumbai', name: 'Mumbai', region: 'Maharashtra, India', latitude: 19.0760, longitude: 72.8777, coordinates: '19.0760 N · 72.8777 E', mapPosition: { x: 61, y: 34 },
     wave: { value: '2.4', unit: 'm', status: 'Elevated', trend: 'Up 0.4 m', tone: 'coral' }, wind: { value: '25', unit: 'km/h', status: 'WSW direction', trend: 'Up 5 km/h', tone: 'amber' }, temperature: { value: '27.6', unit: 'C', status: 'Surface reading', trend: 'Down 0.3 C', tone: 'blue' }, visibility: 'Moderate, 6 km',
     currents: { speed: '2.1 knots', direction: 'NW', status: 'Strong tidal currents' },
     safety: { score: 54, label: 'Caution', note: 'Rising wave and wind activity reduce the operating margin for smaller vessels.', wave: 48, wind: 52, visibility: 76 },
@@ -60,6 +60,104 @@ export const dashboardLocations = [
       { id: 'f3', zone: 'High Seas Fishing Bank', activeVessels: 18, activity: 'High activity', depth: '50m shelf', mapPosition: { x: 70, y: 26 } }
     ],
     trends: { waves: { label: 'Wave height (m)', values: [1.3, 1.45, 1.5, 1.65, 1.7, 1.8, 1.9, 2.05, 2, 2.2, 2.25, 2.4], current: '2.4 m', direction: 'Rising' }, wind: { label: 'Wind speed (km/h)', values: [15, 16, 18, 17, 19, 20, 21, 23, 22, 24, 24, 25], current: '25 km/h', direction: 'Rising' }, temperature: { label: 'Surface temperature (C)', values: [28.4, 28.3, 28.2, 28.1, 28, 27.9, 27.9, 27.8, 27.7, 27.6, 27.6], current: '27.6 C', direction: 'Cooling' } },
+  },
+  {
+    id: 'kochi', name: 'Kochi', region: 'Kerala, India', latitude: 9.9312, longitude: 76.2673, coordinates: '9.9312 N · 76.2673 E', mapPosition: { x: 42, y: 72 },
+    wave: { value: '1.3', unit: 'm', status: 'Moderate', trend: 'Up 0.1 m', tone: 'amber' }, wind: { value: '14', unit: 'km/h', status: 'WNW direction', trend: 'Stable', tone: 'blue' }, temperature: { value: '28.9', unit: 'C', status: 'Surface reading', trend: 'Up 0.1 C', tone: 'blue' }, visibility: 'Good, 9 km',
+    currents: { speed: '1.1 knots', direction: 'S', status: 'Moderate coastal drift' },
+    safety: { score: 81, label: 'Favorable', note: 'Routine harbor and nearshore navigation window open.', wave: 82, wind: 80, visibility: 90 },
+    brief: 'Conditions near Kochi port are stable with minor swell activity. Safe for light craft and commercial shipping.',
+    findings: [{ tone: 'good', text: 'Port channel navigation conditions clear' }, { tone: 'good', text: 'Visibility is good for coastal passage' }],
+    alertsList: [
+      { id: 'koc-wave', severity: 'advisory', category: 'wave', title: 'Southwest swell watch', detail: 'Low long-period swell entering the channel.', guidance: 'Exercise watchfulness near shallow harbor mouth.', affectedArea: 'Kochi harbor channel', time: 'Today · 07:00 AM', expectedTime: 'Next 12 Hours', recommendation: 'Maintain standard channel speed.', mapPosition: { x: 44, y: 70 } }
+    ],
+    traffic: [{ id: 'k1', name: 'Malabar Queen', type: 'Passenger Ferry', status: 'In Transit (10 knots)', mapPosition: { x: 40, y: 70 } }],
+    fishing: [{ id: 'f4', zone: 'Wayanad Shelf Bank', activeVessels: 14, activity: 'Moderate activity', depth: '40m shelf', mapPosition: { x: 45, y: 74 } }],
+    trends: { waves: { label: 'Wave height (m)', values: [1.1, 1.15, 1.2, 1.25, 1.3], current: '1.3 m', direction: 'Stable' }, wind: { label: 'Wind speed (km/h)', values: [12, 13, 14, 14], current: '14 km/h', direction: 'Stable' }, temperature: { label: 'Surface temperature (C)', values: [28.7, 28.8, 28.9], current: '28.9 C', direction: 'Stable' } }
+  },
+  {
+    id: 'goa', name: 'Goa (Panaji)', region: 'Goa, India', latitude: 15.4989, longitude: 73.8278, coordinates: '15.4989 N · 73.8278 E', mapPosition: { x: 50, y: 52 },
+    wave: { value: '1.0', unit: 'm', status: 'Calm', trend: 'Down 0.2 m', tone: 'mint' }, wind: { value: '11', unit: 'km/h', status: 'NW direction', trend: 'Light breeze', tone: 'mint' }, temperature: { value: '29.3', unit: 'C', status: 'Surface reading', trend: 'Up 0.3 C', tone: 'blue' }, visibility: 'Excellent, 12 km',
+    currents: { speed: '0.6 knots', direction: 'NW', status: 'Calm water drift' },
+    safety: { score: 92, label: 'Favorable', note: 'Ideal beach, boating, and coastal sightseeing conditions.', wave: 94, wind: 90, visibility: 95 },
+    brief: 'Goa coastal waters are calm with low wave activity and clear skies. Excellent window for all maritime activities.',
+    findings: [{ tone: 'good', text: 'Sea state is calm and favorable' }, { tone: 'good', text: 'Visibility is excellent' }],
+    alertsList: [
+      { id: 'goa-info', severity: 'info', category: 'safety', title: 'Favorable coastal operations', detail: 'Low swell and light winds active.', guidance: 'Standard safety precautions apply.', affectedArea: 'Panaji & Mormugao waters', time: 'Today · 06:00 AM', expectedTime: '24 Hours', recommendation: 'Routine monitoring active.', mapPosition: { x: 50, y: 52 } }
+    ],
+    traffic: [{ id: 'g1', name: 'Mormugao Express', type: 'Iron Ore Carrier', status: 'Anchored (0 knots)', mapPosition: { x: 48, y: 50 } }],
+    fishing: [{ id: 'f5', zone: 'Goa Coastal Waters', activeVessels: 8, activity: 'Routine activity', depth: '25m shelf', mapPosition: { x: 52, y: 54 } }],
+    trends: { waves: { label: 'Wave height (m)', values: [1.2, 1.1, 1.0], current: '1.0 m', direction: 'Calm' }, wind: { label: 'Wind speed (km/h)', values: [14, 12, 11], current: '11 km/h', direction: 'Light' }, temperature: { label: 'Surface temperature (C)', values: [29.0, 29.2, 29.3], current: '29.3 C', direction: 'Warming' } }
+  },
+  {
+    id: 'mangalore', name: 'Mangalore', region: 'Karnataka, India', latitude: 12.9141, longitude: 74.8560, coordinates: '12.9141 N · 74.8560 E', mapPosition: { x: 46, y: 62 },
+    wave: { value: '1.4', unit: 'm', status: 'Moderate', trend: 'Up 0.1 m', tone: 'amber' }, wind: { value: '16', unit: 'km/h', status: 'W direction', trend: 'Up 2 km/h', tone: 'blue' }, temperature: { value: '28.6', unit: 'C', status: 'Surface reading', trend: 'Stable', tone: 'blue' }, visibility: 'Good, 9 km',
+    currents: { speed: '1.2 knots', direction: 'S', status: 'Moderate drift' },
+    safety: { score: 78, label: 'Favorable', note: 'Manageable coastal waters. Review harbor updates prior to departure.', wave: 76, wind: 80, visibility: 88 },
+    brief: 'Moderate sea state near New Mangalore Port. Cargo and fishing operations proceeding as planned.',
+    findings: [{ tone: 'good', text: 'Visibility remains clear' }, { tone: 'warning', text: 'Moderate afternoon onshore breeze expected' }],
+    alertsList: [
+      { id: 'mng-wind', severity: 'advisory', category: 'wind', title: 'Onshore breeze advisory', detail: 'Westerly gusts near 18 km/h.', guidance: 'Secure small craft moorings.', affectedArea: 'New Mangalore approach', time: 'Today · 09:15 AM', expectedTime: 'Through 8:00 PM', recommendation: 'Verify deck lashings.', mapPosition: { x: 46, y: 62 } }
+    ],
+    traffic: [{ id: 'mng1', name: 'Karnataka Cargo 02', type: 'Bulk Carrier', status: 'Docked', mapPosition: { x: 44, y: 60 } }],
+    fishing: [{ id: 'f6', zone: 'Karnataka Shelf', activeVessels: 11, activity: 'Moderate activity', depth: '30m shelf', mapPosition: { x: 48, y: 64 } }],
+    trends: { waves: { label: 'Wave height (m)', values: [1.2, 1.3, 1.4], current: '1.4 m', direction: 'Moderate' }, wind: { label: 'Wind speed (km/h)', values: [12, 14, 16], current: '16 km/h', direction: 'Building' }, temperature: { label: 'Surface temperature (C)', values: [28.5, 28.6], current: '28.6 C', direction: 'Stable' } }
+  },
+  {
+    id: 'paradip', name: 'Paradip', region: 'Odisha, India', latitude: 20.3164, longitude: 86.6105, coordinates: '20.3164 N · 86.6105 E', mapPosition: { x: 62, y: 32 },
+    wave: { value: '2.1', unit: 'm', status: 'Elevated', trend: 'Up 0.3 m', tone: 'coral' }, wind: { value: '22', unit: 'km/h', status: 'SE direction', trend: 'Up 4 km/h', tone: 'amber' }, temperature: { value: '27.9', unit: 'C', status: 'Surface reading', trend: 'Down 0.2 C', tone: 'blue' }, visibility: 'Moderate, 7 km',
+    currents: { speed: '1.8 knots', direction: 'NE', status: 'Strong shelf current' },
+    safety: { score: 61, label: 'Caution', note: 'Elevated wave activity in Bay of Bengal approaches.', wave: 56, wind: 60, visibility: 82 },
+    brief: 'High wave action near Paradip Port. Small craft advised to exercise caution offshore.',
+    findings: [{ tone: 'warning', text: 'High wave activity in Bay of Bengal sector' }, { tone: 'warning', text: 'Fresh southeasterly winds' }],
+    alertsList: [
+      { id: 'pdp-wave', severity: 'high', category: 'wave', title: 'High wave warning', detail: 'Waves up to 2.3 m near outer anchorage.', guidance: 'Small vessels avoid open Bay of Bengal transit.', affectedArea: 'Paradip outer anchorage', time: 'Today · 05:30 AM', expectedTime: 'Next 18 Hours', recommendation: 'Remain in sheltered waters.', mapPosition: { x: 62, y: 32 } }
+    ],
+    traffic: [{ id: 'p1', name: 'Odisha Pride', type: 'Coal Freighter', status: 'Anchored Outer Road (3 knots)', mapPosition: { x: 60, y: 30 } }],
+    fishing: [{ id: 'f7', zone: 'Paradip Deep Waters', activeVessels: 9, activity: 'Low activity', depth: '45m shelf', mapPosition: { x: 64, y: 34 } }],
+    trends: { waves: { label: 'Wave height (m)', values: [1.6, 1.8, 2.1], current: '2.1 m', direction: 'Rising' }, wind: { label: 'Wind speed (km/h)', values: [16, 19, 22], current: '22 km/h', direction: 'Rising' }, temperature: { label: 'Surface temperature (C)', values: [28.1, 27.9], current: '27.9 C', direction: 'Cooling' } }
+  },
+  {
+    id: 'kolkata', name: 'Kolkata / Haldia', region: 'West Bengal, India', latitude: 22.0257, longitude: 88.0583, coordinates: '22.0257 N · 88.0583 E', mapPosition: { x: 70, y: 22 },
+    wave: { value: '1.2', unit: 'm', status: 'Stable', trend: 'Stable', tone: 'mint' }, wind: { value: '15', unit: 'km/h', status: 'S direction', trend: 'Up 1 km/h', tone: 'blue' }, temperature: { value: '28.2', unit: 'C', status: 'Surface reading', trend: 'Up 0.1 C', tone: 'blue' }, visibility: 'Moderate, 7 km (Estuarine fog)',
+    currents: { speed: '2.4 knots', direction: 'S', status: 'Strong river estuarine tidal ebb' },
+    safety: { score: 75, label: 'Moderate', note: 'Strong tidal flow in Hooghly river channel. Watch navigation markers.', wave: 85, wind: 78, visibility: 72 },
+    brief: 'Estuarine navigation near Haldia & Kolkata river channel proceeding under pilotage advisories.',
+    findings: [{ tone: 'good', text: 'Estuary wave heights manageable' }, { tone: 'warning', text: 'Strong tidal ebb currents in river channel' }],
+    alertsList: [
+      { id: 'kol-current', severity: 'advisory', category: 'current', title: 'Tidal ebb velocity watch', detail: 'River current velocity up to 2.6 knots.', guidance: 'Follow harbor pilot instructions in channel.', affectedArea: 'Hooghly estuary & Haldia channel', time: 'Today · 08:00 AM', expectedTime: 'During ebb tide', recommendation: 'Maintain steering way in channel.', mapPosition: { x: 70, y: 22 } }
+    ],
+    traffic: [{ id: 'kol1', name: 'Hooghly Pioneer', type: 'River Barge', status: 'Under Pilotage (8 knots)', mapPosition: { x: 68, y: 20 } }],
+    fishing: [{ id: 'f8', zone: 'Sunderbans Estuary', activeVessels: 15, activity: 'High traditional activity', depth: '15m estuary', mapPosition: { x: 72, y: 24 } }],
+    trends: { waves: { label: 'Wave height (m)', values: [1.1, 1.2, 1.2], current: '1.2 m', direction: 'Stable' }, wind: { label: 'Wind speed (km/h)', values: [12, 14, 15], current: '15 km/h', direction: 'Stable' }, temperature: { label: 'Surface temperature (C)', values: [28.0, 28.2], current: '28.2 C', direction: 'Stable' } }
+  },
+  {
+    id: 'portblair', name: 'Port Blair', region: 'Andaman & Nicobar, India', latitude: 11.6234, longitude: 92.7265, coordinates: '11.6234 N · 92.7265 E', mapPosition: { x: 80, y: 75 },
+    wave: { value: '1.6', unit: 'm', status: 'Moderate', trend: 'Up 0.2 m', tone: 'amber' }, wind: { value: '17', unit: 'km/h', status: 'SW direction', trend: 'Gentle breeze', tone: 'blue' }, temperature: { value: '29.4', unit: 'C', status: 'Surface reading', trend: 'Up 0.2 C', tone: 'blue' }, visibility: 'Excellent, 12 km',
+    currents: { speed: '1.3 knots', direction: 'SW', status: 'Island pass drift' },
+    safety: { score: 80, label: 'Favorable', note: 'Clear island passage conditions. Routine inter-island ferry and vessel traffic active.', wave: 78, wind: 82, visibility: 94 },
+    brief: 'Conditions near Port Blair harbor & Andaman Sea inter-island channels are favorable with clear visibility.',
+    findings: [{ tone: 'good', text: 'Visibility excellent for island approaches' }, { tone: 'good', text: 'Inter-island ferry routes operational' }],
+    alertsList: [
+      { id: 'pb-wind', severity: 'advisory', category: 'wind', title: 'Andaman Channel breeze watch', detail: 'Southwesterly wind gusts near 18 km/h in exposed passages.', guidance: 'Maintain VHF radio watch between island ports.', affectedArea: 'Port Blair & Andaman channel', time: 'Today · 06:45 AM', expectedTime: 'Next 12 Hours', recommendation: 'Monitor inter-island marine advisories.', mapPosition: { x: 80, y: 75 } }
+    ],
+    traffic: [{ id: 'pb1', name: 'Coral Queen', type: 'Inter-Island Passenger Ferry', status: 'In Transit (12 knots)', mapPosition: { x: 78, y: 72 } }],
+    fishing: [{ id: 'f9', zone: 'Andaman Shelf Reef', activeVessels: 7, activity: 'Routine activity', depth: '60m shelf', mapPosition: { x: 82, y: 78 } }],
+    trends: { waves: { label: 'Wave height (m)', values: [1.3, 1.4, 1.6], current: '1.6 m', direction: 'Moderate' }, wind: { label: 'Wind speed (km/h)', values: [14, 16, 17], current: '17 km/h', direction: 'Stable' }, temperature: { label: 'Surface temperature (C)', values: [29.1, 29.3, 29.4], current: '29.4 C', direction: 'Warming' } }
+  },
+  {
+    id: 'surat', name: 'Surat (Hazira)', region: 'Gujarat, India', latitude: 21.1702, longitude: 72.8311, coordinates: '21.1702 N · 72.8311 E', mapPosition: { x: 58, y: 38 },
+    wave: { value: '1.5', unit: 'm', status: 'Moderate', trend: 'Up 0.1 m', tone: 'amber' }, wind: { value: '19', unit: 'km/h', status: 'SW direction', trend: 'Fresh breeze', tone: 'amber' }, temperature: { value: '28.8', unit: 'C', status: 'Surface reading', trend: 'Up 0.1 C', tone: 'blue' }, visibility: 'Good, 9 km',
+    currents: { speed: '2.2 knots', direction: 'SW', status: 'Gulf of Khambhat tidal flow' },
+    safety: { score: 76, label: 'Favorable', note: 'Gulf of Khambhat tidal currents active. Exercise caution near Hazira LNG port approaches.', wave: 74, wind: 72, visibility: 88 },
+    brief: 'Hazira & Tapi estuarine channel near Surat proceeding under routine port pilotage.',
+    findings: [{ tone: 'good', text: 'Hazira industrial channel navigation clear' }, { tone: 'warning', text: 'Strong tidal currents in Gulf of Khambhat' }],
+    alertsList: [
+      { id: 'sur-current', severity: 'advisory', category: 'current', title: 'Gulf tidal flow advisory', detail: 'Tidal current speeds up to 2.3 knots near Hazira port approach.', guidance: 'Maintain pilotage navigation guidance.', affectedArea: 'Surat Hazira channel & Gulf of Khambhat', time: 'Today · 07:15 AM', expectedTime: 'During flood & ebb tide', recommendation: 'Verify draft & tug assistance.', mapPosition: { x: 58, y: 38 } }
+    ],
+    traffic: [{ id: 'sur1', name: 'Hazira Trader', type: 'LNG Tanker', status: 'Berthing (3 knots)', mapPosition: { x: 56, y: 36 } }],
+    fishing: [{ id: 'f10', zone: 'Khambhat Coastal Bank', activeVessels: 10, activity: 'Moderate activity', depth: '20m gulf', mapPosition: { x: 60, y: 40 } }],
+    trends: { waves: { label: 'Wave height (m)', values: [1.2, 1.4, 1.5], current: '1.5 m', direction: 'Moderate' }, wind: { label: 'Wind speed (km/h)', values: [15, 17, 19], current: '19 km/h', direction: 'Building' }, temperature: { label: 'Surface temperature (C)', values: [28.6, 28.7, 28.8], current: '28.8 C', direction: 'Stable' } }
   },
 ]
 

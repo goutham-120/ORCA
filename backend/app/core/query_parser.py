@@ -34,11 +34,20 @@ class QueryParser:
         "pfz": ("मछली", "मछली पकड़"),
     }
 
+    _telugu_terms = {
+        "weather": ("వాతావరణం", "గాలి", "వర్షం", "తుఫాను", "ఉష్ణోగ్రత"),
+        "ocean": ("సముద్రం", "సముద్ర", "అలలు", "అలల", "కెరటాలు"),
+        "safety": ("సురక్షితం", "సురక్షితమేనా", "భద్రత", "ప్రమాదం"),
+        "gis": ("నిషిద్ధ", "ప్రాంతం", "సమీపంలో", "చేరువలో"),
+        "pfz": ("చేపలు", "చేపల", "మత్స్య"),
+    }
+
     def parse(self, query: str) -> ParsedQuery:
         normalized = " ".join(query.strip().split())
         lowered = normalized.lower()
         matches = [name for name, terms in self._intent_terms.items() if any(term in lowered for term in terms)]
         matches.extend(name for name, terms in self._hindi_terms.items() if any(term in normalized for term in terms) and name not in matches)
+        matches.extend(name for name, terms in self._telugu_terms.items() if any(term in normalized for term in terms) and name not in matches)
         explicit_pfz = "pfz" in matches or any(term in lowered for term in ("fishing zone", "potential fishing zone", "potential fishing zones"))
         fishing = any(term in lowered for term in ("fish", "fishing")) or explicit_pfz
         safety = "safety" in matches

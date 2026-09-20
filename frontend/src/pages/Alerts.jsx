@@ -146,7 +146,7 @@ export default function Alerts({ navigate }) {
 
     targetKeys.forEach((key) => {
       const locData = liveLocationMap[key]
-      if (locData && Array.isArray(locData.alertsList)) {
+      if (locData && Array.isArray(locData.alertsList) && locData.alertsList.length > 0) {
         locData.alertsList.forEach((alert) => {
           allAlerts.push({
             ...alert,
@@ -156,6 +156,19 @@ export default function Alerts({ navigate }) {
             coordinates: locData.coordinates
           })
         })
+      } else {
+        const staticLoc = dashboardLocations.find((loc) => loc.id === key)
+        if (staticLoc && Array.isArray(staticLoc.alertsList)) {
+          staticLoc.alertsList.forEach((alert) => {
+            allAlerts.push({
+              ...alert,
+              locationId: staticLoc.id,
+              locationName: staticLoc.name,
+              region: staticLoc.region,
+              coordinates: staticLoc.coordinates
+            })
+          })
+        }
       }
     })
     return allAlerts

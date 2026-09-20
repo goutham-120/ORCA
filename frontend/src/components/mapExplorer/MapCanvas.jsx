@@ -5,8 +5,14 @@ import {
   Marker,
   NavigationControl,
   Popup,
+  setWorkerUrl,
 } from 'maplibre-gl'
+import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 import 'maplibre-gl/dist/maplibre-gl.css'
+import { registerOmProtocol, OM_TEMPERATURE_URL } from '../../utils/omProtocolHelper'
+
+setWorkerUrl(workerUrl)
+registerOmProtocol()
 
 const DEFAULT_STYLE = import.meta.env.VITE_MAP_STYLE_URL || {
   version: 8,
@@ -34,9 +40,9 @@ const featureCollection = (features) => ({
 })
 
 const DEFAULT_LOCATION = {
-  latitude: 13.0827,
-  longitude: 80.2707,
-  label: 'Chennai',
+  latitude: 20.5,
+  longitude: 78.9,
+  label: 'India coastal waters',
 }
 
 function flattenCoordinates(geometry) {
@@ -123,28 +129,14 @@ export default function MapCanvas({
     locationHandlerRef.current = onMapLocation
   }, [onMapLocation])
 
-  /*
-   * Create the MapLibre map.
-   */
   useEffect(() => {
     if (!containerRef.current || mapRef.current) {
       return undefined
     }
 
-    const initialLocation =
-      initialLocationRef.current || DEFAULT_LOCATION
-
-    const latitude = Number.isFinite(
-      Number(initialLocation.latitude)
-    )
-      ? Number(initialLocation.latitude)
-      : DEFAULT_LOCATION.latitude
-
-    const longitude = Number.isFinite(
-      Number(initialLocation.longitude)
-    )
-      ? Number(initialLocation.longitude)
-      : DEFAULT_LOCATION.longitude
+    const initialLocation = initialLocationRef.current || DEFAULT_LOCATION
+    const latitude = Number.isFinite(Number(initialLocation.latitude)) ? Number(initialLocation.latitude) : DEFAULT_LOCATION.latitude
+    const longitude = Number.isFinite(Number(initialLocation.longitude)) ? Number(initialLocation.longitude) : DEFAULT_LOCATION.longitude
 
     let map
     let styleReady = false
@@ -155,6 +147,25 @@ export default function MapCanvas({
       }
 
       try {
+        if (!map.getSource('om-temperature-source')) {
+          map.addSource('om-temperature-source', {
+            type: 'raster',
+            url: 'om://' + OM_TEMPERATURE_URL,
+            maxzoom: 12,
+          })
+        }
+
+        if (!map.getLayer('om-temperature-layer')) {
+          map.addLayer({
+            id: 'om-temperature-layer',
+            type: 'raster',
+            source: 'om-temperature-source',
+            paint: {
+              'raster-opacity': 0.75,
+            },
+          })
+        }
+
         if (!map.getSource('orca-layers')) {
           map.addSource('orca-layers', {
             type: 'geojson',
@@ -233,53 +244,6 @@ export default function MapCanvas({
           })
         }
 
-        map.on('click', 'orca-line', (e) => {
-          const feature = e.features?.[0]
-          if (!feature) return
-          e.originalEvent.cancelBubble = true
-          const props = feature.properties || {}
-          const isPFZ = props.layer === 'pfz' || props.dataset === 'PFZ' || String(props.id).toLowerCase().includes('pfz')
-          new Popup({ offset: 12, maxWidth: '280px' })
-            .setLngLat(e.lngLat)
-            .setHTML(`
-              <div style="font-family: system-ui, sans-serif; color: #0f172a; padding: 4px;">
-                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                  <span style="font-size: 16px;">${isPFZ ? '🐟' : '📍'}</span>
-                  <strong style="color: ${isPFZ ? '#0891b2' : '#d97706'}; font-size: 13px;">
-                    ${isPFZ ? 'Potential Fishing Zone Track' : 'GIS Line Feature'}
-                  </strong>
-                </div>
-                <div style="font-size: 11px; line-height: 1.4; color: #334155;">
-                  <p style="margin: 2px 0;"><strong>ID:</strong> ${props.id || 'PFZ Feature'}</p>
-                  <p style="margin: 2px 0;"><strong>Source:</strong> ${props.source || 'INCOIS'} (${props.freshness_status || 'live'})</p>
-                  <p style="margin: 2px 0;"><strong>Position:</strong> ${e.lngLat.lat.toFixed(4)}°N, ${e.lngLat.lng.toFixed(4)}°E</p>
-                </div>
-              </div>
-            `)
-            .addTo(map)
-        })
-
-        map.on('click', 'orca-route-line', (e) => {
-          e.originalEvent.cancelBubble = true
-          new Popup({ offset: 12, maxWidth: '260px' })
-            .setLngLat(e.lngLat)
-            .setHTML(`
-              <div style="font-family: system-ui, sans-serif; color: #0f172a; padding: 4px;">
-                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                  <span style="font-size: 16px;">🧭</span>
-                  <strong style="color: #2563eb; font-size: 13px;">Calculated Navigation Route</strong>
-                </div>
-                <p style="margin: 2px 0; font-size: 11px; color: #334155;">Active computed marine voyage path between selected endpoints.</p>
-              </div>
-            `)
-            .addTo(map)
-        })
-
-        map.on('mouseenter', 'orca-line', () => { map.getCanvas().style.cursor = 'pointer' })
-        map.on('mouseleave', 'orca-line', () => { map.getCanvas().style.cursor = '' })
-        map.on('mouseenter', 'orca-route-line', () => { map.getCanvas().style.cursor = 'pointer' })
-        map.on('mouseleave', 'orca-route-line', () => { map.getCanvas().style.cursor = '' })
-
         styleReady = true
         setMapStatus('ready')
       } catch (error) {
@@ -288,26 +252,17 @@ export default function MapCanvas({
       }
     }
 
-    const timeoutId = window.setTimeout(() => {
-      if (!styleReady) {
-        activateOverlay()
-      }
-    }, 12000)
-
     try {
       map = new Map({
         container: containerRef.current,
         style: DEFAULT_STYLE,
         center: [longitude, latitude],
-        zoom: 7,
+        zoom: 4,
       })
 
       mapRef.current = map
 
-      map.addControl(
-        new NavigationControl(),
-        'top-right'
-      )
+      map.addControl(new NavigationControl(), 'top-right')
 
       map.once('style.load', activateOverlay)
       map.once('load', activateOverlay)
@@ -315,9 +270,8 @@ export default function MapCanvas({
       map.on('click', (event) => {
         const bbox = [[event.point.x - 4, event.point.y - 4], [event.point.x + 4, event.point.y + 4]]
         const hits = map.queryRenderedFeatures(bbox, { layers: ['orca-line', 'orca-route-line', 'orca-fill'] })
-        if (hits.length > 0) {
-          return
-        }
+        if (hits.length > 0) return
+
         locationHandlerRef.current?.({
           latitude: event.lngLat.lat,
           longitude: event.lngLat.lng,
@@ -326,12 +280,10 @@ export default function MapCanvas({
       })
     } catch (error) {
       console.error('MapLibre initialization failed:', error)
-      window.clearTimeout(timeoutId)
-      window.setTimeout(() => setMapStatus('error'), 0)
+      setMapStatus('error')
     }
 
     return () => {
-      window.clearTimeout(timeoutId)
       pfzMarkersRef.current.forEach((m) => m.remove())
       pfzMarkersRef.current = []
       map?.remove()
@@ -339,60 +291,32 @@ export default function MapCanvas({
     }
   }, [])
 
-  /*
-   * Draw GIS layers.
-   */
   useEffect(() => {
     const map = mapRef.current
-
-    if (!map || mapStatus !== 'ready') {
-      return
-    }
+    if (!map || mapStatus !== 'ready') return
 
     const latitude = Number(selectedLocation?.latitude)
     const longitude = Number(selectedLocation?.longitude)
-
-    if (
-      !Number.isFinite(latitude) ||
-      !Number.isFinite(longitude)
-    ) {
-      return
-    }
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return
 
     const target = [longitude, latitude]
+    const visibleLayers = layers.filter((layer) => layer?.enabled !== false && Array.isArray(layer?.features))
+    const features = visibleLayers.flatMap((layer) => layer.features).map((feature) => ({
+      type: 'Feature',
+      geometry: feature.geometry || feature,
+      properties: feature.properties || { id: feature.id, layer: feature.layer, source: feature.source, freshness_status: feature.freshness_status },
+    }))
 
-    const visibleLayers = layers.filter(
-      (layer) => layer?.enabled !== false && Array.isArray(layer?.features)
-    )
-
-    const features = visibleLayers
-      .flatMap((layer) => layer.features)
-      .map((feature) => ({
-        type: 'Feature',
-        geometry: feature.geometry || feature,
-        properties: feature.properties || { id: feature.id, layer: feature.layer, source: feature.source, freshness_status: feature.freshness_status },
-      }))
-
-    /*
-     * Add route to the same GeoJSON source.
-     */
     if (routeGeometry) {
       features.push({
         type: 'Feature',
         geometry: routeGeometry,
-        properties: {
-          kind: 'route',
-        },
+        properties: { kind: 'route' },
       })
     }
 
     map.getSource('orca-layers')?.setData(featureCollection(features))
 
-    map.getSource('orca-layers')?.setData(featureCollection(features))
-
-    /*
-     * Remove existing PFZ DOM markers and create new interactive ones.
-     */
     pfzMarkersRef.current.forEach((marker) => marker.remove())
     pfzMarkersRef.current = []
 
@@ -408,10 +332,7 @@ export default function MapCanvas({
       el.className = 'pfz-interactive-marker'
       el.innerHTML = '<div class="pfz-marker-bubble"><span>🐟</span><strong>PFZ</strong></div>'
 
-      const dist = Number.isFinite(latitude) && Number.isFinite(longitude)
-        ? distanceKm(target, repCoord).toFixed(1)
-        : null
-
+      const dist = distanceKm(target, repCoord).toFixed(1)
       const props = feature.properties || {}
       const popup = new Popup({ offset: 15, maxWidth: '280px' }).setHTML(`
         <div style="font-family: system-ui, sans-serif; color: #0f172a; padding: 4px;">
@@ -424,93 +345,36 @@ export default function MapCanvas({
           </div>
           <div style="font-size: 11px; line-height: 1.5; border-top: 1px solid #e2e8f0; padding-top: 6px; color: #334155;">
             <p style="margin: 2px 0;"><strong>Feature ID:</strong> ${feature.id || 'INCOIS-PFZ'}</p>
-            <p style="margin: 2px 0;"><strong>Source:</strong> ${feature.source || props.source || 'INCOIS'} (${feature.freshness_status || props.freshness_status || 'live'})</p>
+            <p style="margin: 2px 0;"><strong>Source:</strong> ${feature.source || props.source || 'INCOIS'}</p>
             <p style="margin: 2px 0;"><strong>Coordinates:</strong> ${repCoord[1].toFixed(4)}°N, ${repCoord[0].toFixed(4)}°E</p>
             ${dist ? `<p style="margin: 2px 0; color: #0284c7;"><strong>Distance:</strong> ${dist} km from center</p>` : ''}
-            ${props.depth_m ? `<p style="margin: 2px 0;"><strong>Target Depth:</strong> ${props.depth_m} m</p>` : ''}
-            ${props.bearing_deg ? `<p style="margin: 2px 0;"><strong>Bearing:</strong> ${props.bearing_deg}°</p>` : ''}
-          </div>
-          <div style="margin-top: 8px;">
-            <button style="background: #0891b2; color: #fff; border: none; border-radius: 4px; padding: 4px 8px; font-size: 10px; font-weight: 600; cursor: pointer;" onclick="window.dispatchEvent(new CustomEvent('orca-select-coord', {detail: {latitude: ${repCoord[1]}, longitude: ${repCoord[0]}, label: 'PFZ: ${feature.id || 'Zone'}'}}))">📍 Focus Here</button>
           </div>
         </div>
       `)
 
-      const marker = new Marker({ element: el })
-        .setLngLat(repCoord)
-        .setPopup(popup)
-        .addTo(map)
-
+      const marker = new Marker({ element: el }).setLngLat(repCoord).setPopup(popup).addTo(map)
       pfzMarkersRef.current.push(marker)
     })
+  }, [layers, routeGeometry, selectedLocation, mapStatus])
 
-    /*
-     * If route geometry is active, zoom to route bounds.
-     */
-    if (routeGeometry?.coordinates?.length >= 2) {
-      const routeBounds = routeGeometry.coordinates.reduce(
-        (b, pt) => b.extend(pt),
-        new LngLatBounds(routeGeometry.coordinates[0], routeGeometry.coordinates[0])
-      )
-      map.fitBounds(routeBounds, {
-        padding: 80,
-        maxZoom: 9,
-        duration: 700,
-      })
-    }
-  }, [
-    layers,
-    routeGeometry,
-    selectedLocation,
-    mapStatus,
-  ])
-
-  /*
-   * Selected location marker.
-   */
   useEffect(() => {
     const map = mapRef.current
-
-    if (!map || mapStatus !== 'ready') {
-      return
-    }
-
-    const latitude = Number(
-      selectedLocation?.latitude
-    )
-
-    const longitude = Number(
-      selectedLocation?.longitude
-    )
-
-    if (
-      !Number.isFinite(latitude) ||
-      !Number.isFinite(longitude)
-    ) {
-      return
-    }
+    if (!map || mapStatus !== 'ready') return
+    const latitude = Number(selectedLocation?.latitude)
+    const longitude = Number(selectedLocation?.longitude)
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return
 
     markerRef.current?.remove()
+    const locationLabel = selectedLocation.label || selectedLocation.name || 'Selected map coordinate'
 
-    const locationLabel =
-      selectedLocation.label ||
-      selectedLocation.name ||
-      'Selected map coordinate'
-
-    markerRef.current = new Marker({
-      color: '#0ea5e9',
-    })
+    markerRef.current = new Marker({ color: '#0ea5e9' })
       .setLngLat([longitude, latitude])
-      .setPopup(
-        new Popup({ offset: 20 }).setText(
-          locationLabel
-        )
-      )
+      .setPopup(new Popup({ offset: 20 }).setText(locationLabel))
       .addTo(map)
 
     map.flyTo({
       center: [longitude, latitude],
-      zoom: Math.max(map.getZoom(), 7),
+      zoom: Math.max(map.getZoom(), 6),
       essential: true,
     })
   }, [selectedLocation, mapStatus])
@@ -520,80 +384,24 @@ export default function MapCanvas({
   }, [isExpanded])
 
   return (
-    <div
-      className={`map-canvas-container ${
-        isExpanded ? 'is-expanded-canvas' : ''
-      }`}
-    >
+    <div className={`map-canvas-container ${isExpanded ? 'is-expanded-canvas' : ''}`}>
       <div className="canvas-toolbar">
         <span className="demo-indicator">
           {mapStatus === 'ready'
-            ? 'MapLibre basemap • GIS overlays are source-backed'
+            ? 'MapLibre basemap • Open-Meteo Weather Tile protocol'
             : mapStatus === 'error'
               ? 'PFZ overlay view • basemap unavailable'
               : 'Loading map…'}
         </span>
-
         <div className="canvas-actions">
-          <button
-            type="button"
-            className="canvas-btn"
-            onClick={() =>
-              mapRef.current?.zoomIn()
-            }
-            aria-label="Zoom in"
-          >
-            +
-          </button>
-
-          <button
-            type="button"
-            className="canvas-btn"
-            onClick={() =>
-              mapRef.current?.zoomOut()
-            }
-            aria-label="Zoom out"
-          >
-            −
-          </button>
-
-          <button
-            type="button"
-            className="canvas-btn"
-            onClick={() =>
-              mapRef.current?.flyTo({
-                center: [
-                  Number(selectedLocation.longitude),
-                  Number(selectedLocation.latitude),
-                ],
-                zoom: 7,
-              })
-            }
-            aria-label="Center map"
-          >
-            ⌖
-          </button>
-
-          <button
-            type="button"
-            className="canvas-btn"
-            onClick={onToggleExpanded}
-          >
-            {isExpanded ? 'Exit' : 'Fullscreen'}
-          </button>
+          <button type="button" className="canvas-btn" onClick={() => mapRef.current?.zoomIn()} aria-label="Zoom in">+</button>
+          <button type="button" className="canvas-btn" onClick={() => mapRef.current?.zoomOut()} aria-label="Zoom out">&minus;</button>
+          <button type="button" className="canvas-btn" onClick={() => mapRef.current?.flyTo({ center: [Number(selectedLocation.longitude), Number(selectedLocation.latitude)], zoom: 6 })} aria-label="Center map">⌖</button>
+          <button type="button" className="canvas-btn" onClick={onToggleExpanded}>{isExpanded ? 'Exit' : 'Fullscreen'}</button>
         </div>
       </div>
-
-      <div
-        ref={containerRef}
-        className="maplibre-viewport"
-      />
-
-      {mapStatus === 'error' && (
-        <div className="map-unavailable">
-          Unable to load the interactive map.
-        </div>
-      )}
+      <div ref={containerRef} className="maplibre-viewport" />
+      {mapStatus === 'error' && <div className="map-unavailable">Unable to load the interactive map.</div>}
     </div>
   )
 }

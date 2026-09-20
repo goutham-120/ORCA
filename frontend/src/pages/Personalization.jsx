@@ -1092,7 +1092,7 @@ export default function Personalization({ navigate }) {
 
             <form onSubmit={handleSaveSpot} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                {['Chennai, Tamil Nadu', 'Visakhapatnam, AP', 'Mumbai, Maharashtra', 'Kochi, Kerala', 'Goa Coast'].map((spot) => {
+                {['Visakhapatnam, AP', 'Chennai, Tamil Nadu', 'Mumbai, Maharashtra', 'Kochi, Kerala', 'Goa Coast', 'Mangalore, Karnataka', 'Paradip, Odisha', 'Kolkata, WB', 'Port Blair, A&N', 'Surat, Gujarat'].map((spot) => {
                   const isSelected = spotInput === spot
                   return (
                     <button
