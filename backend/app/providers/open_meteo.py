@@ -166,11 +166,87 @@ weather_provider = OpenMeteoProvider(WEATHER_URL, WEATHER_FIELDS, normalize_weat
 marine_provider = OpenMeteoProvider(MARINE_URL, MARINE_FIELDS, normalize_marine)
 
 
+INDIC_COASTAL_ALIASES = {
+    # Hindi
+    "विशाखापत्तनम": "Visakhapatnam",
+    "वाइजाग": "Visakhapatnam",
+    "चेन्नई": "Chennai",
+    "मद्रास": "Chennai",
+    "मुंबई": "Mumbai",
+    "बंबई": "Mumbai",
+    "कोलकाता": "Kolkata",
+    "कोच्चि": "Kochi, Kerala, India",
+    "कोचीन": "Kochi, Kerala, India",
+    "गोवा": "Goa, India",
+    "काकीनाड़ा": "Kakinada",
+    "काकीनाडा": "Kakinada",
+    "मछलीपट्टनम": "Machilipatnam",
+    "मंगलोर": "Mangalore",
+    "मंगलुरु": "Mangalore",
+    "पारादीप": "Paradip",
+    "पुरी": "Puri",
+    "तूतीकोरिन": "Thoothukudi",
+    "थूथुकुडी": "Thoothukudi",
+    "कन्याकुमारी": "Kanyakumari",
+    "रामेश्वरम": "Rameswaram",
+    "कांडला": "Kandla",
+    "पोरबंदर": "Porbandar",
+    "दीव": "Diu",
+    "वेरावल": "Veraval",
+    "सूरत": "Surat",
+
+    # Telugu
+    "విశాఖపట్నం": "Visakhapatnam",
+    "వైజాగ్": "Visakhapatnam",
+    "చెన్నై": "Chennai",
+    "ముంబై": "Mumbai",
+    "కోల్‌కతా": "Kolkata",
+    "కోల్కతా": "Kolkata",
+    "కొచ్చి": "Kochi, Kerala, India",
+    "గోవా": "Goa, India",
+    "కాకినాడ": "Kakinada",
+    "మచిలీపట్నం": "Machilipatnam",
+    "కృష్ణా": "Machilipatnam",
+    "మంగళూరు": "Mangalore",
+    "పారదీప్": "Paradip",
+    "పూరి": "Puri",
+    "తూత్తుకుడి": "Thoothukudi",
+    "కన్యాకుమారి": "Kanyakumari",
+    "రామేశ్వరం": "Rameswaram",
+    "భీమునిపట్నం": "Bheemunipatnam",
+    "కళింగపట్నం": "Kalingapatnam",
+    "వాడరేవు": "Vadarevu",
+    "నిజాంపట్నం": "Nizampatnam",
+    "కృష్ణపట్నం": "Krishnapatnam",
+
+    # Tamil
+    "சென்னை": "Chennai",
+    "மதராஸ்": "Chennai",
+    "தூத்துக்குடி": "Thoothukudi",
+    "கன்னியாகுமரி": "Kanyakumari",
+    "ராமேஸ்வரம்": "Rameswaram",
+    "நாகப்பட்டினம்": "Nagapattinam",
+    "கடலூர்": "Cuddalore",
+    "பாண்டிச்சேரி": "Puducherry",
+    "புதுச்சேரி": "Puducherry",
+    "எண்ணூர்": "Ennore",
+    "விசாகப்பட்டினம்": "Visakhapatnam",
+    "விசாகப்பட்டணம்": "Visakhapatnam",
+    "மும்பை": "Mumbai",
+    "கொச்சி": "Kochi, Kerala, India",
+    "கோவா": "Goa, India",
+}
+
+
 class OpenMeteoGeocoder:
     endpoint = "https://geocoding-api.open-meteo.com/v1/search"
 
     async def resolve(self, place: str) -> dict[str, Any] | None:
-        parameters = urlencode({"name": place, "count": 1, "language": "en", "format": "json"})
+        if not place:
+            return None
+        clean_place = place.strip()
+        search_query = INDIC_COASTAL_ALIASES.get(clean_place, clean_place)
+        parameters = urlencode({"name": search_query, "count": 1, "language": "en", "format": "json"})
         try:
             payload = await asyncio.to_thread(self._read_json, f"{self.endpoint}?{parameters}")
         except (URLError, TimeoutError, json.JSONDecodeError):
@@ -180,7 +256,7 @@ class OpenMeteoGeocoder:
         if not isinstance(item, dict) or not isinstance(item.get("latitude"), (int, float)) or not isinstance(item.get("longitude"), (int, float)):
             return None
         label = ", ".join(str(value) for value in (item.get("name"), item.get("admin1"), item.get("country")) if value)
-        return {"latitude": item["latitude"], "longitude": item["longitude"], "label": label or place}
+        return {"latitude": item["latitude"], "longitude": item["longitude"], "label": label or clean_place}
 
     @staticmethod
     def _read_json(url: str) -> dict[str, Any]:

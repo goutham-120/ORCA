@@ -84,8 +84,14 @@ class QueryParser:
         match = re.search(r"\b(?:near|at|around|off|in)\s+([A-Za-z][A-Za-z .'-]{1,60}?)(?=\s+(?:today|tomorrow|tonight|this|next|at|for|and|with)\b|[?.!,]|$)", query, re.IGNORECASE)
         if match:
             return match.group(1).strip()
-        match_indic = re.search(r"([A-Za-z\u0900-\u097F\u0C00-\u0C7F\u0B80-\u0BFF][A-Za-z\u0900-\u097F\u0C00-\u0C7F\u0B80-\u0BFF .'-]{1,60}?)\s+(?:के\s+पास|दग्गर|దగ్గర|అరుగిల్|அருகில்)\b", query)
-        return match_indic.group(1).strip() if match_indic else None
+        match_indic = re.search(r"([A-Za-z\u0900-\u097F\u0C00-\u0C7F\u0B80-\u0BFF][A-Za-z\u0900-\u097F\u0C00-\u0C7F\u0B80-\u0BFF .'-]{1,60}?)\s+(?:के\s+पास|दग्गर|దగ్గర|అరుగిల్|அருகில்)(?:\s+|[?.!,]|$)", query)
+        if match_indic:
+            raw_loc = match_indic.group(1).strip()
+            for prefix in ("क्या आज", "क्या कल", "क्या", "आज", "कल", "ఈ రోజు", "ఈరోజు", "నేడు", "రేపు", "இன்று", "நாளை"):
+                if raw_loc.startswith(prefix):
+                    raw_loc = raw_loc[len(prefix):].strip()
+            return raw_loc if raw_loc else None
+        return None
 
     @staticmethod
     def _time_expression(lowered: str, original: str) -> str | None:

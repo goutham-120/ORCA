@@ -151,12 +151,11 @@ class OrcaOrchestrator:
             return "te"
         if lang_lower in {"hi", "hi-in"}:
             return "hi"
-        if lang_lower in {"en", "en-in"}:
-            return "en"
-        if any("\u0b80" <= c <= "\u0bff" for c in query):
-            return "ta"
-        if any("\u0c00" <= c <= "\u0c7f" for c in query):
-            return "te"
-        if any("\u0900" <= c <= "\u097f" for c in query):
-            return "hi"
+        if query:
+            if any("\u0b80" <= c <= "\u0bff" for c in query):
+                return "ta"
+            if any("\u0c00" <= c <= "\u0c7f" for c in query):
+                return "te"
+            if any("\u0900" <= c <= "\u097f" for c in query):
+                return "hi"
         return "en"
