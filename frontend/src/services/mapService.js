@@ -51,7 +51,19 @@ export async function findNearestSuitablePFZ({ latitude, longitude, radiusKm = 5
   )
 }
 
+export async function analyzeDetailedRoute(payload, options) {
+  return ensureObject(
+    await api('/map/analyze-route', {
+      method: 'POST',
+      body: payload,
+      ...options,
+    }),
+    'detailed route analysis'
+  )
+}
+
 export function mapErrorMessage(error) {
+
   if (error instanceof ApiError) return error.message
   if (error?.name === 'AbortError') return 'Request cancelled.'
   return error?.message || 'GIS data unavailable. Please try again.'

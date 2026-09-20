@@ -8,6 +8,7 @@ import { dashboardLocations } from '../data/dashboardData'
 import { COASTAL_LOCATIONS, COASTAL_LOCATIONS_MAP, COASTAL_STATES } from '../data/coastalLocations'
 import CoastalLocationPicker from '../components/common/CoastalLocationPicker'
 import {
+  analyzeDetailedRoute,
   analyzeLocation,
   analyzePFZ,
   analyzeRoute,
@@ -139,6 +140,10 @@ export default function MapExplorer({ navigate }) {
   // Nearest Suitable PFZ state
   const [searchRadius, setSearchRadius] = useState(50)
   const [nearestPFZ, setNearestPFZ] = useState({ loading: false, error: '', data: null })
+
+  // Detailed Route Analysis state
+  const [detailedRoute, setDetailedRoute] = useState({ loading: false, error: '', data: null })
+  const [selectedDestinationPFZId, setSelectedDestinationPFZId] = useState('auto_nearest')
 
   const [destinationId, setDestinationId] = useState('nearest_pfz')
   const [isExpanded, setIsExpanded] = useState(false)
@@ -388,6 +393,82 @@ export default function MapExplorer({ navigate }) {
     }
   }
 
+  const runDetailedRouteAnalysis = async () => {
+    setDetailedRoute({ loading: true, error: '', data: null })
+    try {
+      const activeLat = Number(activeLocation?.latitude)
+      const activeLon = Number(activeLocation?.longitude)
+
+      if (!Number.isFinite(activeLat) || !Number.isFinite(activeLon)) {
+        throw new Error('Valid origin coordinate required.')
+      }
+
+      let destLat = null
+      let destLon = null
+      let pfzId = null
+      let pfzName = 'Selected PFZ'
+
+      const candidates = nearestPFZ.data?.candidate_pfzs || []
+
+      if (selectedDestinationPFZId !== 'auto_nearest' && candidates.length > 0) {
+        const found = candidates.find((c) => String(c.id) === String(selectedDestinationPFZId))
+        if (found && Array.isArray(found.rep_point)) {
+          destLon = found.rep_point[0]
+          destLat = found.rep_point[1]
+          pfzId = String(found.id)
+          pfzName = found.name || `PFZ ${found.id}`
+        }
+      }
+
+      if (!destLat || !destLon) {
+        const selected = nearestPFZ.data?.selected_pfz || candidates[0]
+        if (selected && Array.isArray(selected.rep_point)) {
+          destLon = selected.rep_point[0]
+          destLat = selected.rep_point[1]
+          pfzId = String(selected.id)
+          pfzName = selected.name || `PFZ ${selected.id}`
+        } else {
+          const nearest = findNearestPFZCoordinate(activeLocation, layers)
+          if (nearest) {
+            destLat = nearest.latitude
+            destLon = nearest.longitude
+            pfzName = nearest.label
+          }
+        }
+      }
+
+      if (!Number.isFinite(destLat) || !Number.isFinite(destLon)) {
+        throw new Error('Unable to calculate route: No valid destination PFZ available within search radius or map layers.')
+      }
+
+      const res = await analyzeDetailedRoute({
+        origin_latitude: activeLat,
+        origin_longitude: activeLon,
+        destination_latitude: destLat,
+        destination_longitude: destLon,
+        pfz_id: pfzId,
+      })
+
+      setDetailedRoute({
+        loading: false,
+        error: '',
+        data: {
+          ...res,
+          dest_name: pfzName,
+          dest_id: pfzId,
+          origin_lat: activeLat,
+          origin_lon: activeLon,
+        },
+      })
+    } catch (err) {
+      setDetailedRoute({
+        loading: false,
+        error: mapErrorMessage(err),
+        data: null,
+      })
+    }
+  }
+
   const refreshPFZ = async () => {
     setPFZSync({ loading: true, error: '', message: '' })
     try {
@@ -470,7 +551,8 @@ export default function MapExplorer({ navigate }) {
             <MapCanvas
               selectedLocation={selectedLocation}
               layers={layers}
-              routeGeometry={routeGeometry}
+              routeGeometry={detailedRoute.data?.route_geometry || routeGeometry}
+              detailedRouteStatus={detailedRoute.data?.overall_status || null}
               radiusKm={Number(searchRadius) || 50}
               pfzEvaluations={pfzEvaluations}
               selectedPFZGeometry={nearestPFZ.data?.selected_geometry || null}
@@ -765,107 +847,269 @@ export default function MapExplorer({ navigate }) {
             )}
           </section>
 
-          <section className="map-actions-panel panel" style={{ marginTop: '16px' }}>
-            <div>
-              <p className="eyebrow">SPATIAL ANALYSIS</p>
-              <h2>Coordinate and route checks</h2>
-            </div>
-            <div className="map-action-grid">
+          {/* ROUTE ANALYSIS ENGINE & INFORMATION PANEL */}
+          <section className="route-analysis-section panel" style={{ marginTop: '16px' }}>
+            <div className="route-analysis-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
               <div>
-                <p>
-                  Run the available zone check for {Number.isFinite(activeLat) ? activeLat.toFixed(4) : '0.0000'},{' '}
-                  {Number.isFinite(activeLon) ? activeLon.toFixed(4) : '0.0000'}.
+                <p className="eyebrow" style={{ color: '#0284c7', fontWeight: 700, fontSize: '11px', letterSpacing: '0.05em' }}>NAVIGATION INTELLIGENCE</p>
+                <h2 style={{ margin: '2px 0 0 0', fontSize: '18px', color: '#0f172a' }}>Analyse Route Before Travelling</h2>
+                <p style={{ fontSize: '13px', color: '#64748b', margin: '4px 0 0 0' }}>
+                  Evaluate proposed marine route against GIS obstacles, hazard zones, weather, breeze/wind, and wave conditions.
                 </p>
-                <button
-                  type="button"
-                  className="ask-orca-link-btn"
-                  disabled={analysis.loading}
-                  onClick={runAnalysis}
-                >
-                  {analysis.loading ? 'Analyzing…' : 'Analyze location'}
-                </button>
-                {analysis.error && <p className="map-state map-state-error">{analysis.error}</p>}
-                {analysis.data && (
-                  <p className="map-state">
-                    <strong>{analysis.data.status}</strong>: {analysis.data.message}
-                  </p>
-                )}
+              </div>
+            </div>
+
+            <div className="route-controls-bar" style={{ marginTop: '14px', background: '#f8fafc', padding: '14px', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+              <div style={{ flex: '1 1 200px' }}>
+                <label style={{ fontSize: '11px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>
+                  ORIGIN (CURRENT COORDINATE)
+                </label>
+                <div style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a', background: '#ffffff', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
+                  📍 {Number.isFinite(activeLat) ? activeLat.toFixed(4) : '0.0000'}°N, {Number.isFinite(activeLon) ? activeLon.toFixed(4) : '0.0000'}°E ({activeLocation.label || activeLocation.name || 'Selected point'})
+                </div>
               </div>
 
-              <div>
-                <label className="route-label" htmlFor="route-destination">
-                  Route destination
+              <div style={{ flex: '1 1 240px' }}>
+                <label htmlFor="destination-pfz-select" style={{ fontSize: '11px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>
+                  DESTINATION (TARGET PFZ)
                 </label>
                 <select
-                  id="route-destination"
-                  value={destinationId}
-                  onChange={(event) => setDestinationId(event.target.value)}
+                  id="destination-pfz-select"
+                  value={selectedDestinationPFZId}
+                  onChange={(e) => setSelectedDestinationPFZId(e.target.value)}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', background: '#ffffff', color: '#0f172a', fontWeight: 600 }}
                 >
-                  <option value="nearest_pfz">🐟 Nearest PFZ (Auto-detect)</option>
+                  <option value="auto_nearest">
+                    ⭐ Nearest Suitable PFZ ({nearestPFZ.data?.selected_pfz?.name || 'Auto-detect'})
+                  </option>
+                  {Array.isArray(nearestPFZ.data?.candidate_pfzs) &&
+                    nearestPFZ.data.candidate_pfzs.map((cand) => (
+                      <option key={cand.id} value={cand.id}>
+                        🐟 {cand.name || `PFZ ${cand.id}`} ({cand.distance_km} km away)
+                      </option>
+                    ))}
                   {Object.entries(locationsByState).map(([st, locs]) => {
                     const filtered = locs.filter((l) => l.id !== locationId)
                     if (filtered.length === 0) return null
                     return (
-                      <optgroup key={st} label={st}>
+                      <optgroup key={st} label={`Harbors — ${st}`}>
                         {filtered.map((item) => (
                           <option key={item.id} value={item.id}>
-                            {item.name}
+                            ⚓ {item.name}
                           </option>
                         ))}
                       </optgroup>
                     )
                   })}
                 </select>
-                <button
-                  type="button"
-                  className="expand-toggle-btn"
-                  disabled={route.loading}
-                  onClick={() => runRoute()}
-                >
-                  {route.loading ? 'Calculating…' : 'Analyze route'}
-                </button>
-                <button
-                  type="button"
-                  className="ask-orca-link-btn"
-                  style={{ marginTop: '8px' }}
-                  disabled={route.loading}
-                  onClick={() => {
-                    setDestinationId('nearest_pfz')
-                    runRoute()
-                  }}
-                >
-                  🐟 Route to Nearest PFZ
-                </button>
-                {route.error && <p className="map-state map-state-error">{route.error}</p>}
-                {route.data && (
-                  <p className="map-state">
-                    <strong>{route.data.status}</strong>: {route.data.message}
-                    {route.data.route?.distance_km != null && ` (${route.data.route.distance_km} km)`}
-                  </p>
-                )}
               </div>
 
-              <div>
-                <p>Check authorized PFZ evidence and current marine suitability for this coordinate.</p>
-                <button type="button" className="ask-orca-link-btn" disabled={pfz.loading} onClick={runPFZ}>
-                  {pfz.loading ? 'Checking PFZ…' : 'Check PFZ suitability'}
-                </button>
-                {pfz.error && <p className="map-state map-state-error">{pfz.error}</p>}
-                {pfz.data && (
-                  <p className="map-state">
-                    <strong>{pfz.data.suitability}</strong>: {pfz.data.assessment}
-                  </p>
-                )}
-                <button type="button" className="expand-toggle-btn" disabled={pfzSync.loading} onClick={refreshPFZ}>
-                  {pfzSync.loading ? 'Refreshing PFZ…' : 'Refresh PFZ source'}
-                </button>
-                {pfzSync.error && <p className="map-state map-state-error">{pfzSync.error}</p>}
-                {pfzSync.message && (
-                  <p className="map-state">{pfzSync.message} Reload the map to display refreshed features.</p>
-                )}
-              </div>
+              <button
+                type="button"
+                className="analyze-route-btn"
+                disabled={detailedRoute.loading}
+                onClick={runDetailedRouteAnalysis}
+                style={{
+                  background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                  color: '#ffffff',
+                  fontWeight: 700,
+                  fontSize: '14px',
+                  padding: '10px 22px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 6px rgba(5, 150, 105, 0.3)',
+                  transition: 'all 0.2s ease',
+                  whiteSpace: 'nowrap',
+                  marginTop: '18px',
+                }}
+              >
+                {detailedRoute.loading ? '⚡ Analysing Route, GIS & Marine Telemetry…' : '🧭 Analyse Route'}
+              </button>
             </div>
+
+            {detailedRoute.error && (
+              <div className="map-state map-state-error" style={{ marginTop: '12px' }}>
+                ⚠️ {detailedRoute.error}
+              </div>
+            )}
+
+            {/* ROUTE INFORMATION PANEL */}
+            {detailedRoute.data && (
+              <div className="route-info-panel" style={{ marginTop: '16px', background: '#ffffff', padding: '18px', borderRadius: '10px', border: '1px solid #cbd5e1', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1.5px solid #e2e8f0', paddingBottom: '12px', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+                  <div>
+                    <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em' }}>ROUTE SAFETY ASSESSMENT</span>
+                    <h3 style={{ margin: '2px 0 0 0', fontSize: '18px', color: '#0f172a' }}>
+                      Route Analysis Output
+                    </h3>
+                  </div>
+
+                  {/* OVERALL ROUTE STATUS BADGE */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#475569' }}>OVERALL ROUTE STATUS:</span>
+                    <span
+                      style={{
+                        padding: '6px 16px',
+                        borderRadius: '20px',
+                        fontSize: '13px',
+                        fontWeight: 900,
+                        letterSpacing: '0.05em',
+                        textTransform: 'uppercase',
+                        background:
+                          detailedRoute.data.overall_status === 'SAFE'
+                            ? '#dcfce7'
+                            : detailedRoute.data.overall_status === 'CAUTION'
+                            ? '#fef3c7'
+                            : detailedRoute.data.overall_status === 'UNSAFE'
+                            ? '#fee2e2'
+                            : '#f1f5f9',
+                        color:
+                          detailedRoute.data.overall_status === 'SAFE'
+                            ? '#15803d'
+                            : detailedRoute.data.overall_status === 'CAUTION'
+                            ? '#b45309'
+                            : detailedRoute.data.overall_status === 'UNSAFE'
+                            ? '#b91c1c'
+                            : '#475569',
+                        border:
+                          detailedRoute.data.overall_status === 'SAFE'
+                            ? '1.5px solid #86efac'
+                            : detailedRoute.data.overall_status === 'CAUTION'
+                            ? '1.5px solid #fde68a'
+                            : detailedRoute.data.overall_status === 'UNSAFE'
+                            ? '1.5px solid #fca5a5'
+                            : '1.5px solid #cbd5e1',
+                      }}
+                    >
+                      {detailedRoute.data.overall_status === 'SAFE' && '🟢 SAFE'}
+                      {detailedRoute.data.overall_status === 'CAUTION' && '🟡 CAUTION'}
+                      {detailedRoute.data.overall_status === 'UNSAFE' && '🔴 UNSAFE'}
+                      {detailedRoute.data.overall_status === 'DATA UNAVAILABLE' && '⚪ DATA UNAVAILABLE'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* MAIN REASON / FISHERMAN EXPLANATION BOX */}
+                <div
+                  style={{
+                    padding: '12px 16px',
+                    borderRadius: '8px',
+                    marginBottom: '16px',
+                    background:
+                      detailedRoute.data.overall_status === 'SAFE'
+                        ? '#f0fdf4'
+                        : detailedRoute.data.overall_status === 'CAUTION'
+                        ? '#fffbeb'
+                        : detailedRoute.data.overall_status === 'UNSAFE'
+                        ? '#fef2f2'
+                        : '#f8fafc',
+                    borderLeft: `4px solid ${
+                      detailedRoute.data.overall_status === 'SAFE'
+                        ? '#16a34a'
+                        : detailedRoute.data.overall_status === 'CAUTION'
+                        ? '#d97706'
+                        : detailedRoute.data.overall_status === 'UNSAFE'
+                        ? '#dc2626'
+                        : '#64748b'
+                    }`,
+                  }}
+                >
+                  <strong style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px', letterSpacing: '0.05em' }}>
+                    RECOMMENDATION / MAIN REASON
+                  </strong>
+                  <p style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: '#0f172a', lineHeight: 1.5 }}>
+                    {detailedRoute.data.explanation}
+                  </p>
+                </div>
+
+                {/* ROUTE METRICS GRID */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '16px' }}>
+                  <div style={{ background: '#f8fafc', padding: '10px 14px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                    <small style={{ color: '#64748b', fontSize: '11px', display: 'block', fontWeight: 600 }}>ORIGIN</small>
+                    <strong style={{ fontSize: '13px', color: '#0f172a' }}>
+                      {detailedRoute.data.origin_lat.toFixed(4)}°N, {detailedRoute.data.origin_lon.toFixed(4)}°E
+                    </strong>
+                  </div>
+
+                  <div style={{ background: '#f8fafc', padding: '10px 14px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                    <small style={{ color: '#64748b', fontSize: '11px', display: 'block', fontWeight: 600 }}>DESTINATION</small>
+                    <strong style={{ fontSize: '13px', color: '#0284c7' }}>
+                      {detailedRoute.data.dest_name || detailedRoute.data.dest_id || 'Target PFZ'}
+                    </strong>
+                  </div>
+
+                  <div style={{ background: '#f8fafc', padding: '10px 14px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                    <small style={{ color: '#64748b', fontSize: '11px', display: 'block', fontWeight: 600 }}>ROUTE DISTANCE</small>
+                    <strong style={{ fontSize: '13px', color: '#0f172a' }}>{detailedRoute.data.route_distance_km} km</strong>
+                  </div>
+
+                  <div style={{ background: '#f8fafc', padding: '10px 14px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                    <small style={{ color: '#64748b', fontSize: '11px', display: 'block', fontWeight: 600 }}>ESTIMATED TRAVEL TIME</small>
+                    <strong style={{ fontSize: '13px', color: '#0f172a' }}>{detailedRoute.data.estimated_travel_time}</strong>
+                  </div>
+                </div>
+
+                {/* 4 CORE CHECKS BREAKDOWN */}
+                <h4 style={{ margin: '0 0 10px 0', fontSize: '13px', color: '#334155' }}>Detailed Environmental & GIS Checks</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '12px' }}>
+                  {/* GIS CHECK */}
+                  <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', borderLeft: `4px solid ${detailedRoute.data.gis_analysis.status === 'suitable' ? '#10b981' : detailedRoute.data.gis_analysis.status === 'caution' ? '#f59e0b' : detailedRoute.data.gis_analysis.status === 'unsuitable' ? '#ef4444' : '#64748b'}` }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>🗺️ GIS Safety Check</span>
+                      <span style={{ fontSize: '11px', fontWeight: 800, color: detailedRoute.data.gis_analysis.status === 'suitable' ? '#15803d' : detailedRoute.data.gis_analysis.status === 'caution' ? '#b45309' : detailedRoute.data.gis_analysis.status === 'unsuitable' ? '#b91c1c' : '#475569' }}>
+                        {detailedRoute.data.gis_analysis.label || detailedRoute.data.gis_analysis.status.toUpperCase()}
+                      </span>
+                    </div>
+                    <p style={{ margin: 0, fontSize: '12px', color: '#475569', lineHeight: 1.4 }}>
+                      {detailedRoute.data.gis_analysis.summary}
+                    </p>
+                  </div>
+
+                  {/* WEATHER CHECK */}
+                  <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', borderLeft: `4px solid ${detailedRoute.data.weather_analysis.status === 'suitable' ? '#0ea5e9' : detailedRoute.data.weather_analysis.status === 'caution' ? '#f59e0b' : detailedRoute.data.weather_analysis.status === 'unsuitable' ? '#ef4444' : '#64748b'}` }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>🌤️ Weather Check</span>
+                      <span style={{ fontSize: '11px', fontWeight: 800, color: detailedRoute.data.weather_analysis.status === 'suitable' ? '#15803d' : detailedRoute.data.weather_analysis.status === 'caution' ? '#b45309' : detailedRoute.data.weather_analysis.status === 'unsuitable' ? '#b91c1c' : '#475569' }}>
+                        {detailedRoute.data.weather_analysis.label || detailedRoute.data.weather_analysis.status.toUpperCase()}
+                      </span>
+                    </div>
+                    <p style={{ margin: 0, fontSize: '12px', color: '#475569', lineHeight: 1.4 }}>
+                      {detailedRoute.data.weather_analysis.summary}
+                    </p>
+                  </div>
+
+                  {/* BREEZE / WIND CHECK */}
+                  <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', borderLeft: `4px solid ${detailedRoute.data.wind_analysis.status === 'suitable' ? '#06b6d4' : detailedRoute.data.wind_analysis.status === 'caution' ? '#f59e0b' : detailedRoute.data.wind_analysis.status === 'unsuitable' ? '#ef4444' : '#64748b'}` }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>💨 Wind / Breeze Check</span>
+                      <span style={{ fontSize: '11px', fontWeight: 800, color: detailedRoute.data.wind_analysis.status === 'suitable' ? '#15803d' : detailedRoute.data.wind_analysis.status === 'caution' ? '#b45309' : detailedRoute.data.wind_analysis.status === 'unsuitable' ? '#b91c1c' : '#475569' }}>
+                        {detailedRoute.data.wind_analysis.label || detailedRoute.data.wind_analysis.status.toUpperCase()}
+                      </span>
+                    </div>
+                    <p style={{ margin: 0, fontSize: '12px', color: '#475569', lineHeight: 1.4 }}>
+                      {detailedRoute.data.wind_analysis.summary}
+                    </p>
+                  </div>
+
+                  {/* OCEAN CHECK */}
+                  <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', borderLeft: `4px solid ${detailedRoute.data.ocean_analysis.status === 'suitable' ? '#0284c7' : detailedRoute.data.ocean_analysis.status === 'caution' ? '#f59e0b' : detailedRoute.data.ocean_analysis.status === 'unsuitable' ? '#ef4444' : '#64748b'}` }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>🌊 Ocean Check</span>
+                      <span style={{ fontSize: '11px', fontWeight: 800, color: detailedRoute.data.ocean_analysis.status === 'suitable' ? '#15803d' : detailedRoute.data.ocean_analysis.status === 'caution' ? '#b45309' : detailedRoute.data.ocean_analysis.status === 'unsuitable' ? '#b91c1c' : '#475569' }}>
+                        {detailedRoute.data.ocean_analysis.label || detailedRoute.data.ocean_analysis.status.toUpperCase()}
+                      </span>
+                    </div>
+                    <p style={{ margin: 0, fontSize: '12px', color: '#475569', lineHeight: 1.4 }}>
+                      {detailedRoute.data.ocean_analysis.summary}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </section>
+
+
         </div>
 
         <div className="map-sidebar-col">

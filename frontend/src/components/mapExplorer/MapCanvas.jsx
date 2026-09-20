@@ -230,6 +230,7 @@ export default function MapCanvas({
   selectedLocation,
   layers = [],
   routeGeometry,
+  detailedRouteStatus = null,
   radiusKm = 50,
   pfzEvaluations = {},
   selectedPFZGeometry = null,
@@ -523,8 +524,15 @@ export default function MapCanvas({
             source: 'orca-layers',
             filter: ['==', ['get', 'kind'], 'route'],
             paint: {
-              'line-color': '#2563eb',
-              'line-width': 5,
+              'line-color': [
+                'match',
+                ['get', 'status'],
+                'UNSAFE', '#dc2626',
+                'CAUTION', '#d97706',
+                'SAFE', '#16a34a',
+                '#2563eb',
+              ],
+              'line-width': 5.5,
               'line-dasharray': [2, 1],
               'line-opacity': 0.95,
             },
@@ -826,6 +834,7 @@ export default function MapCanvas({
         geometry: routeGeometry,
         properties: {
           kind: 'route',
+          status: detailedRouteStatus || routeGeometry.status || 'default',
         },
       })
     }

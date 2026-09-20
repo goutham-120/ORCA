@@ -15,6 +15,8 @@ from app.models.spatial_feature import spatial_features
 from app.providers.demo_spatial import ensure_demo_gis
 from app.providers.incois_pfz import incois_pfz_provider
 from app.schemas.map import (
+    DetailedRouteAnalysisRequest,
+    DetailedRouteAnalysisResponse,
     MapAnalysisRequest,
     MapAnalysisResponse,
     MapFeature,
@@ -27,6 +29,7 @@ from app.schemas.map import (
 from app.tools.gis_tools import GISTool
 
 
+
 router = APIRouter(
     prefix="/map",
     tags=["map"],
@@ -37,12 +40,22 @@ def require_map_api_key(
     api_key: str | None = Header(default=None, alias="X-API-Key"),
 ) -> None:
     configured_key = get_settings().map_api_key
-    if not configured_key or get_settings().environment.lower() in ("development", "testing"):
+    if get_settings().environment.lower() == "development":
         return
 
-    if api_key and api_key == configured_key:
-        return
-    # Allow dashboard requests when running locally or unconfigured
+    if not configured_key:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="ORCA_MAP_API_KEY is not configured.",
+        )
+
+    if api_key != configured_key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="A valid X-API-Key is required.",
+        )
+
+
 @router.get(
     "/layers",
     response_model=MapLayersResponse,
@@ -156,6 +169,9 @@ async def sync_pfz(
     Refresh authorized PFZ records
     from the official INCOIS WFS.
     """
+
+    return await incois_pfz_provider.sync()
+
 
 @router.post("/pfz/nearest-suitable")
 async def nearest_suitable_pfz_map(
@@ -491,6 +507,30 @@ async def route(
             "data_status": data_status,
         },
     )
+
+
+@router.post(
+    "/analyze-route",
+    response_model=DetailedRouteAnalysisResponse,
+)
+async def analyze_detailed_route(
+    payload: DetailedRouteAnalysisRequest,
+) -> DetailedRouteAnalysisResponse:
+    """
+    Analyse route from origin to destination PFZ considering GIS hazards,
+    weather, breeze/wind speed & direction, and ocean conditions.
+    """
+    from app.services.route_analysis_service import RouteAnalysisService
+
+    service = RouteAnalysisService()
+    res = await service.analyze_route(
+        origin_lat=payload.origin_latitude,
+        origin_lon=payload.origin_longitude,
+        dest_lat=payload.destination_latitude,
+        dest_lon=payload.destination_longitude,
+        pfz_id=payload.pfz_id,
+    )
+    return DetailedRouteAnalysisResponse(**res)
 
 
 @router.get("/spatial-grid")
