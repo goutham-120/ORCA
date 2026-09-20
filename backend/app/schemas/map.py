@@ -57,3 +57,29 @@ class RouteResponse(BaseModel):
     status: str
     route: dict[str, Any] | None = None
     message: str
+
+
+class DetailedRouteAnalysisRequest(BaseModel):
+    origin_latitude: float = Field(..., ge=-90, le=90)
+    origin_longitude: float = Field(..., ge=-180, le=180)
+    destination_latitude: float = Field(..., ge=-90, le=90)
+    destination_longitude: float = Field(..., ge=-180, le=180)
+    pfz_id: str | None = None
+
+
+class DetailedRouteAnalysisResponse(BaseModel):
+    status: str
+    overall_status: str
+    route_distance_km: float
+    estimated_travel_time: str
+    estimated_travel_time_hours: float | None = None
+    route_geometry: dict[str, Any]
+    alternative_used: bool = False
+    gis_analysis: dict[str, Any]
+    weather_analysis: dict[str, Any]
+    wind_analysis: dict[str, Any]
+    ocean_analysis: dict[str, Any]
+    explanation: str
+    detected_obstacles: list[str] = Field(default_factory=list)
+    detected_risks: list[str] = Field(default_factory=list)
+

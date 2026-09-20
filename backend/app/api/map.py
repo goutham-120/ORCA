@@ -15,6 +15,8 @@ from app.models.spatial_feature import spatial_features
 from app.providers.demo_spatial import ensure_demo_gis
 from app.providers.incois_pfz import incois_pfz_provider
 from app.schemas.map import (
+    DetailedRouteAnalysisRequest,
+    DetailedRouteAnalysisResponse,
     MapAnalysisRequest,
     MapAnalysisResponse,
     MapFeature,
@@ -25,6 +27,7 @@ from app.schemas.map import (
     RouteResponse,
 )
 from app.tools.gis_tools import GISTool
+
 
 
 router = APIRouter(
@@ -503,3 +506,27 @@ async def route(
             "data_status": data_status,
         },
     )
+
+
+@router.post(
+    "/analyze-route",
+    response_model=DetailedRouteAnalysisResponse,
+)
+async def analyze_detailed_route(
+    payload: DetailedRouteAnalysisRequest,
+) -> DetailedRouteAnalysisResponse:
+    """
+    Analyse route from origin to destination PFZ considering GIS hazards,
+    weather, breeze/wind speed & direction, and ocean conditions.
+    """
+    from app.services.route_analysis_service import RouteAnalysisService
+
+    service = RouteAnalysisService()
+    res = await service.analyze_route(
+        origin_lat=payload.origin_latitude,
+        origin_lon=payload.origin_longitude,
+        dest_lat=payload.destination_latitude,
+        dest_lon=payload.destination_longitude,
+        pfz_id=payload.pfz_id,
+    )
+    return DetailedRouteAnalysisResponse(**res)
