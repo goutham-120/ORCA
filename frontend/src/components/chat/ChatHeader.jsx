@@ -70,6 +70,12 @@ export default function ChatHeader({
             <option value="hi">हिन्दी (HI)</option>
             <option value="te">తెలుగు (TE)</option>
             <option value="ta">தமிழ் (TA)</option>
+            <option value="or">Odia (ଓଡ଼ିଆ)</option>
+            <option value="bn">Bengali (বাংলা)</option>
+            <option value="kok">Konkani (कोंकणी)</option>
+            <option value="tcy">Tulu (ತುಳು)</option>
+            <option value="gu">Gujarati (ગુજરાતી)</option>
+            <option value="mr">Marathi (मराठी)</option>
           </select>
         </label>
 

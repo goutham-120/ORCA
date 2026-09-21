@@ -115,6 +115,71 @@ class ConversationTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("வானிலை", response.answer)
         self.assertIn("ORCA", response.answer)
 
+    async def test_odia_support_uses_same_domain_pipeline(self):
+        response = await orchestrator().handle(OrcaQueryRequest(query="ଆଜି ସମୁଦ୍ର ପାଣିପାଗ କିପରି ଅଛି?", location={"latitude": 17.7, "longitude": 83.3}, language="or"))
+        self.assertEqual(set(response.agents_used), {"ocean", "weather"})
+        self.assertEqual(response.language, "or")
+        self.assertIn("ପାଣିପାଗ", response.answer)
+        self.assertIn("ORCA", response.answer)
+
+    async def test_bengali_support_uses_same_domain_pipeline(self):
+        response = await orchestrator().handle(OrcaQueryRequest(query="আজ সমুদ্রের আবহাওয়া কেমন?", location={"latitude": 17.7, "longitude": 83.3}, language="bn"))
+        self.assertEqual(set(response.agents_used), {"ocean", "weather"})
+        self.assertEqual(response.language, "bn")
+        self.assertIn("আবহাওয়া", response.answer)
+        self.assertIn("ORCA", response.answer)
+
+    async def test_konkani_support_uses_same_domain_pipeline(self):
+        response = await orchestrator().handle(OrcaQueryRequest(query="आयज दर्या हवामान कशे आसा?", location={"latitude": 17.7, "longitude": 83.3}, language="kok"))
+        self.assertEqual(set(response.agents_used), {"ocean", "weather"})
+        self.assertEqual(response.language, "kok")
+        self.assertIn("हवामान", response.answer)
+        self.assertIn("ORCA", response.answer)
+
+    async def test_tulu_support_uses_same_domain_pipeline(self):
+        response = await orchestrator().handle(OrcaQueryRequest(query="ಇನಿ ಕಡಲ ವಾತಾವರಣ ಎಂಚ ಉಂಡು?", location={"latitude": 17.7, "longitude": 83.3}, language="tcy"))
+        self.assertEqual(set(response.agents_used), {"ocean", "weather"})
+        self.assertEqual(response.language, "tcy")
+        self.assertIn("ವಾತಾವರಣ", response.answer)
+        self.assertIn("ORCA", response.answer)
+
+    async def test_gujarati_support_uses_same_domain_pipeline(self):
+        response = await orchestrator().handle(OrcaQueryRequest(query="આજે દરિયાનું હવામાન કેવું છે?", location={"latitude": 17.7, "longitude": 83.3}, language="gu"))
+        self.assertEqual(set(response.agents_used), {"ocean", "weather"})
+        self.assertEqual(response.language, "gu")
+        self.assertIn("હવામાન", response.answer)
+        self.assertIn("ORCA", response.answer)
+
+    async def test_authoritative_selected_language_gujarati_with_english_query(self):
+        response = await orchestrator().handle(OrcaQueryRequest(query="How is the sea weather today?", location={"latitude": 17.7, "longitude": 83.3}, language="gu"))
+        self.assertEqual(response.language, "gu")
+        self.assertIn("ORCA", response.answer)
+
+    async def test_gujarati_script_auto_detection(self):
+        response = await orchestrator().handle(OrcaQueryRequest(query="આજે દરિયાનું હવામાન કેવું છે?", location={"latitude": 17.7, "longitude": 83.3}))
+        self.assertEqual(response.language, "gu")
+        self.assertIn("હવામાન", response.answer)
+
+    async def test_authoritative_selected_language_tulu_with_english_query(self):
+        response = await orchestrator().handle(OrcaQueryRequest(query="How is the sea weather today?", location={"latitude": 17.7, "longitude": 83.3}, language="tcy"))
+        self.assertEqual(response.language, "tcy")
+        self.assertIn("ORCA", response.answer)
+
+    async def test_authoritative_selected_language_konkani_with_english_query(self):
+        response = await orchestrator().handle(OrcaQueryRequest(query="How is the sea weather today?", location={"latitude": 17.7, "longitude": 83.3}, language="kok"))
+        self.assertEqual(response.language, "kok")
+        self.assertIn("ORCA", response.answer)
+
+    async def test_authoritative_selected_language_bengali_with_english_query(self):
+        response = await orchestrator().handle(OrcaQueryRequest(query="How is the sea weather today?", location={"latitude": 17.7, "longitude": 83.3}, language="bn"))
+        self.assertEqual(response.language, "bn")
+        self.assertIn("ORCA", response.answer)
+
+    async def test_authoritative_selected_language_odia_with_english_query(self):
+        response = await orchestrator().handle(OrcaQueryRequest(query="How is the sea weather today?", location={"latitude": 17.7, "longitude": 83.3}, language="or"))
+        self.assertEqual(response.language, "or")
+        self.assertIn("ORCA", response.answer)
+
     async def test_authoritative_selected_language_telugu_with_english_query(self):
         response = await orchestrator().handle(OrcaQueryRequest(query="How is the sea weather today?", location={"latitude": 17.7, "longitude": 83.3}, language="te"))
         self.assertEqual(response.language, "te")
@@ -129,6 +194,17 @@ class ConversationTests(unittest.IsolatedAsyncioTestCase):
         response = await orchestrator().handle(OrcaQueryRequest(query="How is the sea weather today?", location={"latitude": 17.7, "longitude": 83.3}, language="hi"))
         self.assertEqual(response.language, "hi")
         self.assertIn("ORCA का", response.answer)
+
+    async def test_marathi_support_uses_same_domain_pipeline(self):
+        response = await orchestrator().handle(OrcaQueryRequest(query="समुद्राची हवामान स्थिती कशी आहे?", location={"latitude": 17.7, "longitude": 83.3}, language="mr"))
+        self.assertEqual(response.language, "mr")
+        self.assertEqual(set(response.agents_used), {"ocean", "weather"})
+        self.assertIn("ORCA", response.answer)
+
+    async def test_authoritative_selected_language_marathi_with_english_query(self):
+        response = await orchestrator().handle(OrcaQueryRequest(query="How is the sea weather today?", location={"latitude": 17.7, "longitude": 83.3}, language="mr"))
+        self.assertEqual(response.language, "mr")
+        self.assertIn("ORCA", response.answer)
 
     async def test_authoritative_selected_language_english_with_indic_query(self):
         response = await orchestrator().handle(OrcaQueryRequest(query="weather", location={"latitude": 17.7, "longitude": 83.3}, language="en"))
