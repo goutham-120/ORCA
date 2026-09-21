@@ -15,6 +15,12 @@ export function getVoiceForLanguage(langCode) {
   if (targetLang.startsWith('te')) langPrefix = 'te'
   else if (targetLang.startsWith('ta')) langPrefix = 'ta'
   else if (targetLang.startsWith('hi')) langPrefix = 'hi'
+  else if (targetLang.startsWith('or')) langPrefix = 'or'
+  else if (targetLang.startsWith('bn')) langPrefix = 'bn'
+  else if (targetLang.startsWith('kok')) langPrefix = 'kok'
+  else if (targetLang.startsWith('tcy')) langPrefix = 'tcy'
+  else if (targetLang.startsWith('gu')) langPrefix = 'gu'
+  else if (targetLang.startsWith('mr')) langPrefix = 'mr'
 
   const exactLocale =
     langPrefix === 'te'
@@ -23,6 +29,18 @@ export function getVoiceForLanguage(langCode) {
       ? 'ta-in'
       : langPrefix === 'hi'
       ? 'hi-in'
+      : langPrefix === 'or'
+      ? 'or-in'
+      : langPrefix === 'bn'
+      ? 'bn-in'
+      : langPrefix === 'kok'
+      ? 'kok-in'
+      : langPrefix === 'tcy'
+      ? 'tcy-in'
+      : langPrefix === 'gu'
+      ? 'gu-in'
+      : langPrefix === 'mr'
+      ? 'mr-in'
       : 'en-in'
 
   // 1. Match exact locale (e.g. te-IN)
@@ -41,6 +59,12 @@ export function getVoiceForLanguage(langCode) {
       te: ['telugu'],
       ta: ['tamil'],
       hi: ['hindi'],
+      or: ['odia', 'oriya'],
+      bn: ['bengali', 'bangla'],
+      kok: ['konkani', 'kokani'],
+      tcy: ['tulu'],
+      gu: ['gujarati'],
+      mr: ['marathi'],
       en: ['english', 'en_']
     }
     const keywords = nameKeywords[langPrefix] || []
@@ -71,6 +95,12 @@ export function speakResponse(text, language = 'en', onEnd = null, onError = nul
   if (langCode.startsWith('te')) targetLocale = 'te-IN'
   else if (langCode.startsWith('ta')) targetLocale = 'ta-IN'
   else if (langCode.startsWith('hi')) targetLocale = 'hi-IN'
+  else if (langCode.startsWith('or')) targetLocale = 'or-IN'
+  else if (langCode.startsWith('bn')) targetLocale = 'bn-IN'
+  else if (langCode.startsWith('kok')) targetLocale = 'kok-IN'
+  else if (langCode.startsWith('tcy')) targetLocale = 'tcy-IN'
+  else if (langCode.startsWith('gu')) targetLocale = 'gu-IN'
+  else if (langCode.startsWith('mr')) targetLocale = 'mr-IN'
 
   utterance.lang = targetLocale
 

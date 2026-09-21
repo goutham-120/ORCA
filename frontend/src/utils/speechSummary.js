@@ -6,7 +6,7 @@
 
 export function buildSpokenSummary(response, rawText = '', language = 'en') {
   const lang = (language || 'en').toLowerCase()
-  const langPrefix = lang.startsWith('te') ? 'te' : lang.startsWith('ta') ? 'ta' : lang.startsWith('hi') ? 'hi' : 'en'
+  const langPrefix = lang.startsWith('te') ? 'te' : lang.startsWith('ta') ? 'ta' : lang.startsWith('hi') ? 'hi' : lang.startsWith('or') ? 'or' : lang.startsWith('bn') ? 'bn' : lang.startsWith('kok') ? 'kok' : lang.startsWith('tcy') ? 'tcy' : lang.startsWith('gu') ? 'gu' : lang.startsWith('mr') ? 'mr' : 'en'
 
   const assessment = response?.assessment || {}
   const decision = response?.decision || {}
@@ -68,6 +68,24 @@ export function buildSpokenSummary(response, rawText = '', language = 'en') {
   }
   if (langPrefix === 'ta') {
     return buildTamilSummary({ level, scorePercent, windSpeed, waveHeight, precipitation, primaryAction, hasLimitations })
+  }
+  if (langPrefix === 'or') {
+    return buildOdiaSummary({ level, scorePercent, windSpeed, waveHeight, precipitation, primaryAction, hasLimitations })
+  }
+  if (langPrefix === 'bn') {
+    return buildBengaliSummary({ level, scorePercent, windSpeed, waveHeight, precipitation, primaryAction, hasLimitations })
+  }
+  if (langPrefix === 'kok') {
+    return buildKonkaniSummary({ level, scorePercent, windSpeed, waveHeight, precipitation, primaryAction, hasLimitations })
+  }
+  if (langPrefix === 'tcy') {
+    return buildTuluSummary({ level, scorePercent, windSpeed, waveHeight, precipitation, primaryAction, hasLimitations })
+  }
+  if (langPrefix === 'gu') {
+    return buildGujaratiSummary({ level, scorePercent, windSpeed, waveHeight, precipitation, primaryAction, hasLimitations })
+  }
+  if (langPrefix === 'mr') {
+    return buildMarathiSummary({ level, scorePercent, windSpeed, waveHeight, precipitation, primaryAction, hasLimitations })
   }
 
   return buildEnglishSummary({ level, scorePercent, windSpeed, waveHeight, precipitation, primaryAction, hasLimitations })
@@ -209,6 +227,210 @@ function buildTamilSummary({ level, scorePercent, windSpeed, waveHeight, precipi
 
   if (hasLimitations) {
     parts.push('சில குறிப்பிட்ட இடத் தகவல்கள் கிடைக்கவில்லை, எனவே இது முழுமையான பாதுகாப்பு சான்றிதழ் அல்ல.')
+  }
+
+  return parts.join(' ')
+}
+
+function buildOdiaSummary({ level, scorePercent, windSpeed, waveHeight, precipitation, primaryAction, hasLimitations }) {
+  const parts = []
+
+  const statusMap = { low: 'କମ୍', moderate: 'ମଧ୍ୟମ', high: 'ଉଚ୍ଚ', critical: 'ଗମ୍ଭୀର', unknown: 'ଅଜ୍ଞାତ' }
+  const odiaStatus = statusMap[level] || 'ଅଜ୍ଞାତ'
+
+  if (level === 'low') {
+    parts.push('ଆଜି ମାଛ ଧରିବା ପାଇଁ ସମୁଦ୍ର ପରିସ୍ଥିତି ଅନୁକୂଳ ଅଛି।')
+  } else if (level === 'moderate') {
+    parts.push('ସମୁଦ୍ର ପରିସ୍ଥିତି ପାଇଁ ସତର୍କତା ଆବଶ୍ୟକ।')
+  } else {
+    parts.push('ଚେତାବନୀ: ଗମ୍ଭୀର ସାମୁଦ୍ରିକ ବିପଦ ଉପସ୍ଥିତ ଅଛି।')
+  }
+
+  const scoreText = scorePercent != null ? `, ${scorePercent} ପ୍ରତିଶତରେ।` : '।'
+  parts.push(`ବର୍ତ୍ତମାନର ବିପଦ ସ୍ତର ${odiaStatus} ଅଟେ${scoreText}`)
+
+  const conds = []
+  if (windSpeed != null) conds.push(`ପବନର ବେଗ ପ୍ରାୟ ସେକେଣ୍ଡ ପ୍ରତି ${windSpeed} ମିଟର`)
+  if (waveHeight != null) conds.push(`ଲହଡ଼ିର ଉଚ୍ଚତା ପ୍ରାୟ ${waveHeight} ମିଟର ଅଛି`)
+
+  if (conds.length > 0) {
+    parts.push(conds.join(', ') + '।')
+  }
+
+  parts.push('ସୁରକ୍ଷା ଯାଞ୍ଚ ସମ୍ପୂର୍ଣ୍ଣ କରନ୍ତୁ, ଲାଇଫ୍ ଜାକେଟ୍ ଏବଂ VHF ରେଡିଓ ସାଥୀରେ ରଖନ୍ତୁ, ଏବଂ ସରକାରୀ ସୂଚନା ଉପରେ ନଜର ରଖନ୍ତୁ।')
+
+  if (hasLimitations) {
+    parts.push('କିଛି ଆଞ୍ଚଳିକ ତଥ୍ୟ ଉପଲବ୍ଧ ନାହିଁ, ତେଣୁ ଏହା ସମ୍ପୂର୍ଣ୍ଣ ସୁରକ୍ଷା ମଞ୍ଜୁରୀ ନୁହେଁ।')
+  }
+
+  return parts.join(' ')
+}
+
+function buildBengaliSummary({ level, scorePercent, windSpeed, waveHeight, precipitation, primaryAction, hasLimitations }) {
+  const parts = []
+
+  const statusMap = { low: 'কম', moderate: 'মাঝারি', high: 'উচ্চ', critical: 'গুরুতর', unknown: 'অজানা' }
+  const bengaliStatus = statusMap[level] || 'অজানা'
+
+  if (level === 'low') {
+    parts.push('আজ মাছ ধরার জন্য সমুদ্রের পরিস্থিতি অনুকূল রয়েছে।')
+  } else if (level === 'moderate') {
+    parts.push('সমুদ্রের পরিস্থিতির জন্য সতর্কতা অবলম্বন প্রয়োজন।')
+  } else {
+    parts.push('সতর্কতা: গুরুতর সামুদ্রিক ঝুঁকির সম্ভাবনা রয়েছে।')
+  }
+
+  const scoreText = scorePercent != null ? `, ${scorePercent} শতাংশে।` : '।'
+  parts.push(`বর্তমানে ঝুঁকির মাত্রা ${bengaliStatus}${scoreText}`)
+
+  const conds = []
+  if (windSpeed != null) conds.push(`বাতাসের গতিবেগ প্রায় প্রতি সেকেন্ডে ${windSpeed} মিটার`)
+  if (waveHeight != null) conds.push(`ঢেউয়ের উচ্চতা প্রায় ${waveHeight} মিটার রয়েছে`)
+
+  if (conds.length > 0) {
+    parts.push(conds.join(', ') + '।')
+  }
+
+  parts.push('সুরক্ষা পরীক্ষা সম্পন্ন করুন, লাইফ জ্যাকেট এবং VHF রেডিও সাথে রাখুন, এবং সরকারি নির্দেশিকা মেনে চলুন।')
+
+  if (hasLimitations) {
+    parts.push('কিছু নির্দিষ্ট এলাকার তথ্য উপলব্ধ নেই, তাই এটি সম্পূর্ণ নিরাপত্তা শংসাপত্র নয়।')
+  }
+
+  return parts.join(' ')
+}
+
+function buildKonkaniSummary({ level, scorePercent, windSpeed, waveHeight, precipitation, primaryAction, hasLimitations }) {
+  const parts = []
+
+  const statusMap = { low: 'उणी', moderate: 'मध्यम', high: 'व्हड', critical: 'गंभीर', unknown: 'खबर ना' }
+  const konkaniStatus = statusMap[level] || 'खबर ना'
+
+  if (level === 'low') {
+    parts.push('आयज नुस्तेमारा खातीर दर्याची स्थिती बरा आसा।')
+  } else if (level === 'moderate') {
+    parts.push('दर्याच्या परिस्थिती खातीर राखणदारी घेवप गरजेचें।')
+  } else {
+    parts.push('शिटकावणी: गंभीर दर्याचो धोको आसा।')
+  }
+
+  const scoreText = scorePercent != null ? `, ${scorePercent} टक्कयांनी।` : '।'
+  parts.push(`सध्याच्या धोक्याचें प्रमाण ${konkaniStatus} आसा${scoreText}`)
+
+  const conds = []
+  if (windSpeed != null) conds.push(`वार्याची गती सुमार सेकंदाक ${windSpeed} मीटर`)
+  if (waveHeight != null) conds.push(`ल्हारांची उंचाय सुमार ${waveHeight} मीटर आसा`)
+
+  if (conds.length > 0) {
+    parts.push(conds.join(', ') + '।')
+  }
+
+  parts.push('सुरक्षेची तपासणी पुराय करात, लाइफ जॅकेट आनी VHF रेडिओ सांगता दवरात, आनी सरकारी शिटकावण्यो पाळा।')
+
+  if (hasLimitations) {
+    parts.push('काही वाठारांची म्हायती मेळूंक ना, ताका लागून ही पुराय सुरक्षेची परवानगी न्हय।')
+  }
+
+  return parts.join(' ')
+}
+
+function buildTuluSummary({ level, scorePercent, windSpeed, waveHeight, precipitation, primaryAction, hasLimitations }) {
+  const parts = []
+
+  const statusMap = { low: 'ಕಡಿಮೆ', moderate: 'ಮಧ್ಯಮ', high: 'ಹೆಚ್ಚು', critical: 'ಗಂಭೀರ', unknown: 'ಗೊತ್ತಿಜ್ಜಿ' }
+  const tuluStatus = statusMap[level] || 'ಗೊತ್ತಿಜ್ಜಿ'
+
+  if (level === 'low') {
+    parts.push('ಇನಿ ಮೀನ್ ಪತ್ತುನೆಕ್ಅಡ್ ಕಡಲ ಪರಿಸ್ಥಿತಿ ಎಡ್ಡೆ ಉಂಡು.')
+  } else if (level === 'moderate') {
+    parts.push('ಕಡಲ ಪರಿಸ್ಥಿತಿನ್ ತೂದು ಜಾಗ್ರತೆಡ್ ಉಪ್ಪೊಡು.')
+  } else {
+    parts.push('ಎಚ್ಚರಿಕೆ: ಮಲ್ಲ ಕಡಲ ಅಪಾಯ ಉಂಡು.')
+  }
+
+  const scoreText = scorePercent != null ? `, ${scorePercent} ಶೇಕಡಾಡ್.` : '.'
+  parts.push(`ಇತ್ತೆದ ಅಪಾಯೊದ ಪ್ರಮಾಣ ${tuluStatus} ಉಂಡು${scoreText}`)
+
+  const conds = []
+  if (windSpeed != null) conds.push(`ಗಾಳಿದ ವೇಗ ಸುಮಾರಾದ್ ಸೆಕೆಂಡ್‍ಗ್ ${windSpeed} ಮೀಟರ್`)
+  if (waveHeight != null) conds.push(`ಅಲೆತ ಎತ್ತರ ಸುಮಾರಾದ್ ${waveHeight} ಮೀಟರ್ ಉಂಡು`)
+
+  if (conds.length > 0) {
+    parts.push(conds.join(', ') + '.')
+  }
+
+  parts.push('ರಕ್ಷಣೆ ಪರಿಕರೊಲು, ಲೈಫ್ ಜಾಕೆಟ್ ಬೊಕ್ಕ VHF ರೇಡಿಯೋ ದೀವೊನಿಲೆ, ಸರ್ಕಾರಿ ಸೂಚನೆಲೆನ್ ಕೇನ್ಲೆ.')
+
+  if (hasLimitations) {
+    parts.push('ಕೆಲವು ಜಾಗದ ಮಾಹಿತಿ ತಿಕ್‍ದಿಜ್ಜಿ, ಅಂಚಾದ್ ಉಂದು ಪೂರ್ತಿ ರಕ್ಷಣೆದ ಖಾತರಿ ಅತ್ತ್.')
+  }
+
+  return parts.join(' ')
+}
+
+function buildGujaratiSummary({ level, scorePercent, windSpeed, waveHeight, precipitation, primaryAction, hasLimitations }) {
+  const parts = []
+
+  const statusMap = { low: 'ઓછું', moderate: 'મધ્યમ', high: 'ઉચ્ચ', critical: 'ગંભીર', unknown: 'અજ્ઞાત' }
+  const gujaratiStatus = statusMap[level] || 'અજ્ઞાત'
+
+  if (level === 'low') {
+    parts.push('આજે માછીમારી માટે દરિયાઈ પરિસ્થિતિઓ સાનુકૂળ છે.')
+  } else if (level === 'moderate') {
+    parts.push('દરિયાઈ પરિસ્થિતિઓ માટે સાવચેતી રાખવી જરૂરી છે.')
+  } else {
+    parts.push('ચેતવણી: ગંભીર દરિયાઈ જોખમ હાજર છે.')
+  }
+
+  const scoreText = scorePercent != null ? `, ${scorePercent} ટકા પર.` : '.'
+  parts.push(`વર્તમાન જોખમ સ્તર ${gujaratiStatus} છે${scoreText}`)
+
+  const conds = []
+  if (windSpeed != null) conds.push(`પવનની ઝડપ આશરે પ્રતિ સેકન્ડ ${windSpeed} મીટર છે`)
+  if (waveHeight != null) conds.push(`મોજાની ઊંચાઈ આશરે ${waveHeight} મીટર છે`)
+
+  if (conds.length > 0) {
+    parts.push(conds.join(', ') + '.')
+  }
+
+  parts.push('સુરક્ષા તપાસ પૂર્ણ કરો, લાઈફ જેકેટ અને VHF રેડિયો સાથે રાખો, અને સત્તાવાર સૂચનાઓનું પાલન કરો.')
+
+  if (hasLimitations) {
+    parts.push('કેટલીક સ્થળ-વિશિષ્ટ માહિતી ઉપલબ્ધ નથી, તેથી આ સંપૂર્ણ સુરક્ષા મંજૂરી નથી.')
+  }
+
+  return parts.join(' ')
+}
+
+function buildMarathiSummary({ level, scorePercent, windSpeed, waveHeight, precipitation, primaryAction, hasLimitations }) {
+  const parts = []
+
+  const statusMap = { low: 'कमी', moderate: 'मध्यम', high: 'उच्च', critical: 'गंभीर', unknown: 'माहिती नाही' }
+  const marathiStatus = statusMap[level] || 'माहिती नाही'
+
+  if (level === 'low') {
+    parts.push('आज मासेमारीसाठी समुद्राची स्थिती अनुकूल आहे.')
+  } else if (level === 'moderate') {
+    parts.push('समुद्राच्या परिस्थितीसाठी दक्षता घेणे गरजेचे आहे.')
+  } else {
+    parts.push('इशारा: गंभीर समुद्री धोका आहे.')
+  }
+
+  const scoreText = scorePercent != null ? `, ${scorePercent} टक्क्यांवर.` : '.'
+  parts.push(`सध्याचा धोक्याचा स्तर ${marathiStatus} आहे${scoreText}`)
+
+  const conds = []
+  if (windSpeed != null) conds.push(`वाऱ्याचा वेग सुमारे सेकंदाला ${windSpeed} मीटर आहे`)
+  if (waveHeight != null) conds.push(`लाटांची उंची सुमारे ${waveHeight} मीटर आहे`)
+
+  if (conds.length > 0) {
+    parts.push(conds.join(', ') + '.')
+  }
+
+  parts.push('सुरक्षेची तपासणी पूर्ण करा, लाइफ जॅकेट आणि VHF रेडिओ सोबत ठेवा, आणि शासकीय सूचनांचे पालन करा.')
+
+  if (hasLimitations) {
+    parts.push('काही ठिकाणांची माहिती उपलब्ध नाही, त्यामुळे ही पूर्ण सुरक्षेची परवानगी नाही.')
   }
 
   return parts.join(' ')

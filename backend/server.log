@@ -1,0 +1,447 @@
+INFO:     Started server process [31920]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:64891 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55000 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55000 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51678 - "HEAD / HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51678 - "GET / HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51694 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59152 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59152 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65369 - "OPTIONS /map/pfz/nearest-suitable HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53768 - "OPTIONS /map/layers HTTP/1.1" 200 OK
+
+[PFZ Discovery Engine] --- NEW DISCOVERY REQUEST ---
+[PFZ Discovery Engine] Selected Location: 13.1256°N, 80.2978°E | Radius: 50 km
+[PFZ Discovery Engine] Retrieved 4 total PFZ record(s) from database.
+[PFZ Discovery Engine] Candidates inside search radius (50 km): 0 of 4
+[PFZ Discovery Engine] Result: no_pfz_found. Nearest PFZ outside radius is at 53.63 km.
+INFO:     127.0.0.1:65369 - "POST /map/pfz/nearest-suitable HTTP/1.1" 200 OK
+
+[PFZ Discovery Engine] --- NEW DISCOVERY REQUEST ---
+[PFZ Discovery Engine] Selected Location: 13.1256°N, 80.2978°E | Radius: 50 km
+[PFZ Discovery Engine] Retrieved 4 total PFZ record(s) from database.
+[PFZ Discovery Engine] Candidates inside search radius (50 km): 0 of 4
+[PFZ Discovery Engine] Result: no_pfz_found. Nearest PFZ outside radius is at 53.63 km.
+INFO:     127.0.0.1:65369 - "POST /map/pfz/nearest-suitable HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65369 - "GET /map/layers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65369 - "OPTIONS /map/features?layer=hazards&layer=restricted_zones&layer=marine_areas&layer=pfz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65369 - "GET /map/features?layer=hazards&layer=restricted_zones&layer=marine_areas&layer=pfz HTTP/1.1" 200 OK
+
+[PFZ Discovery Engine] --- NEW DISCOVERY REQUEST ---
+[PFZ Discovery Engine] Selected Location: 13.1256°N, 80.2978°E | Radius: 50 km
+[PFZ Discovery Engine] Retrieved 75 total PFZ record(s) from database.
+[PFZ Discovery Engine] Candidates inside search radius (50 km): 3 of 75
+[PFZ Discovery Candidate] ID=155 (2026262046) | Dist=49.15 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=153 (2026262044) | Dist=42.3 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=154 (2026262045) | Dist=24.06 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Result] Overall Suitability: 'suitable'
+[PFZ Discovery Result] Selected PFZ: 2026262045 | Distance: 24.06 km
+[PFZ Discovery Engine] --- DISCOVERY COMPLETE ---
+
+INFO:     127.0.0.1:61139 - "POST /map/pfz/nearest-suitable HTTP/1.1" 200 OK
+
+[PFZ Discovery Engine] --- NEW DISCOVERY REQUEST ---
+[PFZ Discovery Engine] Selected Location: 13.1256°N, 80.2978°E | Radius: 50 km
+[PFZ Discovery Engine] Retrieved 75 total PFZ record(s) from database.
+[PFZ Discovery Engine] Candidates inside search radius (50 km): 3 of 75
+
+[PFZ Discovery Engine] --- NEW DISCOVERY REQUEST ---
+[PFZ Discovery Engine] Selected Location: 13.1256°N, 80.2978°E | Radius: 50 km
+[PFZ Discovery Engine] Retrieved 75 total PFZ record(s) from database.
+[PFZ Discovery Engine] Candidates inside search radius (50 km): 3 of 75
+[PFZ Discovery Candidate] ID=155 (2026262046) | Dist=49.15 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+INFO:     127.0.0.1:57488 - "GET /map/layers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57488 - "GET /map/features?layer=hazards&layer=restricted_zones&layer=marine_areas&layer=pfz HTTP/1.1" 200 OK
+[PFZ Discovery Candidate] ID=153 (2026262044) | Dist=42.3 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=154 (2026262045) | Dist=24.06 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Result] Overall Suitability: 'suitable'
+[PFZ Discovery Result] Selected PFZ: 2026262045 | Distance: 24.06 km
+[PFZ Discovery Engine] --- DISCOVERY COMPLETE ---
+
+INFO:     127.0.0.1:52845 - "POST /map/pfz/nearest-suitable HTTP/1.1" 200 OK
+[PFZ Discovery Candidate] ID=154 (2026262045) | Dist=24.06 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=153 (2026262044) | Dist=42.3 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=155 (2026262046) | Dist=49.15 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Result] Overall Suitability: 'suitable'
+[PFZ Discovery Result] Selected PFZ: 2026262045 | Distance: 24.06 km
+[PFZ Discovery Engine] --- DISCOVERY COMPLETE ---
+
+INFO:     127.0.0.1:63679 - "POST /map/pfz/nearest-suitable HTTP/1.1" 200 OK
+
+[PFZ Discovery Engine] --- NEW DISCOVERY REQUEST ---
+[PFZ Discovery Engine] Selected Location: 20.9077°N, 70.3679°E | Radius: 50 km
+[PFZ Discovery Engine] Retrieved 79 total PFZ record(s) from database.
+[PFZ Discovery Engine] Candidates inside search radius (50 km): 2 of 79
+[PFZ Discovery Candidate] ID=113 (2026262004) | Dist=45.65 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=112 (2026262003) | Dist=47.93 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Result] Overall Suitability: 'suitable'
+[PFZ Discovery Result] Selected PFZ: 2026262004 | Distance: 45.65 km
+[PFZ Discovery Engine] --- DISCOVERY COMPLETE ---
+
+INFO:     127.0.0.1:57006 - "POST /map/pfz/nearest-suitable HTTP/1.1" 200 OK
+
+[PFZ Discovery Engine] --- NEW DISCOVERY REQUEST ---
+[PFZ Discovery Engine] Selected Location: 13.1256°N, 80.2978°E | Radius: 50 km
+[PFZ Discovery Engine] Retrieved 79 total PFZ record(s) from database.
+[PFZ Discovery Engine] Candidates inside search radius (50 km): 3 of 79
+
+[PFZ Discovery Engine] --- NEW DISCOVERY REQUEST ---
+[PFZ Discovery Engine] Selected Location: 13.1256°N, 80.2978°E | Radius: 50 km
+[PFZ Discovery Engine] Retrieved 79 total PFZ record(s) from database.
+[PFZ Discovery Engine] Candidates inside search radius (50 km): 3 of 79
+[PFZ Discovery Candidate] ID=155 (2026262046) | Dist=49.15 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=153 (2026262044) | Dist=42.3 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=154 (2026262045) | Dist=24.06 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Result] Overall Suitability: 'suitable'
+[PFZ Discovery Result] Selected PFZ: 2026262045 | Distance: 24.06 km
+[PFZ Discovery Engine] --- DISCOVERY COMPLETE ---
+
+INFO:     127.0.0.1:58894 - "POST /map/pfz/nearest-suitable HTTP/1.1" 200 OK
+[PFZ Discovery Candidate] ID=153 (2026262044) | Dist=42.3 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=154 (2026262045) | Dist=24.06 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=155 (2026262046) | Dist=49.15 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Result] Overall Suitability: 'suitable'
+[PFZ Discovery Result] Selected PFZ: 2026262045 | Distance: 24.06 km
+[PFZ Discovery Engine] --- DISCOVERY COMPLETE ---
+
+INFO:     127.0.0.1:50515 - "POST /map/pfz/nearest-suitable HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55690 - "GET /map/layers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55690 - "GET /map/features?layer=hazards&layer=restricted_zones&layer=marine_areas&layer=pfz HTTP/1.1" 200 OK
+
+[PFZ Discovery Engine] --- NEW DISCOVERY REQUEST ---
+[PFZ Discovery Engine] Selected Location: 13.1256°N, 80.2978°E | Radius: 135 km
+[PFZ Discovery Engine] Retrieved 75 total PFZ record(s) from database.
+[PFZ Discovery Engine] Candidates inside search radius (135 km): 6 of 75
+[PFZ Discovery Candidate] ID=350 (2026262043) | Dist=103.19 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=354 (2026262047) | Dist=74.31 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=353 (2026262046) | Dist=49.15 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=355 (2026262048) | Dist=109.94 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=352 (2026262045) | Dist=24.06 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=351 (2026262044) | Dist=42.3 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Result] Overall Suitability: 'suitable'
+[PFZ Discovery Result] Selected PFZ: 2026262045 | Distance: 24.06 km
+[PFZ Discovery Engine] --- DISCOVERY COMPLETE ---
+
+INFO:     127.0.0.1:55690 - "POST /map/pfz/nearest-suitable HTTP/1.1" 200 OK
+
+[PFZ Discovery Engine] --- NEW DISCOVERY REQUEST ---
+[PFZ Discovery Engine] Selected Location: 13.1256°N, 80.2978°E | Radius: 85 km
+[PFZ Discovery Engine] Retrieved 75 total PFZ record(s) from database.
+[PFZ Discovery Engine] Candidates inside search radius (85 km): 4 of 75
+[PFZ Discovery Candidate] ID=353 (2026262046) | Dist=49.15 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=352 (2026262045) | Dist=24.06 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=354 (2026262047) | Dist=74.31 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=351 (2026262044) | Dist=42.3 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Result] Overall Suitability: 'suitable'
+[PFZ Discovery Result] Selected PFZ: 2026262045 | Distance: 24.06 km
+[PFZ Discovery Engine] --- DISCOVERY COMPLETE ---
+
+INFO:     127.0.0.1:55690 - "POST /map/pfz/nearest-suitable HTTP/1.1" 200 OK
+
+[PFZ Discovery Engine] --- NEW DISCOVERY REQUEST ---
+[PFZ Discovery Engine] Selected Location: 13.1256°N, 80.2978°E | Radius: 25 km
+[PFZ Discovery Engine] Retrieved 75 total PFZ record(s) from database.
+[PFZ Discovery Engine] Candidates inside search radius (25 km): 1 of 75
+[PFZ Discovery Candidate] ID=352 (2026262045) | Dist=24.06 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Result] Overall Suitability: 'suitable'
+[PFZ Discovery Result] Selected PFZ: 2026262045 | Distance: 24.06 km
+[PFZ Discovery Engine] --- DISCOVERY COMPLETE ---
+
+INFO:     127.0.0.1:55690 - "POST /map/pfz/nearest-suitable HTTP/1.1" 200 OK
+
+[PFZ Discovery Engine] --- NEW DISCOVERY REQUEST ---
+[PFZ Discovery Engine] Selected Location: 13.1256°N, 80.2978°E | Radius: 25 km
+[PFZ Discovery Engine] Retrieved 75 total PFZ record(s) from database.
+[PFZ Discovery Engine] Candidates inside search radius (25 km): 1 of 75
+[PFZ Discovery Candidate] ID=352 (2026262045) | Dist=24.06 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Result] Overall Suitability: 'suitable'
+[PFZ Discovery Result] Selected PFZ: 2026262045 | Distance: 24.06 km
+[PFZ Discovery Engine] --- DISCOVERY COMPLETE ---
+
+INFO:     127.0.0.1:55690 - "POST /map/pfz/nearest-suitable HTTP/1.1" 200 OK
+
+[PFZ Discovery Engine] --- NEW DISCOVERY REQUEST ---
+[PFZ Discovery Engine] Selected Location: 12.5022°N, 80.0166°E | Radius: 25 km
+[PFZ Discovery Engine] Retrieved 75 total PFZ record(s) from database.
+[PFZ Discovery Engine] Candidates inside search radius (25 km): 0 of 75
+[PFZ Discovery Engine] Result: no_pfz_found. Nearest PFZ outside radius is at 45.68 km.
+INFO:     127.0.0.1:52610 - "POST /map/pfz/nearest-suitable HTTP/1.1" 200 OK
+
+[PFZ Discovery Engine] --- NEW DISCOVERY REQUEST ---
+[PFZ Discovery Engine] Selected Location: 12.5022°N, 80.0166°E | Radius: 125 km
+[PFZ Discovery Engine] Retrieved 75 total PFZ record(s) from database.
+[PFZ Discovery Engine] Candidates inside search radius (125 km): 6 of 75
+[PFZ Discovery Candidate] ID=349 (2026262042) | Dist=102.84 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=353 (2026262046) | Dist=118.91 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=348 (2026262041) | Dist=123.41 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=350 (2026262043) | Dist=72.96 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=351 (2026262044) | Dist=45.68 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=352 (2026262045) | Dist=61.6 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Result] Overall Suitability: 'suitable'
+[PFZ Discovery Result] Selected PFZ: 2026262044 | Distance: 45.68 km
+[PFZ Discovery Engine] --- DISCOVERY COMPLETE ---
+
+INFO:     127.0.0.1:52610 - "POST /map/pfz/nearest-suitable HTTP/1.1" 200 OK
+
+[PFZ Discovery Engine] --- NEW DISCOVERY REQUEST ---
+[PFZ Discovery Engine] Selected Location: 12.5022°N, 80.0166°E | Radius: 125 km
+[PFZ Discovery Engine] Retrieved 75 total PFZ record(s) from database.
+[PFZ Discovery Engine] Candidates inside search radius (125 km): 6 of 75
+[PFZ Discovery Candidate] ID=351 (2026262044) | Dist=45.68 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=350 (2026262043) | Dist=72.96 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=349 (2026262042) | Dist=102.84 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=348 (2026262041) | Dist=123.41 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=352 (2026262045) | Dist=61.6 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=353 (2026262046) | Dist=118.91 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Result] Overall Suitability: 'suitable'
+[PFZ Discovery Result] Selected PFZ: 2026262044 | Distance: 45.68 km
+[PFZ Discovery Engine] --- DISCOVERY COMPLETE ---
+
+INFO:     127.0.0.1:52610 - "POST /map/pfz/nearest-suitable HTTP/1.1" 200 OK
+
+[PFZ Discovery Engine] --- NEW DISCOVERY REQUEST ---
+[PFZ Discovery Engine] Selected Location: 14.4022°N, 79.8986°E | Radius: 125 km
+[PFZ Discovery Engine] Retrieved 75 total PFZ record(s) from database.
+[PFZ Discovery Engine] Candidates inside search radius (125 km): 5 of 75
+[PFZ Discovery Candidate] ID=354 (2026262047) | Dist=96.06 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=353 (2026262046) | Dist=124.86 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=357 (2026262050) | Dist=82.93 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=355 (2026262048) | Dist=57.96 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=356 (2026262049) | Dist=49.22 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Result] Overall Suitability: 'suitable'
+[PFZ Discovery Result] Selected PFZ: 2026262049 | Distance: 49.22 km
+[PFZ Discovery Engine] --- DISCOVERY COMPLETE ---
+
+INFO:     127.0.0.1:61373 - "POST /map/pfz/nearest-suitable HTTP/1.1" 200 OK
+
+[PFZ Discovery Engine] --- NEW DISCOVERY REQUEST ---
+[PFZ Discovery Engine] Selected Location: 14.4022°N, 79.8986°E | Radius: 125 km
+[PFZ Discovery Engine] Retrieved 75 total PFZ record(s) from database.
+[PFZ Discovery Engine] Candidates inside search radius (125 km): 5 of 75
+[PFZ Discovery Candidate] ID=355 (2026262048) | Dist=57.96 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=357 (2026262050) | Dist=82.93 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=353 (2026262046) | Dist=124.86 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=354 (2026262047) | Dist=96.06 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=356 (2026262049) | Dist=49.22 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Result] Overall Suitability: 'suitable'
+[PFZ Discovery Result] Selected PFZ: 2026262049 | Distance: 49.22 km
+[PFZ Discovery Engine] --- DISCOVERY COMPLETE ---
+
+INFO:     127.0.0.1:61373 - "POST /map/pfz/nearest-suitable HTTP/1.1" 200 OK
+
+[PFZ Discovery Engine] --- NEW DISCOVERY REQUEST ---
+[PFZ Discovery Engine] Selected Location: 13.1256°N, 80.2978°E | Radius: 50 km
+[PFZ Discovery Engine] Retrieved 75 total PFZ record(s) from database.
+[PFZ Discovery Engine] Candidates inside search radius (50 km): 3 of 75
+
+[PFZ Discovery Engine] --- NEW DISCOVERY REQUEST ---
+[PFZ Discovery Engine] Selected Location: 13.1256°N, 80.2978°E | Radius: 50 km
+[PFZ Discovery Engine] Retrieved 75 total PFZ record(s) from database.
+[PFZ Discovery Engine] Candidates inside search radius (50 km): 3 of 75
+[PFZ Discovery Candidate] ID=351 (2026262044) | Dist=42.3 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=352 (2026262045) | Dist=24.06 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=353 (2026262046) | Dist=49.15 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Result] Overall Suitability: 'suitable'
+[PFZ Discovery Result] Selected PFZ: 2026262045 | Distance: 24.06 km
+[PFZ Discovery Engine] --- DISCOVERY COMPLETE ---
+
+INFO:     127.0.0.1:50060 - "POST /map/pfz/nearest-suitable HTTP/1.1" 200 OK
+[PFZ Discovery Candidate] ID=353 (2026262046) | Dist=49.15 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=351 (2026262044) | Dist=42.3 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=352 (2026262045) | Dist=24.06 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Result] Overall Suitability: 'suitable'
+[PFZ Discovery Result] Selected PFZ: 2026262045 | Distance: 24.06 km
+[PFZ Discovery Engine] --- DISCOVERY COMPLETE ---
+
+INFO:     127.0.0.1:53401 - "POST /map/pfz/nearest-suitable HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55576 - "GET /map/layers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55576 - "GET /map/features?layer=hazards&layer=restricted_zones&layer=marine_areas&layer=pfz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64723 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64723 - "GET /docs HTTP/1.1" 200 OK
+
+[PFZ Discovery Engine] --- NEW DISCOVERY REQUEST ---
+[PFZ Discovery Engine] Selected Location: 13.1256°N, 80.2978°E | Radius: 50 km
+[PFZ Discovery Engine] Retrieved 75 total PFZ record(s) from database.
+[PFZ Discovery Engine] Candidates inside search radius (50 km): 3 of 75
+
+[PFZ Discovery Engine] --- NEW DISCOVERY REQUEST ---
+[PFZ Discovery Engine] Selected Location: 13.1256°N, 80.2978°E | Radius: 50 km
+[PFZ Discovery Engine] Retrieved 75 total PFZ record(s) from database.
+[PFZ Discovery Engine] Candidates inside search radius (50 km): 3 of 75
+[PFZ Discovery Candidate] ID=522 (2026262045) | Dist=24.06 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=521 (2026262044) | Dist=42.3 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=523 (2026262046) | Dist=49.15 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Result] Overall Suitability: 'suitable'
+[PFZ Discovery Result] Selected PFZ: 2026262045 | Distance: 24.06 km
+[PFZ Discovery Engine] --- DISCOVERY COMPLETE ---
+
+INFO:     127.0.0.1:50625 - "POST /map/pfz/nearest-suitable HTTP/1.1" 200 OK
+[PFZ Discovery Candidate] ID=523 (2026262046) | Dist=49.15 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=521 (2026262044) | Dist=42.3 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=522 (2026262045) | Dist=24.06 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Result] Overall Suitability: 'suitable'
+[PFZ Discovery Result] Selected PFZ: 2026262045 | Distance: 24.06 km
+[PFZ Discovery Engine] --- DISCOVERY COMPLETE ---
+
+INFO:     127.0.0.1:60518 - "POST /map/pfz/nearest-suitable HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61900 - "GET /map/layers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61900 - "GET /map/features?layer=hazards&layer=restricted_zones&layer=marine_areas&layer=pfz HTTP/1.1" 200 OK
+
+[PFZ Discovery Engine] --- NEW DISCOVERY REQUEST ---
+[PFZ Discovery Engine] Selected Location: 13.1256°N, 80.2978°E | Radius: 50 km
+[PFZ Discovery Engine] Retrieved 75 total PFZ record(s) from database.
+[PFZ Discovery Engine] Candidates inside search radius (50 km): 3 of 75
+
+[PFZ Discovery Engine] --- NEW DISCOVERY REQUEST ---
+[PFZ Discovery Engine] Selected Location: 13.1256°N, 80.2978°E | Radius: 50 km
+[PFZ Discovery Engine] Retrieved 75 total PFZ record(s) from database.
+[PFZ Discovery Engine] Candidates inside search radius (50 km): 3 of 75
+
+[PFZ Discovery Engine] --- NEW DISCOVERY REQUEST ---
+[PFZ Discovery Engine] Selected Location: 13.1256°N, 80.2978°E | Radius: 50 km
+[PFZ Discovery Engine] Retrieved 75 total PFZ record(s) from database.
+[PFZ Discovery Engine] Candidates inside search radius (50 km): 3 of 75
+
+[PFZ Discovery Engine] --- NEW DISCOVERY REQUEST ---
+[PFZ Discovery Engine] Selected Location: 13.1256°N, 80.2978°E | Radius: 50 km
+[PFZ Discovery Engine] Retrieved 75 total PFZ record(s) from database.
+[PFZ Discovery Engine] Candidates inside search radius (50 km): 3 of 75
+[PFZ Discovery Candidate] ID=692 (2026262045) | Dist=24.06 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=691 (2026262044) | Dist=42.3 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=693 (2026262046) | Dist=49.15 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Result] Overall Suitability: 'suitable'
+[PFZ Discovery Result] Selected PFZ: 2026262045 | Distance: 24.06 km
+[PFZ Discovery Engine] --- DISCOVERY COMPLETE ---
+
+INFO:     127.0.0.1:64296 - "POST /map/pfz/nearest-suitable HTTP/1.1" 200 OK
+[PFZ Discovery Candidate] ID=692 (2026262045) | Dist=24.06 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=691 (2026262044) | Dist=42.3 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=693 (2026262046) | Dist=49.15 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Result] Overall Suitability: 'suitable'
+[PFZ Discovery Result] Selected PFZ: 2026262045 | Distance: 24.06 km
+[PFZ Discovery Engine] --- DISCOVERY COMPLETE ---
+
+INFO:     127.0.0.1:49781 - "POST /map/pfz/nearest-suitable HTTP/1.1" 200 OK
+[PFZ Discovery Candidate] ID=691 (2026262044) | Dist=42.3 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=692 (2026262045) | Dist=24.06 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+INFO:     127.0.0.1:55986 - "GET /map/layers HTTP/1.1" 200 OK
+[PFZ Discovery Candidate] ID=693 (2026262046) | Dist=49.15 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=692 (2026262045) | Dist=24.06 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=691 (2026262044) | Dist=42.3 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=693 (2026262046) | Dist=49.15 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Result] Overall Suitability: 'suitable'
+[PFZ Discovery Result] Selected PFZ: 2026262045 | Distance: 24.06 km
+[PFZ Discovery Engine] --- DISCOVERY COMPLETE ---
+
+INFO:     127.0.0.1:60057 - "POST /map/pfz/nearest-suitable HTTP/1.1" 200 OK
+[PFZ Discovery Result] Overall Suitability: 'suitable'
+[PFZ Discovery Result] Selected PFZ: 2026262045 | Distance: 24.06 km
+[PFZ Discovery Engine] --- DISCOVERY COMPLETE ---
+
+INFO:     127.0.0.1:56193 - "POST /map/pfz/nearest-suitable HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55986 - "GET /map/features?layer=hazards&layer=restricted_zones&layer=marine_areas&layer=pfz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49781 - "GET /map/layers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49781 - "GET /map/features?layer=hazards&layer=restricted_zones&layer=marine_areas&layer=pfz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49781 - "OPTIONS /map/analyze-route HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55986 - "POST /map/analyze-route HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:55986 - "POST /map/analyze-route HTTP/1.1" 404 Not Found
+
+[PFZ Discovery Engine] --- NEW DISCOVERY REQUEST ---
+[PFZ Discovery Engine] Selected Location: 13.1256°N, 80.2978°E | Radius: 50 km
+[PFZ Discovery Engine] Retrieved 75 total PFZ record(s) from database.
+[PFZ Discovery Engine] Candidates inside search radius (50 km): 3 of 75
+[PFZ Discovery Candidate] ID=948 (2026262046) | Dist=49.15 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=947 (2026262045) | Dist=24.06 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=946 (2026262044) | Dist=42.3 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Result] Overall Suitability: 'suitable'
+[PFZ Discovery Result] Selected PFZ: 2026262045 | Distance: 24.06 km
+[PFZ Discovery Engine] --- DISCOVERY COMPLETE ---
+
+INFO:     127.0.0.1:55986 - "POST /map/pfz/nearest-suitable HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55986 - "POST /map/analyze-route HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:55986 - "POST /map/analyze-route HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:53949 - "POST /map/analyze-route HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:58454 - "POST /map/analyze-route HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:58454 - "POST /map/analyze-route HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:64537 - "POST /map/analyze-route HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:61202 - "POST /map/analyze-route HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:61202 - "POST /map/analyze-route HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:61202 - "POST /map/analyze-route HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:61202 - "POST /map/analyze-route HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:54893 - "OPTIONS /map/pfz/nearest-suitable HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59384 - "OPTIONS /map/layers HTTP/1.1" 200 OK
+
+[PFZ Discovery Engine] --- NEW DISCOVERY REQUEST ---
+[PFZ Discovery Engine] Selected Location: 13.0827°N, 80.2707°E | Radius: 50 km
+[PFZ Discovery Engine] Retrieved 75 total PFZ record(s) from database.
+[PFZ Discovery Engine] Candidates inside search radius (50 km): 2 of 75
+
+[PFZ Discovery Engine] --- NEW DISCOVERY REQUEST ---
+[PFZ Discovery Engine] Selected Location: 13.0827°N, 80.2707°E | Radius: 50 km
+[PFZ Discovery Engine] Retrieved 75 total PFZ record(s) from database.
+[PFZ Discovery Engine] Candidates inside search radius (50 km): 2 of 75
+[PFZ Discovery Candidate] ID=18607 (2026262045) | Dist=24.1 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=18606 (2026262044) | Dist=38.87 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Result] Overall Suitability: 'suitable'
+[PFZ Discovery Result] Selected PFZ: 2026262045 | Distance: 24.1 km
+[PFZ Discovery Engine] --- DISCOVERY COMPLETE ---
+
+INFO:     127.0.0.1:54893 - "POST /map/pfz/nearest-suitable HTTP/1.1" 200 OK
+[PFZ Discovery Candidate] ID=18607 (2026262045) | Dist=24.1 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=18606 (2026262044) | Dist=38.87 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Result] Overall Suitability: 'suitable'
+[PFZ Discovery Result] Selected PFZ: 2026262045 | Distance: 24.1 km
+[PFZ Discovery Engine] --- DISCOVERY COMPLETE ---
+
+INFO:     127.0.0.1:64670 - "POST /map/pfz/nearest-suitable HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63304 - "GET /map/layers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63304 - "OPTIONS /map/features?layer=hazards&layer=restricted_zones&layer=marine_areas&layer=pfz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63304 - "GET /map/features?layer=hazards&layer=restricted_zones&layer=marine_areas&layer=pfz HTTP/1.1" 200 OK
+
+[PFZ Discovery Engine] --- NEW DISCOVERY REQUEST ---
+[PFZ Discovery Engine] Selected Location: 13.1256°N, 80.2978°E | Radius: 50 km
+[PFZ Discovery Engine] Retrieved 0 total PFZ record(s) from database.
+[PFZ Discovery Engine] Result: ZERO PFZ records found in database.
+INFO:     127.0.0.1:65372 - "POST /map/pfz/nearest-suitable HTTP/1.1" 200 OK
+
+[PFZ Discovery Engine] --- NEW DISCOVERY REQUEST ---
+[PFZ Discovery Engine] Selected Location: 13.1256°N, 80.2978°E | Radius: 50 km
+[PFZ Discovery Engine] Retrieved 0 total PFZ record(s) from database.
+[PFZ Discovery Engine] Result: ZERO PFZ records found in database.
+INFO:     127.0.0.1:65372 - "POST /map/pfz/nearest-suitable HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50119 - "GET /map/layers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50119 - "GET /map/features?layer=hazards&layer=restricted_zones&layer=marine_areas&layer=pfz HTTP/1.1" 200 OK
+
+[PFZ Discovery Engine] --- NEW DISCOVERY REQUEST ---
+[PFZ Discovery Engine] Selected Location: 13.1256°N, 80.2978°E | Radius: 50 km
+[PFZ Discovery Engine] Retrieved 75 total PFZ record(s) from database.
+[PFZ Discovery Engine] Candidates inside search radius (50 km): 3 of 75
+
+[PFZ Discovery Engine] --- NEW DISCOVERY REQUEST ---
+[PFZ Discovery Engine] Selected Location: 13.1256°N, 80.2978°E | Radius: 50 km
+[PFZ Discovery Engine] Retrieved 75 total PFZ record(s) from database.
+[PFZ Discovery Engine] Candidates inside search radius (50 km): 3 of 75
+[PFZ Discovery Candidate] ID=141 (2026262046) | Dist=49.15 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=139 (2026262044) | Dist=42.3 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=140 (2026262045) | Dist=24.06 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Result] Overall Suitability: 'suitable'
+[PFZ Discovery Result] Selected PFZ: 2026262045 | Distance: 24.06 km
+[PFZ Discovery Engine] --- DISCOVERY COMPLETE ---
+
+INFO:     127.0.0.1:61581 - "POST /map/pfz/nearest-suitable HTTP/1.1" 200 OK
+[PFZ Discovery Candidate] ID=141 (2026262046) | Dist=49.15 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=139 (2026262044) | Dist=42.3 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Candidate] ID=140 (2026262045) | Dist=24.06 km | InRadius=True | Weather=suitable | Ocean=suitable | GIS=suitable | Final=suitable
+[PFZ Discovery Result] Overall Suitability: 'suitable'
+[PFZ Discovery Result] Selected PFZ: 2026262045 | Distance: 24.06 km
+[PFZ Discovery Engine] --- DISCOVERY COMPLETE ---
+
+INFO:     127.0.0.1:65429 - "POST /map/pfz/nearest-suitable HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54533 - "GET /map/layers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54533 - "GET /map/features?layer=hazards&layer=restricted_zones&layer=marine_areas&layer=pfz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54533 - "OPTIONS /map/analyze-route HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65429 - "POST /map/analyze-route HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:65429 - "POST /map/analyze-route HTTP/1.1" 404 Not Found

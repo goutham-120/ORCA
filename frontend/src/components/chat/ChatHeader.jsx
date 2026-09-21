@@ -6,6 +6,12 @@ const LANGUAGE_OPTIONS = [
   { value: 'hi', label: 'हिन्दी (HI)' },
   { value: 'te', label: 'తెలుగు (TE)' },
   { value: 'ta', label: 'தமிழ் (TA)' },
+  { value: 'or', label: 'ଓଡ଼ିଆ (OR)' },
+  { value: 'bn', label: 'বাংলা (BN)' },
+  { value: 'kok', label: 'कोंकणी (KOK)' },
+  { value: 'tcy', label: 'ತುಳು (TCY)' },
+  { value: 'gu', label: 'ગુજરાતી (GU)' },
+  { value: 'mr', label: 'मराठी (MR)' },
 ]
 
 export default function ChatHeader({
@@ -92,7 +98,7 @@ export default function ChatHeader({
           <span className="chevron">{isLocationOpen ? '▲' : '▼'}</span>
         </button>
 
-        {/* Clean & Natural Custom Language Dropdown */}
+        {/* Clean & Natural Custom Language Dropdown (10 Indic & Regional Languages) */}
         <div className="language-dropdown-container font-inter" ref={langRef}>
           <button
             type="button"

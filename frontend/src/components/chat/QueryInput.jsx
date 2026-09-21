@@ -32,7 +32,7 @@ export default function QueryInput({ value, onChange, onSend, loading, language 
     try {
       const instance = new Recognition()
       recognitionRef.current = instance
-      instance.lang = language === 'hi' ? 'hi-IN' : language === 'te' ? 'te-IN' : language === 'ta' ? 'ta-IN' : 'en-IN'
+      instance.lang = language === 'hi' ? 'hi-IN' : language === 'te' ? 'te-IN' : language === 'ta' ? 'ta-IN' : language === 'or' ? 'or-IN' : language === 'bn' ? 'bn-IN' : language === 'kok' ? 'kok-IN' : language === 'tcy' ? 'tcy-IN' : language === 'gu' ? 'gu-IN' : language === 'mr' ? 'mr-IN' : 'en-IN'
       instance.interimResults = true
       instance.continuous = false
 
@@ -52,12 +52,14 @@ export default function QueryInput({ value, onChange, onSend, loading, language 
 
       instance.onerror = (event) => {
         setVoiceState('error')
-        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+        if (event.error === 'language-not-supported') {
+          setVoiceError(language === 'mr' ? 'Marathi (mr-IN) speech recognition is not supported by your browser.' : language === 'gu' ? 'Gujarati (gu-IN) speech recognition is not supported by your browser.' : 'Selected language speech recognition is not supported by your browser.')
+        } else if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
           setVoiceError('Microphone permission was denied. Please click the camera/mic lock icon in your browser address bar and allow Microphone access.')
         } else if (event.error === 'network') {
           setVoiceError('Network connection issue. Voice recognition requires an active internet connection.')
         } else if (event.error === 'no-speech') {
-          setVoiceError('No speech detected. Please check your microphone and try speaking again.')
+          setVoiceError(language === 'tcy' ? 'No speech detected or Tulu voice input is unsupported on this browser.' : language === 'gu' ? 'No speech detected or Gujarati voice input is unsupported on this browser.' : language === 'mr' ? 'No speech detected or Marathi voice input is unsupported on this browser.' : 'No speech detected. Please check your microphone and try speaking again.')
         } else if (event.error === 'audio-capture') {
           setVoiceError('No microphone detected. Please plug in or select a valid microphone.')
         } else {
@@ -112,6 +114,20 @@ export default function QueryInput({ value, onChange, onSend, loading, language 
               ? 'ORCA से कुछ भी पूछें — समुद्री सुरक्षा, मौसम या लहरों की स्थिति...'
               : language === 'te'
               ? 'ORCA ని ఏదైనా అడగండి — సముద్ర భద్రత, వాతావరణం లేదా అలల పరిస్థితి...'
+              : language === 'ta'
+              ? 'ORCA விடம் எது வேண்டுமானாலும் கேட்கலாம் — கடல் பாதுகாப்பு, வானிலை...'
+              : language === 'or'
+              ? 'ORCA କୁ କିଛି ବି ପଚାରନ୍ତୁ — ସମୁଦ୍ର ସୁରକ୍ଷା, ପାଣିପାଗ କିମ୍ବା ଲହଡ଼ିର ସ୍ଥିତି...'
+              : language === 'bn'
+              ? 'ORCA-কে যেকোনো প্রশ্ন জিজ্ঞাসা করুন — সামুদ্রিক নিরাপত্তা, আবহাওয়া বা ঢেউয়ের অবস্থা...'
+              : language === 'kok'
+              ? 'ORCA कडेन कायूय विचारात — दर्याची सुरक्षाय, हवामान वा ल्हारांची स्थिती...'
+              : language === 'tcy'
+              ? 'ORCA ಡಾ ಕೈತಲ್ ದಾನೆಲಾ ಕೇಡ್ಲೆ — ಕಡಲ ಭದ್ರತೆ, ವಾತಾವರಣ ಬೊಕ್ಕ ಅಲೆತ ಸ್ಥಿತಿ...'
+              : language === 'gu'
+              ? 'ORCA ને કંઈપણ પૂછો — દરિયાઈ સુરક્ષા, હવામાન અથવા મોજાની સ્થિતિ...'
+              : language === 'mr'
+              ? 'ORCA લા काहीही विचारा — समुद्री सुरक्षा, हवामान किंवा लाटांची स्थिती...'
               : 'Ask ORCA anything — general questions or marine intelligence...'
           }
           rows={1}

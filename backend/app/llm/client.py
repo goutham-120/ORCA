@@ -80,6 +80,18 @@ class OpenAICompatibleLLM:
     @staticmethod
     def _full_language_name(code: str) -> str:
         c = (code or "").lower()
+        if c in {"mr", "mr-in", "marathi"}:
+            return "Marathi (मराठी)"
+        if c in {"gu", "gu-in", "gujarati"}:
+            return "Gujarati (ગુજરાતી)"
+        if c in {"tcy", "tcy-in", "tulu"}:
+            return "Tulu (ತುಳು)"
+        if c in {"kok", "kok-in", "konkani", "kokani"}:
+            return "Konkani (कोंकणी)"
+        if c in {"bn", "bn-in", "bengali", "bangla"}:
+            return "Bengali (বাংলা)"
+        if c in {"or", "or-in", "odia", "oriya"}:
+            return "Odia (ଓଡ଼ିଆ)"
         if c in {"te", "te-in", "telugu"}:
             return "Telugu (తెలుగు)"
         if c in {"hi", "hi-in", "hindi"}:
@@ -91,7 +103,7 @@ class OpenAICompatibleLLM:
     async def chat(self, query: str, language: str) -> str | None:
         if not self.api_key: return None
         lang_name = self._full_language_name(language)
-        instructions = f"You are ORCA, a helpful conversational assistant. You MUST respond in {lang_name} language. Do not respond in English if the requested language is Telugu or Hindi."
+        instructions = f"You are ORCA, a helpful conversational assistant. You MUST respond in {lang_name} language. Do not respond in English if the requested language is Marathi, Gujarati, Tulu, Konkani, Bengali, Odia, Telugu, Tamil, or Hindi."
         return self._response_text(query, instructions)
 
     async def synthesize(self, payload: dict[str, Any], language: str) -> str | None:

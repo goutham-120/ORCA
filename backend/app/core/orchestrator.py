@@ -37,6 +37,18 @@ class OrcaOrchestrator:
                     answer = "నమస్కారం! నేను ORCA (సముద్ర ఇంటెలిజెన్స్ అసిస్టెంట్). నేను తీరప్రాంత వాతావరణం, అలల ఎత్తు, సముద్ర భద్రత మరియు చేపల వేట ప్రాంతాలను విశ్లేషించగలను. మీరు నన్ను ఏదైనా తీరప్రాంతం (ఉదా. విశాఖపట్నం, చెన్నై, ముంబై, కాకినాడ) గురించి అడగవచ్చు."
                 elif resp_lang == "ta":
                     answer = "வணக்கம்! நான் ORCA (கடல் புலனாய்வு உதவியாளர்). நான் கடலோர வானிலை, அலை உயரம், கடல் பாதுகாப்பு மற்றும் மீன்பிடி மண்டலங்களை பகுப்பாய்வு செய்ய முடியும். நீங்கள் என்னிடம் எந்தவொரு கடலோர இடத்தைப் பற்றியும் கேட்கலாம் (எ.கா. சென்னை, தூத்துக்குடி, கன்னியாகுமரி, ராமேஸ்வரம்)."
+                elif resp_lang == "or":
+                    answer = "ନମସ୍କାର! ମୁଁ ORCA (ସାମୁଦ୍ରିକ ଇଣ୍ଟେଲିଜେନ୍ସ ସହାୟକ)। ମୁଁ ଉପକୂଳ ପାଣିପାଗ, ସମୁଦ୍ର ଲହଡ଼ି, ସାମୁଦ୍ରିକ ସୁରକ୍ଷା ଏବଂ ମାଛ ଧରିବା ଅଞ୍ଚଳର ବିଶ୍ଲେଷଣ କରିପାରିବି। ଆପଣ ମୋତେ କୌଣସି ଉପକୂଳ ସ୍ଥାନ (ଯେପରିକି ପୁରୀ, ପାରାଦ୍ବୀପ, ଗୋପାଳପୁର, ବିଶାଖାପାଟଣା) ବିଷୟରେ ପ୍ରଶ୍ନ ପଚାରିପାରିବେ।"
+                elif resp_lang == "bn":
+                    answer = "নমস্কার! আমি ORCA (সামুদ্রিক গোয়েন্দা সহকারী)। আমি উপকূলীয় আবহাওয়া, সমুদ্রের ঢেউ, সামুদ্রিক নিরাপত্তা এবং মাছ ধরার অঞ্চল বিশ্লেষণ করতে পারি। আপনি আমাকে যেকোনো উপকূলীয় স্থান (যেমন দিঘা, হলদিয়া, কাকদ্বীপ, পুরী) সম্পর্কে প্রশ্ন জিজ্ঞাসা করতে পারেন।"
+                elif resp_lang == "kok":
+                    answer = "नमस्कार! हांव ORCA (दर्याची माहिती दिवपी सहाय्यक). हांव तटावयल्या हवामानाची, दर्या ल्हारांची, तटीय सुरक्षेची आनी मासळी मारपाच्या वाठारांची माहिती दिवं शक्तां. तुमी म्हाका खंयच्याय तटीय वाठारा विशीं (उदा. पणजी, मडगांव, वास्को, कारवार) विचारूंक शकतात."
+                elif resp_lang == "tcy":
+                    answer = "ಸೊಲ್ಮೆಲು! ಯಾನ್ ORCA (ಕಡಲ ಮಾಹಿತಿ ಕೊರ್ಪಿನ ಸಜ್ಜೊ). ಯಾನ್ ಕಡಲ ವಾತಾವರಣ, ಅಲೆತ ಎತ್ತರ, ಕಡಲ ರಕ್ಷಣೆ ಬೊಕ್ಕ ಮೀನ್ ಪತ್ತುನ ಜಾಗೊಲೆನ್ (PFZ) ಅಂದಾಜಿ ಮಲ್ಪುವೆ. ಈರ್ ಏತೊಲಾ ಕಡಲ ಪ್ರದೇಶೊದ (ಉದಾ. ಮಂಗಳೂರು, ಮಲ್ಪೆ, ಕಾರವಾರ) ಬಗೆಟ್ ಕೇನೊಲಿ."
+                elif resp_lang == "gu":
+                    answer = "નમસ્તે! હું ORCA (દરિયાઈ ઇન્ટેલિજન્સ સહાયક) છું. હું દરિયાકાંઠાના હવામાન, મોજાની ઊંચાઈ, દરિયાઈ સુરક્ષા અને માછીમારી ક્ષેત્રોનું વિશ્લેષણ કરી શકું છું. તમે મને કોઈપણ દરિયાકાંઠાના સ્થળ (જેમ કે કંડલા, પોરબંદર, વેરાવળ, સૂરત) વિશે પ્રશ્ન પૂછી શકો છો."
+                elif resp_lang == "mr":
+                    answer = "नमस्कार! मी ORCA (समुद्री इंटेलिजन्स सहाय्यक) आहे. मी किनारी हवामान, लाटांची उंची, समुद्री सुरक्षा आणि मासेमारी क्षेत्रांचे (PFZ) विश्लेषण करू शकतो. तुम्ही मला कोणत्याही किनारी ठिकाणाबद्दल (उदा. मुंबई, रत्नागिरी, मालवण, अलिबाग) विचारू शकता."
                 elif not getattr(self.workflow.llm, "api_key", None):
                     answer = "General conversation is unavailable because no LLM provider is configured. Set ORCA_LLM_API_KEY to enable it."
                 elif "403" in str(getattr(self.workflow.llm, "last_error", "")):
@@ -145,6 +157,18 @@ class OrcaOrchestrator:
     @staticmethod
     def _response_language(language: str, query: str = "") -> str:
         lang_lower = (language or "").lower()
+        if lang_lower in {"mr", "mr-in", "marathi"}:
+            return "mr"
+        if lang_lower in {"gu", "gu-in", "gujarati"}:
+            return "gu"
+        if lang_lower in {"tcy", "tcy-in", "tulu"}:
+            return "tcy"
+        if lang_lower in {"kok", "kok-in", "konkani", "kokani"}:
+            return "kok"
+        if lang_lower in {"bn", "bn-in", "bengali", "bangla"}:
+            return "bn"
+        if lang_lower in {"or", "or-in", "odia", "oriya"}:
+            return "or"
         if lang_lower in {"ta", "ta-in"}:
             return "ta"
         if lang_lower in {"te", "te-in"}:
@@ -152,6 +176,12 @@ class OrcaOrchestrator:
         if lang_lower in {"hi", "hi-in"}:
             return "hi"
         if query:
+            if any("\u0a80" <= c <= "\u0aff" for c in query):
+                return "gu"
+            if any("\u0980" <= c <= "\u09ff" for c in query):
+                return "bn"
+            if any("\u0b00" <= c <= "\u0b7f" for c in query):
+                return "or"
             if any("\u0b80" <= c <= "\u0bff" for c in query):
                 return "ta"
             if any("\u0c00" <= c <= "\u0c7f" for c in query):
