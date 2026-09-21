@@ -49,6 +49,10 @@ class OrcaOrchestrator:
                     answer = "નમસ્તે! હું ORCA (દરિયાઈ ઇન્ટેલિજન્સ સહાયક) છું. હું દરિયાકાંઠાના હવામાન, મોજાની ઊંચાઈ, દરિયાઈ સુરક્ષા અને માછીમારી ક્ષેત્રોનું વિશ્લેષણ કરી શકું છું. તમે મને કોઈપણ દરિયાકાંઠાના સ્થળ (જેમ કે કંડલા, પોરબંદર, વેરાવળ, સૂરત) વિશે પ્રશ્ન પૂછી શકો છો."
                 elif resp_lang == "mr":
                     answer = "नमस्कार! मी ORCA (समुद्री इंटेलिजन्स सहाय्यक) आहे. मी किनारी हवामान, लाटांची उंची, समुद्री सुरक्षा आणि मासेमारी क्षेत्रांचे (PFZ) विश्लेषण करू शकतो. तुम्ही मला कोणत्याही किनारी ठिकाणाबद्दल (उदा. मुंबई, रत्नागिरी, मालवण, अलिबाग) विचारू शकता."
+                elif resp_lang == "ml":
+                    answer = "നമസ്കാരം! ഞാൻ ORCA (സമുദ്ര ഇന്റലിജൻസ് അസിസ്റ്റന്റ്) ആണ്. തീരദേശ കാലാവസ്ഥ, തിരമാലകൾ, സമുദ്ര സുരക്ഷ, മത്സ്യബന്ധന മേഖലകൾ (PFZ) എന്നിവ വിശകലനം ചെയ്യാൻ എനിക്ക് കഴിയും. കൊച്ചി, കോഴിക്കോട്, തിരുവനന്തപുരം, കണ്ണൂർ തുടങ്ങിയ തീരദേശ സ്ഥലങ്ങളെക്കുറിച്ച് നിങ്ങൾക്ക് എന്നോട് ചോദിക്കാം."
+                elif resp_lang == "kn":
+                    answer = "ನಮಸ್ಕಾರ! ನಾನು ORCA (ಸಮುದ್ರ ಇಂಟೆಲಿಜೆನ್ಸ್ ಸಹಾಯಕ). ನಾನು ಕರಾವಳಿ ಹವಾಮಾನ, ಅಲೆಗಳ ಎತ್ತರ, ಸಮುದ್ರ ಸುರಕ್ಷತೆ ಮತ್ತು ಮೀನುಗಾರಿಕೆ ವಲಯಗಳನ್ನು (PFZ) ವಿಶ್ಲೇಷಿಸಬಲ್ಲೆ. ನೀವು ನನ್ನನ್ನು ಮಂಗಳೂರು, ಕಾರವಾರ, ಮಲ್ಪೆ, ಉಡುಪಿ ಮುಂತಾದ ಕರಾವಳಿ ಪ್ರದೇಶಗಳ ಬಗ್ಗೆ ಕೇಳಬಹುದು."
                 elif not getattr(self.workflow.llm, "api_key", None):
                     answer = "General conversation is unavailable because no LLM provider is configured. Set ORCA_LLM_API_KEY to enable it."
                 elif "403" in str(getattr(self.workflow.llm, "last_error", "")):
@@ -157,6 +161,10 @@ class OrcaOrchestrator:
     @staticmethod
     def _response_language(language: str, query: str = "") -> str:
         lang_lower = (language or "").lower()
+        if lang_lower in {"ml", "ml-in", "malayalam"}:
+            return "ml"
+        if lang_lower in {"kn", "kn-in", "kannada"}:
+            return "kn"
         if lang_lower in {"mr", "mr-in", "marathi"}:
             return "mr"
         if lang_lower in {"gu", "gu-in", "gujarati"}:
@@ -176,6 +184,10 @@ class OrcaOrchestrator:
         if lang_lower in {"hi", "hi-in"}:
             return "hi"
         if query:
+            if any("\u0d00" <= c <= "\u0d7f" for c in query):
+                return "ml"
+            if any("\u0c80" <= c <= "\u0cff" for c in query):
+                return "kn"
             if any("\u0a80" <= c <= "\u0aff" for c in query):
                 return "gu"
             if any("\u0980" <= c <= "\u09ff" for c in query):

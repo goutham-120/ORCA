@@ -6,7 +6,7 @@
 
 export function buildSpokenSummary(response, rawText = '', language = 'en') {
   const lang = (language || 'en').toLowerCase()
-  const langPrefix = lang.startsWith('te') ? 'te' : lang.startsWith('ta') ? 'ta' : lang.startsWith('hi') ? 'hi' : lang.startsWith('or') ? 'or' : lang.startsWith('bn') ? 'bn' : lang.startsWith('kok') ? 'kok' : lang.startsWith('tcy') ? 'tcy' : lang.startsWith('gu') ? 'gu' : lang.startsWith('mr') ? 'mr' : 'en'
+  const langPrefix = lang.startsWith('ml') ? 'ml' : lang.startsWith('kn') ? 'kn' : lang.startsWith('te') ? 'te' : lang.startsWith('ta') ? 'ta' : lang.startsWith('hi') ? 'hi' : lang.startsWith('or') ? 'or' : lang.startsWith('bn') ? 'bn' : lang.startsWith('kok') ? 'kok' : lang.startsWith('tcy') ? 'tcy' : lang.startsWith('gu') ? 'gu' : lang.startsWith('mr') ? 'mr' : 'en'
 
   const assessment = response?.assessment || {}
   const decision = response?.decision || {}
@@ -60,6 +60,12 @@ export function buildSpokenSummary(response, rawText = '', language = 'en') {
   // Primary action recommendation
   const primaryAction = recommendations.length > 0 ? recommendations[0].action : ''
 
+  if (langPrefix === 'ml') {
+    return buildMalayalamSummary({ level, scorePercent, windSpeed, waveHeight, precipitation, primaryAction, hasLimitations })
+  }
+  if (langPrefix === 'kn') {
+    return buildKannadaSummary({ level, scorePercent, windSpeed, waveHeight, precipitation, primaryAction, hasLimitations })
+  }
   if (langPrefix === 'hi') {
     return buildHindiSummary({ level, scorePercent, windSpeed, waveHeight, precipitation, primaryAction, hasLimitations })
   }
@@ -435,3 +441,72 @@ function buildMarathiSummary({ level, scorePercent, windSpeed, waveHeight, preci
 
   return parts.join(' ')
 }
+
+function buildMalayalamSummary({ level, scorePercent, windSpeed, waveHeight, precipitation, primaryAction, hasLimitations }) {
+  const parts = []
+
+  const statusMap = { low: 'കുറഞ്ഞത്', moderate: 'ഇടത്തരം', high: 'ഉയർന്നത്', critical: 'ഗുരുതരം', unknown: 'അജ്ഞാതം' }
+  const malayalamStatus = statusMap[level] || 'അജ്ഞാതം'
+
+  if (level === 'low') {
+    parts.push('ഇന്ന് മീൻപിടുത്തത്തിന് സമുദ്രാവസ്ഥ അനുകൂലമാണ്.')
+  } else if (level === 'moderate') {
+    parts.push('സമുദ്രാവസ്ഥയ്ക്ക് ജാഗ്രത ആവശ്യമാണ്.')
+  } else {
+    parts.push('മുന്നറിയിപ്പ്: ഗുരുതരമായ സമുദ്ര അപകടസാധ്യത നിലനിൽക്കുന്നു.')
+  }
+
+  const scoreText = scorePercent != null ? `, ${scorePercent} ശതമാനത്തിൽ.` : '.'
+  parts.push(`നിലവിലെ അപകടസാധ്യത ${malayalamStatus} ആണ്${scoreText}`)
+
+  const conds = []
+  if (windSpeed != null) conds.push(`കാറ്റിന്റെ വേഗത സെക്കൻഡിൽ ഏകദേശം ${windSpeed} മീറ്റർ`)
+  if (waveHeight != null) conds.push(`തിരമാലയുടെ ഉയരം ഏകദേശം ${waveHeight} മീറ്റർ ആണ്`)
+
+  if (conds.length > 0) {
+    parts.push(conds.join(', ') + '.')
+  }
+
+  parts.push('സുരക്ഷാ പരിശോധനകൾ പൂർത്തിയാക്കുക, ലൈഫ് ജാക്കറ്റും VHF റേഡിയോയും കരുതുക, ഔദ്യോഗിക മുന്നറിയിപ്പുകൾ പാലിക്കുക.')
+
+  if (hasLimitations) {
+    parts.push('ചില പ്രാദേശിക വിവരങ്ങൾ ലഭ്യമല്ല, അതിനാൽ ഇത് പൂർണ്ണ സുരക്ഷാ അനുമതി അല്ല.')
+  }
+
+  return parts.join(' ')
+}
+
+function buildKannadaSummary({ level, scorePercent, windSpeed, waveHeight, precipitation, primaryAction, hasLimitations }) {
+  const parts = []
+
+  const statusMap = { low: 'ಕಡಿಮೆ', moderate: 'ಮಧ್ಯಮ', high: 'ಹೆಚ್ಚು', critical: 'ಗಂಭೀರ', unknown: 'ತಿಳಿದಿಲ್ಲ' }
+  const kannadaStatus = statusMap[level] || 'ತಿಳಿದಿಲ್ಲ'
+
+  if (level === 'low') {
+    parts.push('ಇಂದು ಮೀನುಗಾರಿಕೆಗೆ ಸಮುದ್ರ ಪರಿಸ್ಥಿತಿಗಳು ಅನುಕೂಲಕರವಾಗಿವೆ.')
+  } else if (level === 'moderate') {
+    parts.push('ಸಮುದ್ರ ಪರಿಸ್ಥಿತಿಗಳಿಗೆ ಜಾಗರೂಕತೆ ಅಗತ್ಯವಿದೆ.')
+  } else {
+    parts.push('ಎಚ್ಚರಿಕೆ: ತೀವ್ರ ಸಮುದ್ರ ಅಪಾಯದ ಪರಿಸ್ಥಿತಿ ಇದೆ.')
+  }
+
+  const scoreText = scorePercent != null ? `, ${scorePercent} ಪ್ರತಿಶತದಲ್ಲಿ.` : '.'
+  parts.push(`ಪ್ರಸ್ತುತ ಅಪಾಯದ ಮಟ್ಟ ${kannadaStatus} ಆಗಿದೆ${scoreText}`)
+
+  const conds = []
+  if (windSpeed != null) conds.push(`ಗಾಳಿಯ ವೇಗ ಪ್ರತಿ ಸೆಕೆಂಡಿಗೆ ಸುಮಾರು ${windSpeed} ಮೀಟರ್`)
+  if (waveHeight != null) conds.push(`ಅಲೆಗಳ ಎತ್ತರ ಸುಮಾರು ${waveHeight} ಮೀಟರ್ ಇದೆ`)
+
+  if (conds.length > 0) {
+    parts.push(conds.join(', ') + '.')
+  }
+
+  parts.push('ಸುರಕ್ಷತಾ ತಪಾಸಣೆಗಳನ್ನು ಪೂರ್ಣಗೊಳಿಸಿ, ಲೈಫ್ ಜಾಕೆಟ್ ಮತ್ತು VHF ರೇಡಿಯೋ ಜೊತೆಗೆ ಇಟ್ಟುಕೊಳ್ಳಿ, ಅಧಿಕೃತ ಎಚ್ಚರಿಕೆಗಳನ್ನು ಅನುಸರಿಸಿ.')
+
+  if (hasLimitations) {
+    parts.push('ಕೆಲವು ಸ್ಥಳೀಯ ಮಾಹಿತಿ ಲಭ್ಯವಿಲ್ಲ, ಆದ್ದರಿಂದ ಇದು ಸಂಪೂರ್ಣ ಸುರಕ್ಷತಾ ಅನುಮತಿ ಅಲ್ಲ.')
+  }
+
+  return parts.join(' ')
+}
+

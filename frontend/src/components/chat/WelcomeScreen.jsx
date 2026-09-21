@@ -497,22 +497,120 @@ const PROMPT_SUGGESTIONS_MR = [
     category: 'मासेमारी / PFZ',
     icon: '🎣',
     title: 'मासेमारी क्षेत्र (PFZ)',
-    query: 'जवळ काही संभाव्य मासेमारी क्षेत्रे (PFZ) उपलब्ध आहेत का?',
-    desc: 'INCOIS PFZ आणि सागरी माहिती'
+    query: 'आज सर्वात जवळचे संभाव्य मासेमारी क्षेत्र कुठे आहे?',
+    desc: 'उपग्रह आधारित PFZ क्षेत्र'
+  }
+]
+
+const PROMPT_SUGGESTIONS_ML = [
+  {
+    id: 'productivity_decline',
+    category: 'പരിസ്ഥിതി വിശകലനം',
+    icon: '🔬',
+    title: 'മത്സ്യ ലഭ്യതയിലെ കുറവ്',
+    query: 'ഈ തീരദേശ മേഖലയിൽ മത്സ്യ ലഭ്യത കുറയാൻ എന്താണ് കാരണം?',
+    desc: 'സമുദ്ര താപനില ഉയർച്ചയും ക്ലോറോഫിൽ കുറവും'
+  },
+  {
+    id: 'safe_route',
+    category: 'സുരക്ഷിത പാത',
+    icon: '🧭',
+    title: 'സുരക്ഷിതമായ സമുദ്ര റൂട്ട്',
+    query: 'കാലാവസ്ഥയും തിരമാലകളും കണക്കിലെടുത്ത് ബോട്ടിന് ഏറ്റവും സുരക്ഷിതമായ റൂട്ട് ഏതാണ്?',
+    desc: 'അപകടങ്ങൾ ഒഴിവാക്കുന്ന വേപോയിന്റുകൾ'
+  },
+  {
+    id: 'tide_conditions',
+    category: 'വേലിയേറ്റം & കാലാവസ്ഥ',
+    icon: '🌊',
+    title: 'വേലിയേറ്റം & സമുദ്രാവസ്ഥ',
+    query: 'എന്റെ മീൻപിടുത്ത സ്ഥലത്തിന് സമീപമുള്ള വേലിയേറ്റവും സമുദ്രാവസ്ഥയും എങ്ങനെയാണ്?',
+    desc: 'വേലിയേറ്റ സമയം & തിരമാല ഉയരം'
+  },
+  {
+    id: 'safety_check',
+    category: 'സുരക്ഷാ പരിശോധന (MSI)',
+    icon: '🛡️',
+    title: 'സമുദ്ര സുരക്ഷാ സൂചിക',
+    query: 'ഇന്ന് ചെറിയ വള്ളങ്ങൾ കടലിൽ പോകുന്നത് സുരക്ഷിതമാണോ?',
+    desc: '0-100 സമുദ്ര സുരക്ഷാ സ്കോർ'
+  },
+  {
+    id: 'fishing_conditions',
+    category: 'മത്സ്യബന്ധന മേഖല (PFZ)',
+    icon: '🎣',
+    title: 'സാധ്യതാ മത്സ്യബന്ധന മേഖല (PFZ)',
+    query: 'സമീപത്ത് സാധ്യതയുള്ള മത്സ്യബന്ധന മേഖലകൾ (PFZ) ലഭ്യമാണോ?',
+    desc: 'INCOIS PFZ സാറ്റലൈറ്റ് വിവരങ്ങൾ'
   },
   {
     id: 'scenario_simulation',
-    category: 'परिदृश्य सिम्युलेशन',
+    category: 'സിമുലേഷൻ',
     icon: '🧪',
-    title: 'हवामान आणि वारा सिम्युलेशन',
-    query: 'जर तापमान १.५°C वाढले आणि वारा ३० नॉट्स झाला तर काय होईल?',
-    desc: 'MSI बदल आणि बोट बंदी सल्ला'
+    title: 'കാലാവസ്ഥാ സിമുലേഷൻ',
+    query: 'താപനില 1.5°C ഉയരുകയും കാറ്റ് 30 നോട്ട്സ് ആവുകയും ചെയ്താൽ എന്ത് സംഭവിക്കും?',
+    desc: 'MSI മാറ്റവും ബോട്ട് നിയന്ത്രണ മുന്നറിയിപ്പും'
+  },
+]
+
+const PROMPT_SUGGESTIONS_KN = [
+  {
+    id: 'productivity_decline',
+    category: 'ಪರಿಸರ ವಿಶ್ಲೇಷಣೆ',
+    icon: '🔬',
+    title: 'ಮೀನು ಉತ್ಪಾದನೆ ಇಳಿಕೆ',
+    query: 'ಈ ಕರಾವಳಿ ಪ್ರದೇಶದಲ್ಲಿ ಮೀನು ಉತ್ಪಾದನೆ ಏಕೆ ಕಡಿಮೆಯಾಗಿದೆ?',
+    desc: 'ಸಮುದ್ರ ಶಾಖದ ಅಲೆ ಮತ್ತು ಕ್ಲೋರೋಫಿಲ್ ಕೊರತೆ'
+  },
+  {
+    id: 'safe_route',
+    category: 'ಸುರಕ್ಷಿತ ಮಾರ್ಗ',
+    icon: '🧭',
+    title: 'ಅತ್ಯಂತ ಸುರಕ್ಷಿತ ನೌಕಾಯಾನ ಮಾರ್ಗ',
+    query: 'ಹವಾಮಾನ ಮತ್ತು ಅಲೆಗಳ ಪರಿಸ್ಥಿತಿಯನ್ನು ಗಮನದಲ್ಲಿಟ್ಟುಕೊಂಡು ದೋಣಿಗೆ ಸುರಕ್ಷಿತ ಮಾರ್ಗ ಯಾವುದು?',
+    desc: 'ಅಪಾಯಗಳನ್ನು ತಪ್ಪಿಸುವ ವೇಪಾಯಿಂಟ್‌ಗಳು'
+  },
+  {
+    id: 'tide_conditions',
+    category: 'ಉಬ್ಬರ-ಇಳಿತ & ಹವಾಮಾನ',
+    icon: '🌊',
+    title: 'ಉಬ್ಬರ-ಇಳಿತ ಮತ್ತು ಸಾಗರ ಸ್ಥಿತಿ',
+    query: 'ನನ್ನ ಮೀನುಗಾರಿಕಾ ಪ್ರದೇಶದ ಬಳಿ ಉಬ್ಬರ-ಇಳಿತ ಮತ್ತು ಸಾಗರ ಪರಿಸ್ಥಿತಿ ಹೇಗಿದೆ?',
+    desc: 'ಉಬ್ಬರ ಸಮಯ ಮತ್ತು ಅಲೆಗಳ ಎತ್ತರ'
+  },
+  {
+    id: 'safety_check',
+    category: 'ಸುರಕ್ಷತಾ ತಪಾಸಣೆ (MSI)',
+    icon: '🛡️',
+    title: 'ಸಾಗರ ಸುರಕ್ಷತಾ ಸೂಚ್ಯಂಕ',
+    query: 'ಇಂದು ಈ ಕರಾವಳಿ ಪ್ರದೇಶದಲ್ಲಿ ಸಣ್ಣ ದೋಣಿಗಳನ್ನು ಚಲಾಯಿಸುವುದು ಸುರಕ್ಷಿತವೇ?',
+    desc: '0-100 ಸಾಗರ ಸುರಕ್ಷತಾ ಸ್ಕೋರ್'
+  },
+  {
+    id: 'fishing_conditions',
+    category: 'ಮೀನುಗಾರಿಕೆ / PFZ',
+    icon: '🎣',
+    title: 'ಮೀನುಗಾರಿಕಾ ವಲಯಗಳು (PFZ)',
+    query: 'ಸಮೀಪದಲ್ಲಿ ಸಂಭಾವ್ಯ ಮೀನುಗಾರಿಕಾ ವಲಯಗಳು (PFZ) ಲಭ್ಯವಿದೆಯೇ?',
+    desc: 'INCOIS PFZ ಮತ್ತು ಸಾಗರ ಮಾಹಿತಿ'
+  },
+  {
+    id: 'scenario_simulation',
+    category: 'ಸಿಮ್ಯುಲೇಶನ್',
+    icon: '🧪',
+    title: 'ಹವಾಮಾನ ಮತ್ತು ಗಾಳಿ ಸಿಮ್ಯುಲೇಶನ್',
+    query: 'ತಾಪಮಾನ 1.5°C ಹೆಚ್ಚಾದರೆ ಮತ್ತು ಗಾಳಿ 30 ನಾಟ್ಸ್ ತಲುಪಿದರೆ ಏನಾಗುತ್ತದೆ?',
+    desc: 'MSI ಬದಲಾವಣೆ ಮತ್ತು ದೋಣಿ ಎಚ್ಚರಿಕೆ'
   },
 ]
 
 export default function WelcomeScreen({ onSelectPrompt, language = 'en' }) {
   const langLower = (language || 'en').toLowerCase()
-  const promptList = langLower.startsWith('mr')
+  const promptList = langLower.startsWith('ml')
+    ? PROMPT_SUGGESTIONS_ML
+    : langLower.startsWith('kn')
+    ? PROMPT_SUGGESTIONS_KN
+    : langLower.startsWith('mr')
     ? PROMPT_SUGGESTIONS_MR
     : langLower.startsWith('gu')
     ? PROMPT_SUGGESTIONS_GU
@@ -533,6 +631,8 @@ export default function WelcomeScreen({ onSelectPrompt, language = 'en' }) {
     : PROMPT_SUGGESTIONS
 
   const getTitle = () => {
+    if (langLower.startsWith('ml')) return 'ഏത് സമുദ്രാവസ്ഥയാണ് നിങ്ങൾ വിശകലനം ചെയ്യാൻ ആഗ്രഹിക്കുന്നത്?'
+    if (langLower.startsWith('kn')) return 'ನೀವು ಯಾವ ಸಾಗರ ಪರಿಸ್ಥಿತಿಯನ್ನು ವಿಶ್ಲೇಷಿಸಲು ಬಯಸುತ್ತೀರಿ?'
     if (langLower.startsWith('mr')) return 'तुम्ही कोणती समुद्री स्थिती विश्लेषित करू इच्छिता?'
     if (langLower.startsWith('gu')) return 'તમે કઈ દરિયાઈ સ્થિતિનું વિશ્લેષણ કરવા માંગો છો?'
     if (langLower.startsWith('tcy')) return 'ಈರ್ ಒವ್ವು ಕಡಲ ಸ್ಥಿತಿನ್ ವಿಶ್ಲೇಷಣೆ ಮಲ್ಪೆರೆ ಇಷ್ಟ ಪಡ್ಪುರ್?'
@@ -540,12 +640,14 @@ export default function WelcomeScreen({ onSelectPrompt, language = 'en' }) {
     if (langLower.startsWith('bn')) return 'আপনি কোন সামুদ্রিক অবস্থা বিশ্লেষণ করতে চান?'
     if (langLower.startsWith('or')) return 'ଆପଣ କେଉଁ ସାମୁଦ୍ରିକ ସ୍ଥିତିର ବିଶ୍ଲେଷଣ କରିବାକୁ ଚାହୁଁଛନ୍ତି?'
     if (langLower.startsWith('ta')) return 'நீங்கள் எந்த கடல் நிலையை பகுப்பாய்வு செய்ய விரும்புகிறீர்கள்?'
-    if (langLower.startsWith('te')) return 'మీరు ఏ సముద్ర పరిస్థితిని విశ్లేషించాలనుకుంటున్నారు?'
+    if (langLower.startsWith('te')) return 'మీరు ఏ సముద్ర పరిస్థితిని విశ్ಲೇషించాలనుకుంటున్నారు?'
     if (langLower.startsWith('hi')) return 'आप किस समुद्री स्थिति का विश्लेषण करना चाहते हैं?'
     return 'What marine intelligence would you like to analyze?'
   }
 
   const getSubtitle = () => {
+    if (langLower.startsWith('ml')) return 'ORCA-യോട് സമുദ്ര സുരക്ഷാ സൂചിക (MSI), വേലിയേറ്റം, സുരക്ഷിത റൂട്ടുകൾ, മത്സ്യബന്ധന മേഖലകൾ (PFZ), അല്ലെങ്കിൽ മത്സ്യ ലഭ്യതയിലെ കുറവിനെക്കുറിച്ച് ചോദിക്കുക.'
+    if (langLower.startsWith('kn')) return 'ORCA ನಿಂದ ಸಾಗರ ಸುರಕ್ಷತಾ ಸೂಚ್ಯಂಕ (MSI), ಉಬ್ಬರ-ಇಳಿತ, ಸುರಕ್ಷಿತ ಮಾರ್ಗಗಳು, ಮೀನುಗಾರಿಕಾ ವಲಯಗಳು (PFZ) ಅಥವಾ ಉತ್ಪಾದನೆ ಇಳಿಕೆ ಬಗ್ಗೆ ಕೇಳಿ.'
     if (langLower.startsWith('mr')) return 'ORCA कडून समुद्री सुरक्षा निर्देशांक (MSI), भरती-ओहोटी, सुरक्षित मार्ग, मासेमारी क्षेत्रे (PFZ) किंवा मासे उत्पादनातील घटीबद्दल विचारा.'
     if (langLower.startsWith('gu')) return 'ORCA ને દરિયાઈ સુરક્ષા સૂચકાંક (MSI), ભરતી-ઓટ, સુરક્ષિત માર્ગો, માછીમારી વિસ્તારો (PFZ) અથવા ઉત્પાદનમાં ઘટાડા વિશે પૂછો.'
     if (langLower.startsWith('tcy')) return 'ORCA ಡ್ ಕಡಲ ರಕ್ಷಣೆ ಸೂಚ್ಯಂಕ (MSI), ಉಬ್ಬರ-ಇಳಿತ, ರಕ್ಷಣೆದ ಸಾದಿ, ಮೀನ್ ಪತ್ತುನ ಜಾಗೊಲೆ (PFZ) ಅತ್ತ್ಂಡ ಉತ್ಪಾದನೆ ಕಮ್ಮಿ ಆಯಿನೆಕ್ ಕೇನ್ಲೆ.'
@@ -553,12 +655,14 @@ export default function WelcomeScreen({ onSelectPrompt, language = 'en' }) {
     if (langLower.startsWith('bn')) return 'ORCA-কে সামুদ্রিক নিরাপত্তা সূচক (MSI), জোয়ার-ভাটা, নিরাপদ রুট, মাছ ধরার অঞ্চল (PFZ) বা মাছের উৎপাদন হ্রাস সম্পর্কে জিজ্ঞাসা করুন।'
     if (langLower.startsWith('or')) return 'ORCA କୁ ସାମୁଦ୍ରିକ ସୁରକ୍ଷା ସୂଚକାଙ୍କ (MSI), ଜୁଆର-ଭଟ୍ଟା, ସୁରକ୍ଷିତ ମାର୍ଗ, ମାଛ ଧରିବା ଅଞ୍ଚଳ (PFZ) କିମ୍ବା ଉତ୍ପାଦନ ହ୍ରାସ ବିଷୟରେ ପଚାରନ୍ତୁ।'
     if (langLower.startsWith('ta')) return 'ORCA விடம் கடல் பாதுகாப்பு குறியீடு (MSI), ஓதம், பாதுகாப்பான வழித்தடங்கள், மீன்பிடி மண்டலங்கள் (PFZ) அல்லது மீன் உற்பத்தி குறைவு குறித்து கேளுங்கள்.'
-    if (langLower.startsWith('te')) return 'ORCA ని సముద్ర భద్రతా సూచిక (MSI), పోటు-పాటు, సురక్షిత మార్గాలు, చేపల వేట ప్రాంతాలు (PFZ) లేదా ఉత్పత్తి క్షీణత గురించి అడగండి.'
+    if (langLower.startsWith('te')) return 'ORCA ని సముద్ర భద్రతా సూచిక (MSI), పోటు-పాటు, సురಕ್ಷిత మార్గాలు, చేపల వేట ప్రాంతాలు (PFZ) లేదా ఉత్పత్తి క్షీణత గురించి అడಗండి.'
     if (langLower.startsWith('hi')) return 'ORCA से समुद्री सुरक्षा सूचकांक (MSI), ज्वार-भाटा, सुरक्षित मार्ग, मत्स्य क्षेत्र (PFZ), या मछली उत्पादन में गिरावट के बारे में प्रश्न पूछें।'
     return 'Ask ORCA about Marine Safety Index (MSI), safe routes with waypoints, tide hydrodynamics, PFZs, or fish productivity decline.'
   }
 
   const getButtonText = () => {
+    if (langLower.startsWith('ml')) return 'ORCA-യോട് ചോദിക്കുക'
+    if (langLower.startsWith('kn')) return 'ORCA ಗೆ ಕೇಳಿ'
     if (langLower.startsWith('mr')) return 'ORCA ला विचारा'
     if (langLower.startsWith('gu')) return 'ORCA ને પૂછો'
     if (langLower.startsWith('tcy')) return 'ORCA ಡ್ ಕೇನ್ಲೆ'

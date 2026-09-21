@@ -127,11 +127,45 @@ class QueryParser:
         "anomaly": ("घट", "उत्पादनात घट", "कमी", "कारण"),
     }
 
+    _malayalam_terms = {
+        "simulation": ("ഒരുപക്ഷേ", "എന്താണ് സംഭവിക്കുക", "താപനില ഉയർന്നാൽ", "കാറ്റ് കൂടിയാൽ", "സിമുലേഷൻ"),
+        "route": ("റൂട്ട്", "വഴി", "സുരക്ഷിത പാത", "യാത്രാമാർഗ്ഗം"),
+        "weather": ("കാലാവസ്ഥ", "കാറ്റ്", "മഴ", "കൊടുങ്കാറ്റ്", "താപനില"),
+        "ocean": ("കടൽ", "സമുദ്രം", "തിരമാല", "തിരമാലകൾ", "തിര", "ഓളം", "വേലിയിറക്കം", "വേലിയേറ്റം"),
+        "safety": ("സുരക്ഷിതം", "സുരക്ഷ", "അപകടം", "ഭീഷണി"),
+        "gis": ("നിരോധിത", "മേഖല", "അടുത്ത്", "സമീപം", "അതിർത്തി"),
+        "pfz": ("മത്സ്യം", "മീൻപിടുത്തം", "മീൻ", "മത്സ്യബന്ധനം"),
+        "anomaly": ("കുറഞ്ഞു", "ഉത്പാദനം കുറഞ്ഞു", "കാരണം"),
+    }
+
+    _kannada_terms = {
+        "simulation": ("ಒಂದು ವೇಳೆ", "ಏನಾಗುತ್ತದೆ", "ತಾಪಮಾನ ಹೆಚ್ಚಾದರೆ", "ಗಾಳಿ ಹೆಚ್ಚಾದರೆ", "ಸಿಮ್ಯುಲೇಶನ್"),
+        "route": ("ಮಾರ್ಗ", "ಸುರಕ್ಷಿತ ಮಾರ್ಗ", "ದಾರಿ", "ಸಂಚಾರ"),
+        "weather": ("ಹವಾಮಾನ", "ಗಾಳಿ", "ಮಳೆ", "ಬಿರುಗಾಳಿ", "ತಾಪಮಾನ"),
+        "ocean": ("ಸಮುದ್ರ", "ಸಾಗರ", "ಅಲೆಗಳು", "ಅಲೆ", "ಉಬ್ಬರ", "ಇಳಿತ", "ನೀರು"),
+        "safety": ("ಸುರಕ್ಷಿತ", "ಸುರಕ್ಷತೆ", "ಅಪಾಯ", "ಎಚ್ಚರಿಕೆ"),
+        "gis": ("ನಿಷೇಧಿತ", "ಪ್ರದೇಶ", "ಹತ್ತಿರ", "ಸಮೀಪ", "ಗಡಿ"),
+        "pfz": ("ಮೀನು", "ಮೀನುಗಾರಿಕೆ", "ಮತ್ಸ್ಯ"),
+        "anomaly": ("ಇಳಿಕೆ", "ಉತ್ಪಾದನೆ ಇಳಿಕೆ", "ಕಡಿಮೆ", "ಕಾರಣ"),
+    }
+
     def parse(self, query: str) -> ParsedQuery:
         normalized = " ".join(query.strip().split())
         lowered = normalized.lower()
         matches = [name for name, terms in self._intent_terms.items() if any(term in lowered for term in terms)]
-        for lang_terms in (self._hindi_terms, self._telugu_terms, self._tamil_terms, self._odia_terms, self._bengali_terms, self._konkani_terms, self._tulu_terms, self._gujarati_terms, self._marathi_terms):
+        for lang_terms in (
+            self._hindi_terms,
+            self._telugu_terms,
+            self._tamil_terms,
+            self._odia_terms,
+            self._bengali_terms,
+            self._konkani_terms,
+            self._tulu_terms,
+            self._gujarati_terms,
+            self._marathi_terms,
+            self._malayalam_terms,
+            self._kannada_terms,
+        ):
             matches.extend(name for name, terms in lang_terms.items() if any(term in normalized for term in terms) and name not in matches)
 
         is_simulation = "simulation" in matches or any(term in lowered for term in ("what if", "what happens if", "simulate", "simulation", "scenario"))

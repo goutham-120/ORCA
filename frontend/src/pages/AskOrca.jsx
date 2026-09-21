@@ -8,6 +8,8 @@ import { LOCATION_COORDINATES } from '../services/openMeteoService'
 import { speakResponse, stopSpeech } from '../utils/speech'
 import { buildSpokenSummary } from '../utils/speechSummary'
 import ScenarioSimulatorModal from '../components/chat/ScenarioSimulatorModal'
+import EmergencySOSModal from '../components/common/EmergencySOSModal'
+import { cacheOffshoreBundle } from '../services/offlineSync'
 import './AskOrca.css'
 
 const PREFERENCES_KEY = 'orca-dashboard-preferences'
@@ -56,10 +58,12 @@ export default function AskOrca({ navigate }) {
   const [error, setError] = useState('')
   const [failedQuery, setFailedQuery] = useState('')
   const [language, setLanguage] = useState('en')
+  const [persona, setPersona] = useState('fisherman')
   const [conversationId, setConversationId] = useState(newId)
   const [isLocationOpen, setIsLocationOpen] = useState(false)
   const [browserLocation, setBrowserLocation] = useState(null)
   const [isSimulatorOpen, setIsSimulatorOpen] = useState(false)
+  const [isSOSOpen, setIsSOSOpen] = useState(false)
 
   // Active Location state synced with Dashboard preference
   const [location, setLocation] = useState(() => {
@@ -163,6 +167,19 @@ export default function AskOrca({ navigate }) {
       setMessages((prev) => [...prev, assistantMessage])
       const spokenBriefing = buildSpokenSummary(response, response.answer, response.language || language)
       speakResponse(spokenBriefing, response.language || language)
+
+      // Auto-cache offshore bundle for low-bandwidth / disconnected field use (5.4)
+      try {
+        cacheOffshoreBundle(location?.label || 'Current Offshore Zone', {
+          evidence: response.evidence,
+          waypoints: response.waypoints || [],
+          marine_safety_index: response.marine_safety_index,
+          tide: response.evidence?.hydrodynamics?.tide_phase || 'Active',
+          advisory: response.answer
+        })
+      } catch (cacheErr) {
+        console.warn('Offline cache failed:', cacheErr)
+      }
     } catch (err) {
       setError(err.message || 'ORCA could not complete this analysis request.')
       setFailedQuery(text)
@@ -213,11 +230,14 @@ export default function AskOrca({ navigate }) {
       <ChatHeader
         language={language}
         onLanguageChange={setLanguage}
+        persona={persona}
+        onPersonaChange={setPersona}
         onClearSession={handleClearSession}
         locationLabel={location?.label}
         onToggleLocation={() => setIsLocationOpen((prev) => !prev)}
         isLocationOpen={isLocationOpen}
         onOpenSimulator={() => setIsSimulatorOpen(true)}
+        onOpenSOS={() => setIsSOSOpen(true)}
       />
 
       {/* 2. LOCATION CONTEXT PANEL */}
@@ -273,6 +293,13 @@ export default function AskOrca({ navigate }) {
         initialLocation={location}
         onApplyScenarioToChat={handleApplyScenarioToChat}
         onNavigateMap={(path) => navigate && navigate(path)}
+      />
+
+      {/* 6. EMERGENCY SOS / VHF DISTRESS BROADCAST MODAL */}
+      <EmergencySOSModal
+        isOpen={isSOSOpen}
+        onClose={() => setIsSOSOpen(false)}
+        location={location}
       />
     </section>
   )

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import EvidencePanel from './EvidencePanel'
+import ReasoningTrace from './ReasoningTrace'
 import { speakResponse, stopSpeech } from '../../utils/speech'
 import { buildSpokenSummary } from '../../utils/speechSummary'
 
@@ -625,6 +626,11 @@ export default function Message({ message }) {
               </div>
             )}
           </details>
+        )}
+
+        {/* 4.5 EXPLAINABLE AI REASONING TRACE */}
+        {message.role === 'assistant' && message.raw && (
+          <ReasoningTrace message={message} persona={message.persona || 'fisherman'} />
         )}
 
         {/* 5. SOURCES & EVIDENCE */}

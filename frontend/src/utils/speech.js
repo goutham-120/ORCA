@@ -12,7 +12,9 @@ export function getVoiceForLanguage(langCode) {
 
   const targetLang = (langCode || 'en').toLowerCase()
   let langPrefix = 'en'
-  if (targetLang.startsWith('te')) langPrefix = 'te'
+  if (targetLang.startsWith('ml')) langPrefix = 'ml'
+  else if (targetLang.startsWith('kn')) langPrefix = 'kn'
+  else if (targetLang.startsWith('te')) langPrefix = 'te'
   else if (targetLang.startsWith('ta')) langPrefix = 'ta'
   else if (targetLang.startsWith('hi')) langPrefix = 'hi'
   else if (targetLang.startsWith('or')) langPrefix = 'or'
@@ -23,7 +25,11 @@ export function getVoiceForLanguage(langCode) {
   else if (targetLang.startsWith('mr')) langPrefix = 'mr'
 
   const exactLocale =
-    langPrefix === 'te'
+    langPrefix === 'ml'
+      ? 'ml-in'
+      : langPrefix === 'kn'
+      ? 'kn-in'
+      : langPrefix === 'te'
       ? 'te-in'
       : langPrefix === 'ta'
       ? 'ta-in'
@@ -56,6 +62,8 @@ export function getVoiceForLanguage(langCode) {
   // 3. Match voice name keywords
   if (!matched) {
     const nameKeywords = {
+      ml: ['malayalam'],
+      kn: ['kannada'],
       te: ['telugu'],
       ta: ['tamil'],
       hi: ['hindi'],
@@ -92,7 +100,9 @@ export function speakResponse(text, language = 'en', onEnd = null, onError = nul
 
   const langCode = (language || 'en').toLowerCase()
   let targetLocale = 'en-IN'
-  if (langCode.startsWith('te')) targetLocale = 'te-IN'
+  if (langCode.startsWith('ml')) targetLocale = 'ml-IN'
+  else if (langCode.startsWith('kn')) targetLocale = 'kn-IN'
+  else if (langCode.startsWith('te')) targetLocale = 'te-IN'
   else if (langCode.startsWith('ta')) targetLocale = 'ta-IN'
   else if (langCode.startsWith('hi')) targetLocale = 'hi-IN'
   else if (langCode.startsWith('or')) targetLocale = 'or-IN'

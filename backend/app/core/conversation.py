@@ -319,6 +319,28 @@ def synthesize_answer(
             decision=decision,
         )
 
+    if lang_lower in {"ml", "ml-in"}:
+        return _malayalam_answer(
+            level,
+            results,
+            pending,
+            incomplete,
+            time_expression,
+            location_name=place,
+            decision=decision,
+        )
+
+    if lang_lower in {"kn", "kn-in"}:
+        return _kannada_answer(
+            level,
+            results,
+            pending,
+            incomplete,
+            time_expression,
+            location_name=place,
+            decision=decision,
+        )
+
     if lang_lower not in {"en", "en-in"}:
         parts.append(
             "The requested response language is not supported; "
@@ -447,6 +469,34 @@ def _facts(
                 ("wind_speed_mps", "காற்று வேகம் (Wind Speed)", "m/s"),
                 ("precipitation_mm", "மழைப்பொழிவு", "mm"),
                 ("air_temperature_c", "காற்று வெப்பநிலை", "°C"),
+            ),
+        }
+    elif lang.lower() in {"ml", "ml-in"}:
+        fields = {
+            "ocean": (
+                ("wave_height_m", "തിരമാല ഉയരം (Wave Height)", "m"),
+                ("wave_period_s", "തിരമാല ദൈർഘ്യം (Wave Period)", "s"),
+                ("sea_surface_temperature_c", "സമുദ്ര ഉപരിതല താപനില (SST)", "°C"),
+            ),
+            "weather": (
+                ("condition", "കാലാവസ്ഥാ അവസ്ഥ", ""),
+                ("wind_speed_mps", "കാറ്റിന്റെ വേഗത (Wind Speed)", "m/s"),
+                ("precipitation_mm", "മഴ", "mm"),
+                ("air_temperature_c", "വായു താപനില", "°C"),
+            ),
+        }
+    elif lang.lower() in {"kn", "kn-in"}:
+        fields = {
+            "ocean": (
+                ("wave_height_m", "ಅಲೆಗಳ ಎತ್ತರ (Wave Height)", "m"),
+                ("wave_period_s", "ಅಲೆಗಳ ಅವಧಿ (Wave Period)", "s"),
+                ("sea_surface_temperature_c", "ಸಮುದ್ರ ಮೇಲ್ಮೈ ತಾಪಮಾನ (SST)", "°C"),
+            ),
+            "weather": (
+                ("condition", "ಹವಾಮಾನ ಸ್ಥಿತಿ", ""),
+                ("wind_speed_mps", "ಗಾಳಿಯ ವೇಗ (Wind Speed)", "m/s"),
+                ("precipitation_mm", "ಮಳೆ", "mm"),
+                ("air_temperature_c", "ಗಾಳಿಯ ತಾಪಮಾನ", "°C"),
             ),
         }
     elif lang.lower() in {"hi", "hi-in"}:
@@ -1330,4 +1380,193 @@ def _marathi_answer(
         parts.append(" ".join(limitations))
 
     return "\n\n".join(parts)
+
+
+def _malayalam_answer(
+    level: str,
+    results: dict[str, Any],
+    pending: list[str],
+    incomplete: list[str],
+    time_expression: str | None,
+    location_name: str | None = None,
+    decision: dict[str, Any] | None = None,
+) -> str:
+    status_map = {
+        "low": "കുറഞ്ഞ അപകടസാധ്യത (അനുകൂലാവസ്ഥ)",
+        "moderate": "ഇടത്തരം അപകടസാധ്യത (ജാഗ്രത പാലിക്കുക)",
+        "high": "ഉയർന്ന അപകടസാധ്യത (ഗുരുതര മുന്നറിയിപ്പ്)",
+        "critical": "അതീവ ഗുരുതരമായ അപകടാവസ്ഥ",
+        "unknown": "അജ്ഞാതം",
+    }
+
+    status = status_map.get(level, "അജ്ഞാതം")
+    loc_suffix = f" [{location_name}]" if location_name else ""
+
+    is_sim = isinstance(decision, dict) and bool(decision.get("scenario_simulation"))
+
+    if is_sim:
+        sim = decision["scenario_simulation"]
+        opening = f"🧪 ORCA സമുദ്ര സിമുലേഷൻ റിപ്പോർട്ട്{loc_suffix}: {sim.get('scenario_summary')}"
+    else:
+        opening = (
+            f"ORCA സമുദ്ര സുരക്ഷാ വിലയിരുത്തൽ{loc_suffix}: {status}."
+            if not incomplete
+            else f"ORCA സുരക്ഷാ വിലയിരുത്തൽ{loc_suffix} പരിമിതമാണ്."
+        )
+
+    facts = []
+    for domain, label in (("ocean", "🌊 സമുദ്ര വിവരങ്ങൾ"), ("weather", "🌤️ കാലാവസ്ഥാ വിവരങ്ങൾ")):
+        result = results.get(domain, {})
+        if result.get("data_status") in {"live", "cached", "demo", "static"}:
+            values = _facts(domain, result.get("observation") or {}, lang="ml")
+            if values:
+                facts.append(f"{label}: " + "; ".join(values) + ".")
+        elif domain in results:
+            facts.append(f"{label}: വിവരങ്ങൾ ലഭ്യമല്ല.")
+
+    guidance = []
+    if is_sim:
+        sim = decision["scenario_simulation"]
+        sim_msi = sim.get("simulated", {}).get("msi", {})
+        guidance.append(f"🛡️ പ്രവചിക്കപ്പെട്ട സമുദ്ര സുരക്ഷാ സൂചിക (MSI): {sim_msi.get('score')}/100 ({sim_msi.get('tier_label')}), മാറ്റം: {sim.get('msi_delta', 0):+d} പോയിന്റ്.")
+        vessels = sim.get("vessel_advisories", [])
+        if vessels:
+            guidance.append("ബോട്ട് നിർദ്ദേശം: " + "; ".join(f"{v['category']}: {v['status']} ({v['advisory']})" for v in vessels))
+        species = sim.get("species_impacts", [])
+        disrupted = [s for s in species if s.get("severity") in {"high", "critical"}]
+        if disrupted:
+            guidance.append("മത്സ്യ ലഭ്യത മുന്നറിയിപ്പ്: " + "; ".join(f"{s['species'].split(' (')[0]}: {s['impact']} {s['catch_projection']}" for s in disrupted))
+        port = sim.get("port_impact")
+        if isinstance(port, dict):
+            guidance.append(f"തുറമുഖ അവസ്ഥ: {port.get('status')} - {port.get('advisory')}")
+    elif isinstance(decision, dict):
+        msi = decision.get("marine_safety_index")
+        if isinstance(msi, dict) and msi.get("score") is not None:
+            guidance.append(f"🛡️ സമുദ്ര സുരക്ഷാ സൂചിക (MSI): {msi['score']}/100 ({msi.get('tier_label', '')})")
+
+        tide = decision.get("tide")
+        if isinstance(tide, dict) and tide.get("status") == "available":
+            guidance.append(f"🌊 വേലിയേറ്റം/വേലിയിറക്കം: {tide.get('tide_state')} (ജലനിരപ്പ്: {tide.get('current_height_m')}m)")
+
+    if not is_sim:
+        if level == "low":
+            guidance.append("💡 നിർദ്ദേശം: തീരദേശ പ്രവർത്തനങ്ങൾക്കും മീൻപിടുത്തത്തിനും സമുദ്രം അനുകൂലമാണ്.")
+        elif level == "moderate":
+            guidance.append("💡 നിർദ്ദേശം: കടലിൽ പ്രവർത്തിക്കുമ്പോൾ ജാഗ്രത പാലിക്കുക. ചെറിയ വള്ളങ്ങൾ ശ്രദ്ധിക്കുക.")
+        elif level in {"high", "critical"}:
+            guidance.append("⚠️ മുന്നറിയിപ്പ്: കടലിൽ പോകരുത്. ശക്തമായ കാറ്റും ഉയർന്ന തിരമാലകളും നിലനിൽക്കുന്നു.")
+
+    if isinstance(decision, dict) and decision.get("assessment"):
+        guidance.append(f"📌 വിശകലനം: {decision.get('assessment')}")
+
+    limitations = []
+    if incomplete:
+        limitations.append("ആവശ്യമായ വിവരങ്ങൾ പൂർണ്ണമായി ലഭ്യമല്ല.")
+    if "pfz" in pending:
+        limitations.append("PFZ വിവരങ്ങൾ ലഭ്യമല്ല.")
+
+    parts = [opening]
+    if facts:
+        parts.append(" ".join(facts))
+    if guidance:
+        parts.append(" ".join(guidance))
+    if limitations:
+        parts.append(" ".join(limitations))
+
+    return "\n\n".join(parts)
+
+
+def _kannada_answer(
+    level: str,
+    results: dict[str, Any],
+    pending: list[str],
+    incomplete: list[str],
+    time_expression: str | None,
+    location_name: str | None = None,
+    decision: dict[str, Any] | None = None,
+) -> str:
+    status_map = {
+        "low": "ಕಡಿಮೆ ಅಪಾಯ (ಅನುಕೂಲಕರ ಸ್ಥಿತಿ)",
+        "moderate": "ಮಧ್ಯಮ ಅಪಾಯ (ಎಚ್ಚರಿಕೆ ಅಗತ್ಯ)",
+        "high": "ಹೆಚ್ಚಿನ ಅಪಾಯ (ಗಂಭೀರ ಎಚ್ಚರಿಕೆ)",
+        "critical": "ಅತ್ಯಂತ ಅಪಾಯಕಾರಿ",
+        "unknown": "ತಿಳಿದಿಲ್ಲ",
+    }
+
+    status = status_map.get(level, "ತಿಳಿದಿಲ್ಲ")
+    loc_suffix = f" [{location_name}]" if location_name else ""
+
+    is_sim = isinstance(decision, dict) and bool(decision.get("scenario_simulation"))
+
+    if is_sim:
+        sim = decision["scenario_simulation"]
+        opening = f"🧪 ORCA ಸಾಗರ ಸನ್ನಿವೇಶ ಸಿಮ್ಯುಲೇಶನ್ ವರದಿ{loc_suffix}: {sim.get('scenario_summary')}"
+    else:
+        opening = (
+            f"ORCA ಸಾಗರ ಅಪಾಯದ ಮೌಲ್ಯಮಾಪನ{loc_suffix}: {status}."
+            if not incomplete
+            else f"ORCA ಸುರಕ್ಷತಾ ಮೌಲ್ಯಮಾಪನ{loc_suffix} ಸೀಮಿತವಾಗಿದೆ."
+        )
+
+    facts = []
+    for domain, label in (("ocean", "🌊 ಸಾಗರ ಮಾಹಿತಿ"), ("weather", "🌤️ ಹವಾಮಾನ ಮಾಹಿತಿ")):
+        result = results.get(domain, {})
+        if result.get("data_status") in {"live", "cached", "demo", "static"}:
+            values = _facts(domain, result.get("observation") or {}, lang="kn")
+            if values:
+                facts.append(f"{label}: " + "; ".join(values) + ".")
+        elif domain in results:
+            facts.append(f"{label}: ಮಾಹಿತಿ ಲಭ್ಯವಿಲ್ಲ.")
+
+    guidance = []
+    if is_sim:
+        sim = decision["scenario_simulation"]
+        sim_msi = sim.get("simulated", {}).get("msi", {})
+        guidance.append(f"🛡️ ಅಂದಾಜು ಸಾಗರ ಸುರಕ್ಷತಾ ಸೂಚ್ಯಂಕ (MSI): {sim_msi.get('score')}/100 ({sim_msi.get('tier_label')}), ಬದಲಾವಣೆ: {sim.get('msi_delta', 0):+d} ಅಂಕಗಳು.")
+        vessels = sim.get("vessel_advisories", [])
+        if vessels:
+            guidance.append("ದೋಣಿ ಸಲಹೆ: " + "; ".join(f"{v['category']}: {v['status']} ({v['advisory']})" for v in vessels))
+        species = sim.get("species_impacts", [])
+        disrupted = [s for s in species if s.get("severity") in {"high", "critical"}]
+        if disrupted:
+            guidance.append("ಮೀನುಗಾರಿಕೆ ಎಚ್ಚರಿಕೆ: " + "; ".join(f"{s['species'].split(' (')[0]}: {s['impact']} {s['catch_projection']}" for s in disrupted))
+        port = sim.get("port_impact")
+        if isinstance(port, dict):
+            guidance.append(f"ಬಂದರು ಸ್ಥಿತಿ: {port.get('status')} - {port.get('advisory')}")
+    elif isinstance(decision, dict):
+        msi = decision.get("marine_safety_index")
+        if isinstance(msi, dict) and msi.get("score") is not None:
+            guidance.append(f"🛡️ ಸಾಗರ ಸುರಕ್ಷತಾ ಸೂಚ್ಯಂಕ (MSI): {msi['score']}/100 ({msi.get('tier_label', '')})")
+
+        tide = decision.get("tide")
+        if isinstance(tide, dict) and tide.get("status") == "available":
+            guidance.append(f"🌊 ಉಬ್ಬರ-ಇಳಿತ: {tide.get('tide_state')} (ನೀರಿನ ಮಟ್ಟ: {tide.get('current_height_m')}m)")
+
+    if not is_sim:
+        if level == "low":
+            guidance.append("💡 ಸಲಹೆ: ಕರಾವಳಿ ಚಟುವಟಿಕೆಗಳು, ಬೋಟಿಂಗ್ ಮತ್ತು ಮೀನುಗಾರಿಕೆಗೆ ಸಾಗರ ಅನುಕೂಲಕರವಾಗಿದೆ.")
+        elif level == "moderate":
+            guidance.append("💡 ಸಲಹೆ: ಸಮುದ್ರದಲ್ಲಿ ಕಾರ್ಯನಿರ್ವಹಿಸುವಾಗ ಜಾಗರೂಕರಾಗಿರಿ. ಸಣ್ಣ ದೋಣಿಗಳು ಎಚ್ಚರಿಕೆ ವಹಿಸಬೇಕು.")
+        elif level in {"high", "critical"}:
+            guidance.append("⚠️ ಎಚ್ಚರಿಕೆ: ಸಮುದ್ರಕ್ಕೆ ಹೋಗಬೇಡಿ. ಬಲವಾದ ಗಾಳಿ ಮತ್ತು ಎತ್ತರದ ಅಲೆಗಳು ಸಕ್ರಿಯವಾಗಿವೆ.")
+
+    if isinstance(decision, dict) and decision.get("assessment"):
+        guidance.append(f"📌 ವಿಶ್ಲೇಷಣೆ: {decision.get('assessment')}")
+
+    limitations = []
+    if incomplete:
+        limitations.append("ಅಗತ್ಯ ಮಾಹಿತಿ ಇನ್ನೂ ಸಂಪೂರ್ಣವಾಗಿ ಲಭ್ಯವಿಲ್ಲ.")
+    if "pfz" in pending:
+        limitations.append("PFZ ಮಾಹಿತಿ ಲಭ್ಯವಿಲ್ಲ.")
+
+    parts = [opening]
+    if facts:
+        parts.append(" ".join(facts))
+    if guidance:
+        parts.append(" ".join(guidance))
+    if limitations:
+        parts.append(" ".join(limitations))
+
+    return "\n\n".join(parts)
+
 
