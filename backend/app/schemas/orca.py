@@ -56,3 +56,30 @@ class QueryHistoryItem(BaseModel):
 
 class QueryHistoryResponse(BaseModel):
     items: list[QueryHistoryItem]
+
+
+class ScenarioSimulationRequest(BaseModel):
+    location: Location
+    delta_sst_c: float = 0.0
+    delta_wave_m: float = 0.0
+    delta_wind_mps: float = 0.0
+    wind_multiplier: float = 1.0
+    storm_condition: str | None = None
+
+
+class ScenarioSimulationResponse(BaseModel):
+    status: str
+    scenario_summary: str
+    perturbations_applied: dict[str, Any]
+    baseline: dict[str, Any]
+    simulated: dict[str, Any]
+    msi_delta: int
+    comparison_matrix: list[dict[str, Any]]
+    species_impacts: list[dict[str, Any]]
+    vessel_advisories: list[dict[str, Any]]
+    port_impact: dict[str, Any]
+    recommendations: list[dict[str, Any]]
+    location: dict[str, Any]
+    location_name: str | None = None
+    timestamp: str
+

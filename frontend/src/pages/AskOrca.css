@@ -1880,3 +1880,255 @@
     justify-content: flex-end;
   }
 }
+
+/* ==========================================================================
+   SCENARIO SIMULATION REPORT CARD STYLES
+   ========================================================================== */
+.simulation-result-card {
+  background: rgba(11, 21, 38, 0.85);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-radius: 12px;
+  padding: 1.15rem 1.25rem;
+  margin: 0.85rem 0;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4), 0 0 15px rgba(0, 212, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sim-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 0.75rem;
+}
+
+.sim-tag {
+  font-size: 0.65rem;
+  letter-spacing: 0.06em;
+  background: rgba(0, 212, 255, 0.15);
+  color: #00d4ff;
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  padding: 2px 7px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-bottom: 0.25rem;
+}
+
+.sim-summary-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #f1f5f9;
+  line-height: 1.35;
+}
+
+.sim-msi-delta-box {
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.45rem 0.75rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  min-width: 85px;
+}
+
+.delta-label {
+  font-size: 0.6rem;
+  color: #64748b;
+  letter-spacing: 0.05em;
+}
+
+.delta-val {
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.delta-val.drop { color: #f87171; }
+.delta-val.rise { color: #34d399; }
+
+.sim-table-wrap {
+  overflow-x: auto;
+}
+
+.sim-comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+.sim-comparison-table th {
+  background: rgba(15, 23, 42, 0.6);
+  color: #94a3b8;
+  font-weight: 600;
+  text-align: left;
+  padding: 0.5rem 0.65rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sim-comparison-table td {
+  padding: 0.5rem 0.65rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: #cbd5e1;
+}
+
+.sim-comparison-table .param-name {
+  color: #f8fafc;
+  font-weight: 500;
+}
+
+.sim-sev-pill {
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+.sim-sev-pill.critical { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+.sim-sev-pill.high { background: rgba(249, 115, 22, 0.2); color: #fb923c; }
+.sim-sev-pill.moderate { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+.sim-sev-pill.nominal { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+
+.sim-section-sub {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.85rem;
+  color: #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.sim-species-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+}
+
+.sim-species-card {
+  background: rgba(15, 23, 42, 0.6);
+  border-left: 3px solid #64748b;
+  border-radius: 0 6px 6px 0;
+  padding: 0.5rem 0.75rem;
+}
+
+.sim-species-card.critical { border-left-color: #ef4444; }
+.sim-species-card.high { border-left-color: #f97316; }
+.sim-species-card.moderate { border-left-color: #f59e0b; }
+.sim-species-card.nominal { border-left-color: #10b981; }
+
+.species-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  color: #f1f5f9;
+}
+
+.species-thermal-badge {
+  font-size: 0.65rem;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.species-thermal-badge.critical { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+.species-thermal-badge.high { background: rgba(249, 115, 22, 0.2); color: #fb923c; }
+.species-thermal-badge.moderate { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+.species-thermal-badge.nominal { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+
+.species-impact-desc {
+  margin: 0.2rem 0 0.15rem 0;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.species-catch-alert {
+  font-size: 0.72rem;
+  color: #38bdf8;
+  display: block;
+}
+
+.sim-vessels-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .sim-vessels-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sim-vessel-card {
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 6px;
+  padding: 0.5rem 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.vessel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.vessel-title {
+  font-size: 0.72rem;
+  color: #cbd5e1;
+  font-weight: 600;
+}
+
+.vessel-status-tag {
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.vessel-status-tag.prohibited { background: rgba(239, 68, 68, 0.25); color: #f87171; }
+.vessel-status-tag.caution { background: rgba(245, 158, 11, 0.25); color: #fbbf24; }
+.vessel-status-tag.safe { background: rgba(16, 185, 129, 0.25); color: #34d399; }
+
+.vessel-adv-text {
+  margin: 0;
+  font-size: 0.68rem;
+  color: #94a3b8;
+  line-height: 1.25;
+}
+
+.sim-port-alert {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 0.6rem 0.75rem;
+}
+
+.sim-port-alert.critical {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.sim-port-alert.moderate {
+  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.port-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  display: block;
+}
+
+.port-desc {
+  margin: 0.2rem 0 0 0;
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+

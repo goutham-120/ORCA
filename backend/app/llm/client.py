@@ -84,6 +84,8 @@ class OpenAICompatibleLLM:
             return "Telugu (తెలుగు)"
         if c in {"hi", "hi-in", "hindi"}:
             return "Hindi (हिन्दी)"
+        if c in {"ta", "ta-in", "tamil"}:
+            return "Tamil (தமிழ்)"
         return "English"
 
     async def chat(self, query: str, language: str) -> str | None:

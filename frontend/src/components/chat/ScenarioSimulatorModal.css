@@ -1,0 +1,573 @@
+.scenario-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 10, 20, 0.75);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  animation: fadeInModal 0.2s ease-out;
+}
+
+@keyframes fadeInModal {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.scenario-modal-card {
+  background: #0b1526;
+  border: 1px solid rgba(0, 212, 255, 0.25);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7), 0 0 30px rgba(0, 212, 255, 0.1);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 1100px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: #e2e8f0;
+}
+
+.scenario-modal-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(15, 23, 42, 0.6);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.scenario-modal-header .modal-badge-tag {
+  display: inline-block;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  padding: 2px 8px;
+  background: rgba(0, 212, 255, 0.15);
+  color: #00d4ff;
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-radius: 4px;
+  margin-bottom: 0.35rem;
+}
+
+.scenario-modal-title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #f8fafc;
+  letter-spacing: -0.01em;
+}
+
+.scenario-modal-desc {
+  margin: 0.35rem 0 0 0;
+  font-size: 0.82rem;
+  color: #94a3b8;
+  max-width: 850px;
+  line-height: 1.4;
+}
+
+.modal-close-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.15s ease;
+}
+
+.modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.scenario-modal-body {
+  padding: 1.25rem 1.5rem;
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+@media (max-width: 850px) {
+  .scenario-modal-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* LEFT CONTROLS */
+.scenario-controls-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+.control-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.field-label {
+  font-size: 0.7rem;
+  color: #00d4ff;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+.scenario-select {
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 0.55rem 0.85rem;
+  color: #f8fafc;
+  font-size: 0.88rem;
+  outline: none;
+  cursor: pointer;
+}
+
+.scenario-select:focus {
+  border-color: #00d4ff;
+  box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.2);
+}
+
+.presets-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.preset-btn {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.55rem 0.75rem;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  transition: all 0.15s ease;
+}
+
+.preset-btn:hover {
+  background: rgba(0, 212, 255, 0.08);
+  border-color: rgba(0, 212, 255, 0.3);
+}
+
+.preset-btn.active {
+  background: rgba(0, 212, 255, 0.15);
+  border-color: #00d4ff;
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.2);
+}
+
+.preset-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+
+.preset-desc {
+  font-size: 0.68rem;
+  color: #94a3b8;
+  line-height: 1.3;
+}
+
+.sliders-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background: rgba(15, 23, 42, 0.4);
+  padding: 1rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.slider-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.slider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  color: #cbd5e1;
+}
+
+.slider-val {
+  color: #00d4ff;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.scenario-range {
+  width: 100%;
+  accent-color: #00d4ff;
+  cursor: pointer;
+}
+
+.slider-ticks {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.65rem;
+  color: #64748b;
+}
+
+.conditions-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.cond-chip {
+  flex: 1;
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cond-chip:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #f1f5f9;
+}
+
+.cond-chip.active {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: #f59e0b;
+  color: #fbbf24;
+  font-weight: 600;
+}
+
+/* RIGHT PREVIEW */
+.scenario-preview-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  background: rgba(15, 23, 42, 0.4);
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.preview-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 0.5rem;
+}
+
+.preview-label {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  letter-spacing: 0.06em;
+}
+
+.preview-spinner {
+  font-size: 0.72rem;
+  color: #00d4ff;
+  animation: pulse 1s infinite;
+}
+
+.telemetry-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.msi-shift-card {
+  background: #09121f;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 0.75rem 0.9rem;
+}
+
+.shift-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.65rem;
+}
+
+.shift-sub {
+  font-size: 0.65rem;
+  color: #64748b;
+  letter-spacing: 0.05em;
+}
+
+.shift-title {
+  margin: 0.15rem 0 0 0;
+  font-size: 0.95rem;
+  color: #cbd5e1;
+}
+
+.sim-score.safe { color: #10b981; }
+.sim-score.caution { color: #f59e0b; }
+.sim-score.high_risk { color: #f97316; }
+.sim-score.critical { color: #ef4444; }
+
+.msi-delta-badge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.msi-delta-badge.negative {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.msi-delta-badge.positive {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.msi-comparison-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.bar-row {
+  display: grid;
+  grid-template-columns: 60px 1fr 65px;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.7rem;
+}
+
+.bar-label {
+  color: #94a3b8;
+}
+
+.bar-track {
+  background: rgba(255, 255, 255, 0.08);
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.bar-fill.baseline {
+  height: 100%;
+  background: #3b82f6;
+  border-radius: 4px;
+}
+
+.bar-fill.simulated.safe { background: #10b981; }
+.bar-fill.simulated.caution { background: #f59e0b; }
+.bar-fill.simulated.high_risk { background: #f97316; }
+.bar-fill.simulated.critical { background: #ef4444; }
+
+.bar-val {
+  color: #cbd5e1;
+  text-align: right;
+}
+
+.card-sub-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: #f1f5f9;
+  margin-bottom: 0.45rem;
+}
+
+.species-impact-card, .vessel-port-card {
+  background: #09121f;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 0.75rem 0.9rem;
+}
+
+.species-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.species-item {
+  border-left: 3px solid #64748b;
+  padding-left: 0.5rem;
+}
+
+.species-item.critical { border-left-color: #ef4444; }
+.species-item.high { border-left-color: #f97316; }
+.species-item.moderate { border-left-color: #f59e0b; }
+.species-item.nominal { border-left-color: #10b981; }
+
+.species-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.species-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.species-status-chip {
+  font-size: 0.65rem;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.species-status-chip.critical { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+.species-status-chip.high { background: rgba(249, 115, 22, 0.2); color: #fb923c; }
+.species-status-chip.moderate { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+.species-status-chip.nominal { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+
+.species-impact-text {
+  margin: 0.15rem 0 0 0;
+  font-size: 0.7rem;
+  color: #94a3b8;
+  line-height: 1.3;
+}
+
+.species-catch-text {
+  font-size: 0.68rem;
+  color: #38bdf8;
+  margin-top: 0.15rem;
+  display: block;
+}
+
+.vessel-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.vessel-tile {
+  background: #0f172a;
+  border-radius: 6px;
+  padding: 0.45rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.vessel-cat {
+  font-size: 0.65rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.vessel-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  width: fit-content;
+}
+
+.vessel-badge.prohibited { background: rgba(239, 68, 68, 0.25); color: #f87171; }
+.vessel-badge.caution { background: rgba(245, 158, 11, 0.25); color: #fbbf24; }
+.vessel-badge.safe { background: rgba(16, 185, 129, 0.25); color: #34d399; }
+
+.vessel-adv {
+  font-size: 0.62rem;
+  color: #64748b;
+  line-height: 1.25;
+}
+
+.port-banner {
+  border-radius: 6px;
+  padding: 0.45rem 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.72rem;
+}
+
+.port-banner.critical {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+
+.port-banner.moderate {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #fbbf24;
+}
+
+.port-banner.low {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #34d399;
+}
+
+.scenario-modal-footer {
+  padding: 1rem 1.5rem;
+  background: rgba(15, 23, 42, 0.7);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.scenario-modal-footer button {
+  padding: 0.55rem 1.15rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.secondary-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #94a3b8;
+}
+
+.secondary-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+}
+
+.map-inspect-btn {
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  color: #60a5fa;
+}
+
+.map-inspect-btn:hover {
+  background: rgba(59, 130, 246, 0.25);
+  color: #93c5fd;
+}
+
+.primary-btn {
+  background: linear-gradient(135deg, #0284c7, #0369a1);
+  border: 1px solid rgba(0, 212, 255, 0.5);
+  color: #ffffff;
+  box-shadow: 0 0 15px rgba(2, 132, 199, 0.3);
+}
+
+.primary-btn:hover {
+  background: linear-gradient(135deg, #0369a1, #075985);
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+}

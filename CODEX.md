@@ -138,3 +138,11 @@ Status: Completed
 Completed: Runnable FastAPI foundation, schemas, routers, services, workflow interfaces, and DB configuration.
 Files Changed: backend/app/{main,config,api,core,workflows,services,models,schemas,database,utils,analysis}; docs/api_contracts.md
 Integration Notes: Agents register through workflow/data-coordination interfaces; database remains optional until ORCA_DATABASE_URL is supplied.
+
+### Sprint 1 — Core Agentic AI Reasoning & Deep Marine Analytics
+Status: Completed
+Branch: route-opt
+Completed: Added 4 core agentic AI reasoning capabilities: (1) Marine Ecosystem Anomaly & Fish Productivity Diagnostics Agent (MHW/SST anomalies, Chlorophyll depletion, and upwelling disruption), (2) Dynamic Maritime Safe Route Optimization Engine with grid A* obstacle bypass, nautical waypoints, and fuel metrics, (3) Harmonic Tide & Hydrodynamic Current Prediction Engine for 12 Indian coastal ports, and (4) Unified Marine Safety Index (0-100 continuous MSI scoring).
+Files Changed: backend/app/{analysis/{safety_index.py,safety_analysis.py,investigation.py,route_analysis.py},services/{ecosystem_service.py,tide_service.py,route_analysis_service.py,decision_service.py},core/{query_parser.py,conversation.py},schemas/{decisions.py,map.py},api/map.py}, backend/tests/{test_safety_index.py,test_tide_service.py,test_ecosystem_anomaly.py,test_route_optimization.py}, frontend/src/{services/mapService.js,pages/MapExplorer.jsx}
+Integration Notes: Fully backwards-compatible. All 86 unit tests passing (100% success rate). Frontend builds clean with 0 errors.
+

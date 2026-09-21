@@ -300,6 +300,8 @@ export default function Message({ message }) {
 
   const isPFZDiscovery = response?.context?.decision_type === 'pfz' && decision?.status === 'available' && decision?.features?.length > 0 && decision?.suitability === 'unavailable'
   const isFishingSuitability = Boolean(decision?.suitability && decision?.suitability !== 'unavailable')
+  const isSimulation = response?.context?.decision_type === 'simulation' || Boolean(decision?.scenario_simulation)
+  const simulation = decision?.scenario_simulation
   const levelBadgeClass = level === 'low' ? 'low' : level === 'moderate' ? 'moderate' : level === 'high' ? 'high' : level === 'critical' ? 'critical' : 'unknown'
   const evidenceList = response?.evidence || []
   const scorePercent = assessment?.score != null ? Math.round(assessment.score * 100) : null
@@ -401,6 +403,101 @@ export default function Message({ message }) {
           </section>
         )}
 
+        {/* 2B. SCENARIO SIMULATION REPORT CARD */}
+        {isSimulation && simulation && (
+          <section className="simulation-result-card font-sans">
+            <div className="sim-card-header">
+              <div className="sim-title-group">
+                <span className="sim-tag font-mono">🧪 WHAT-IF SCENARIO SIMULATION</span>
+                <h3 className="sim-summary-title font-sora">{simulation.scenario_summary}</h3>
+              </div>
+              <div className="sim-msi-delta-box font-mono">
+                <span className="delta-label">MSI SHIFT</span>
+                <strong className={`delta-val ${simulation.msi_delta < 0 ? 'drop' : 'rise'}`}>
+                  {simulation.msi_delta > 0 ? `+${simulation.msi_delta}` : simulation.msi_delta} pts
+                </strong>
+              </div>
+            </div>
+
+            {/* Comparison Matrix Table */}
+            {simulation.comparison_matrix?.length > 0 && (
+              <div className="sim-table-wrap">
+                <table className="sim-comparison-table font-sans">
+                  <thead>
+                    <tr>
+                      <th>Marine Parameter</th>
+                      <th>Baseline</th>
+                      <th>Simulated</th>
+                      <th>Shift (Δ)</th>
+                      <th>Operational Severity</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {simulation.comparison_matrix.map((row, rIdx) => (
+                      <tr key={rIdx} className={row.severity || ''}>
+                        <td className="param-name font-sora">{row.parameter}</td>
+                        <td className="font-mono">{row.baseline} {row.unit}</td>
+                        <td className="font-mono font-bold">{row.simulated} {row.unit}</td>
+                        <td className="font-mono">{row.delta}</td>
+                        <td>
+                          <span className={`sim-sev-pill font-mono ${row.severity || ''}`}>
+                            {(row.severity || 'nominal').toUpperCase()}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Pelagic Fishery & Biomass Dispersal Alert */}
+            {simulation.species_impacts?.length > 0 && (
+              <div className="sim-species-section">
+                <h4 className="sim-section-sub font-sora">🐟 Pelagic Fishery Biomass Dispersal</h4>
+                <div className="sim-species-grid">
+                  {simulation.species_impacts.map((sp, sIdx) => (
+                    <div key={sIdx} className={`sim-species-card ${sp.severity || ''}`}>
+                      <div className="species-card-head">
+                        <strong className="font-sora">{sp.species}</strong>
+                        <span className={`species-thermal-badge font-mono ${sp.severity || ''}`}>{sp.thermal_status}</span>
+                      </div>
+                      <p className="species-impact-desc font-sans">{sp.impact}</p>
+                      <span className="species-catch-alert font-mono">▸ {sp.catch_projection}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Vessel Category Operational Restrictions */}
+            {simulation.vessel_advisories?.length > 0 && (
+              <div className="sim-vessels-section">
+                <h4 className="sim-section-sub font-sora">⚓ Vessel Category Operational Restrictions</h4>
+                <div className="sim-vessels-grid">
+                  {simulation.vessel_advisories.map((v, vIdx) => (
+                    <div key={vIdx} className={`sim-vessel-card ${v.badge || ''}`}>
+                      <div className="vessel-head">
+                        <span className="vessel-title font-sora">{v.category}</span>
+                        <span className={`vessel-status-tag font-mono ${v.badge || ''}`}>{v.status}</span>
+                      </div>
+                      <p className="vessel-adv-text font-sans">{v.advisory}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Port & Harbor Infrastructure Alert */}
+            {simulation.port_impact && (
+              <div className={`sim-port-alert font-sans ${simulation.port_impact.risk_level || ''}`}>
+                <span className="port-label font-mono">🏛️ HARBOR & NAVIGATION TRANSIT: {simulation.port_impact.status}</span>
+                <p className="port-desc font-sans">{simulation.port_impact.advisory}</p>
+              </div>
+            )}
+          </section>
+        )}
+
         {/* 3. REASON BREAKDOWN SECTION (UNDER RISK BOX) */}
         {showReason && isSpecialized && (
           <div className="structured-reason-container font-sans">
@@ -462,7 +559,9 @@ export default function Message({ message }) {
                   {factors.map((factor, index) => (
                     <li key={index} className="factor-row">
                       <span className="factor-bullet">▸</span>
-                      <span className="factor-text">{factor}</span>
+                      <span className="factor-text">
+                        {typeof factor === 'string' ? factor : (factor?.message || JSON.stringify(factor))}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -497,7 +596,9 @@ export default function Message({ message }) {
               </p>
             )}
             {decision?.warnings?.map((warning, index) => (
-              <p key={index} className="supporting-note font-sans">⚠️ {warning}</p>
+              <p key={index} className="supporting-note font-sans">
+                ⚠️ {typeof warning === 'string' ? warning : (warning?.message || JSON.stringify(warning))}
+              </p>
             ))}
             {recommendations.length > 0 && (
               <div className="recommendations-list font-sans">

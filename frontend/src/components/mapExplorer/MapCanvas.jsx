@@ -238,10 +238,17 @@ export default function MapCanvas({
   onMapLocation,
   isExpanded,
   onToggleExpanded,
+  liveVesselLocation = null,
+  navigationWaypoints = [],
+  isTracking = false,
+  landTransit = null,
 }) {
   const containerRef = useRef(null)
   const mapRef = useRef(null)
   const markerRef = useRef(null)
+  const vesselMarkerRef = useRef(null)
+  const waypointMarkersRef = useRef([])
+  const harborMarkerRef = useRef(null)
   const gisMarkersRef = useRef([])
   const initialLocationRef = useRef(selectedLocation)
   const locationHandlerRef = useRef(onMapLocation)
@@ -513,6 +520,34 @@ export default function MapCanvas({
               'line-width': 4.5,
               'line-dasharray': [3, 1.5],
               'line-opacity': 0.95,
+            },
+          })
+        }
+
+        // 11. Multi-Modal Land Road Route (Amber / Gold Real Road Track)
+        if (!map.getLayer('orca-land-route-casing')) {
+          map.addLayer({
+            id: 'orca-land-route-casing',
+            type: 'line',
+            source: 'orca-layers',
+            filter: ['==', ['get', 'kind'], 'land-road-route'],
+            paint: {
+              'line-color': '#78350f',
+              'line-width': 8,
+              'line-opacity': 0.8,
+            },
+          })
+        }
+        if (!map.getLayer('orca-land-route-line')) {
+          map.addLayer({
+            id: 'orca-land-route-line',
+            type: 'line',
+            source: 'orca-layers',
+            filter: ['==', ['get', 'kind'], 'land-road-route'],
+            paint: {
+              'line-color': '#f59e0b',
+              'line-width': 5,
+              'line-opacity': 1.0,
             },
           })
         }
@@ -839,6 +874,17 @@ export default function MapCanvas({
       })
     }
 
+    if (landTransit?.road_geometry) {
+      features.push({
+        type: 'Feature',
+        geometry: landTransit.road_geometry,
+        properties: {
+          kind: 'land-road-route',
+          harbor_name: landTransit.harbor?.name || 'Departure Harbor',
+        },
+      })
+    }
+
     try {
       if (map.getSource && map.getSource('orca-layers')) {
         map.getSource('orca-layers').setData(featureCollection(features))
@@ -847,13 +893,11 @@ export default function MapCanvas({
       console.warn('Failed to update map features:', e)
     }
 
-    /*
-     * Remove existing GIS & PFZ DOM markers and create new interactive ones.
-     */
     gisMarkersRef.current.forEach((marker) => {
       try { marker.remove() } catch {}
     })
     gisMarkersRef.current = []
+    const placedPFZCoords = []
 
     visibleLayers.forEach((layer) => {
       if (!layer) return
@@ -977,6 +1021,12 @@ export default function MapCanvas({
             isInRadius = distVal <= radiusKm
           }
 
+          const isDuplicateNearby = placedPFZCoords.some((coord) => distanceKm(coord, repCoord) < 35)
+          if (isDuplicateNearby && !isInRadius) {
+            return
+          }
+          placedPFZCoords.push(repCoord)
+
           el.className = `gis-interactive-marker pfz-marker ${isInRadius ? 'pfz-marker-in-radius' : 'pfz-marker-outside'}`
 
           const borderCol = isInRadius ? '#22c55e' : '#06b6d4'
@@ -1020,26 +1070,32 @@ export default function MapCanvas({
     })
 
     /*
-     * If route geometry is active, zoom to route bounds.
+     * If route or land transit geometry is active, zoom to encompass full multi-modal bounds.
      */
-    if (routeGeometry?.coordinates?.length >= 2) {
+    const allRouteCoords = [
+      ...(Array.isArray(landTransit?.road_geometry?.coordinates) ? landTransit.road_geometry.coordinates : []),
+      ...(Array.isArray(routeGeometry?.coordinates) ? routeGeometry.coordinates : []),
+    ]
+
+    if (allRouteCoords.length >= 2) {
       try {
-        const routeBounds = routeGeometry.coordinates.reduce(
+        const routeBounds = allRouteCoords.reduce(
           (b, pt) => (Array.isArray(pt) && pt.length >= 2 ? b.extend(pt) : b),
-          new LngLatBounds(routeGeometry.coordinates[0], routeGeometry.coordinates[0])
+          new LngLatBounds(allRouteCoords[0], allRouteCoords[0])
         )
         map.fitBounds(routeBounds, {
-          padding: 80,
-          maxZoom: 9,
+          padding: 70,
+          maxZoom: 11,
           duration: 700,
         })
       } catch (e) {
-        console.warn('Failed to fit route bounds:', e)
+        console.warn('Failed to fit multi-modal route bounds:', e)
       }
     }
   }, [
     layers,
     routeGeometry,
+    landTransit,
     radiusKm,
     selectedPFZGeometry,
     pfzRouteGeometry,
@@ -1100,6 +1156,144 @@ export default function MapCanvas({
       console.warn('Failed to update selected location marker:', e)
     }
   }, [selectedLocation, mapStatus])
+
+  /*
+   * Live Vessel GPS Position Marker & Auto-Tracking Camera
+   */
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || mapStatus !== 'ready') return
+
+    if (
+      !liveVesselLocation ||
+      !Number.isFinite(Number(liveVesselLocation.latitude)) ||
+      !Number.isFinite(Number(liveVesselLocation.longitude))
+    ) {
+      vesselMarkerRef.current?.remove()
+      vesselMarkerRef.current = null
+      return
+    }
+
+    const lat = Number(liveVesselLocation.latitude)
+    const lon = Number(liveVesselLocation.longitude)
+
+    try {
+      if (!vesselMarkerRef.current) {
+        const el = document.createElement('div')
+        el.className = 'live-vessel-map-marker'
+        el.innerHTML = `
+          <div style="position: relative; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;">
+            <div style="position: absolute; width: 100%; height: 100%; border-radius: 50%; background: rgba(56, 189, 248, 0.35); border: 2px solid #0284c7; animation: radarPulse 1.8s infinite;"></div>
+            <div style="position: relative; width: 24px; height: 24px; border-radius: 50%; background: #0284c7; color: white; display: flex; align-items: center; justify-content: center; font-size: 13px; box-shadow: 0 2px 8px rgba(0,0,0,0.4); font-weight: bold; border: 2px solid #ffffff;">
+              ⛵
+            </div>
+          </div>
+        `
+        const popup = new Popup({ offset: 18 }).setHTML(`
+          <div style="font-family: inherit; font-size: 12px; color: #0f172a; padding: 2px 4px;">
+            <strong style="color: #0284c7;">📍 Live Vessel Position</strong><br/>
+            ${lat.toFixed(4)}°N, ${lon.toFixed(4)}°E
+            ${liveVesselLocation.accuracy ? `<br/><small style="color: #64748b;">Accuracy: ±${Math.round(liveVesselLocation.accuracy)}m</small>` : ''}
+          </div>
+        `)
+        vesselMarkerRef.current = new Marker({ element: el })
+          .setLngLat([lon, lat])
+          .setPopup(popup)
+          .addTo(map)
+      } else {
+        vesselMarkerRef.current.setLngLat([lon, lat])
+      }
+
+      if (isTracking) {
+        map.easeTo({
+          center: [lon, lat],
+          zoom: Math.max(map.getZoom(), 11),
+          duration: 1000,
+        })
+      }
+    } catch (e) {
+      console.warn('Failed to update live vessel marker:', e)
+    }
+  }, [liveVesselLocation, isTracking, mapStatus])
+
+  /*
+   * Turn-by-Turn Navigation Waypoint Pins
+   */
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || mapStatus !== 'ready') return
+
+    waypointMarkersRef.current.forEach((m) => m.remove())
+    waypointMarkersRef.current = []
+
+    if (!Array.isArray(navigationWaypoints) || navigationWaypoints.length === 0) return
+
+    navigationWaypoints.forEach((wp, idx) => {
+      const lat = Number(wp.latitude)
+      const lon = Number(wp.longitude)
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return
+
+      const isLast = idx === navigationWaypoints.length - 1
+      const label = isLast ? '🎯' : `W${wp.waypoint_number || idx + 1}`
+
+      const el = document.createElement('div')
+      el.className = 'navigation-waypoint-pin'
+      el.innerHTML = `
+        <div style="background: ${isLast ? '#10b981' : '#0284c7'}; color: white; font-weight: 800; font-size: 11px; padding: 2px 6px; border-radius: 12px; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.35); cursor: pointer; white-space: nowrap;">
+          ${label}
+        </div>
+      `
+
+      const popup = new Popup({ offset: 15 }).setHTML(`
+        <div style="font-family: inherit; font-size: 12px; color: #0f172a; padding: 2px;">
+          <strong style="color: ${isLast ? '#059669' : '#0284c7'};">${isLast ? '🎯 Destination PFZ' : `Waypoint ${wp.waypoint_number || idx + 1}`}</strong><br/>
+          <strong>Coords:</strong> ${lat.toFixed(4)}°N, ${lon.toFixed(4)}°E<br/>
+          ${wp.bearing_deg != null ? `<strong>Course:</strong> ${wp.bearing_deg}° ${wp.compass_heading || ''}<br/>` : ''}
+          ${wp.leg_distance_nm != null ? `<strong>Leg Distance:</strong> ${wp.leg_distance_nm} NM<br/>` : ''}
+          <strong>Safety:</strong> <span style="color: ${wp.safety_status === 'UNSAFE' ? '#dc2626' : wp.safety_status === 'CAUTION' ? '#d97706' : '#16a34a'}; font-weight: bold;">${wp.safety_status || 'SAFE'}</span>
+        </div>
+      `)
+
+      const marker = new Marker({ element: el })
+        .setLngLat([lon, lat])
+        .setPopup(popup)
+        .addTo(map)
+
+      waypointMarkersRef.current.push(marker)
+    })
+
+    // If land transit to a coastal harbor is active, add an Amber Harbor Departure pin
+    if (landTransit?.harbor && landTransit?.land_transit_needed) {
+      const hLon = Number(landTransit.harbor.longitude)
+      const hLat = Number(landTransit.harbor.latitude)
+      if (Number.isFinite(hLon) && Number.isFinite(hLat)) {
+        const el = document.createElement('div')
+        el.className = 'harbor-departure-pin'
+        el.innerHTML = `
+          <div style="background: #f59e0b; color: #0f172a; font-weight: 800; font-size: 11px; padding: 3px 8px; border-radius: 14px; border: 2px solid #ffffff; box-shadow: 0 3px 10px rgba(0,0,0,0.45); cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 4px;">
+            <span style="font-size: 13px;">⚓</span> ${landTransit.harbor.name || 'Harbor'}
+          </div>
+        `
+        const popup = new Popup({ offset: 16 }).setHTML(`
+          <div style="font-family: inherit; font-size: 12px; color: #0f172a; padding: 2px;">
+            <strong style="color: #b45309; font-size: 13px;">⚓ Departure Fishing Harbor</strong><br/>
+            <strong>${landTransit.harbor.name}</strong><br/>
+            <span style="color: #64748b;">${landTransit.harbor.state || ''} · ${landTransit.harbor.type || 'Fishing Harbor'}</span><br/>
+            <strong>Road Distance:</strong> ${landTransit.distance_km} km (${landTransit.formatted_duration || ''})<br/>
+            <strong>Coordinates:</strong> ${hLat.toFixed(4)}°N, ${hLon.toFixed(4)}°E<br/>
+            <div style="margin-top: 4px; padding: 3px 6px; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 4px; color: #065f46; font-weight: 600; font-size: 11px;">
+              ⛵ Transition point from road transit to marine voyage
+            </div>
+          </div>
+        `)
+        const marker = new Marker({ element: el })
+          .setLngLat([hLon, hLat])
+          .setPopup(popup)
+          .addTo(map)
+        waypointMarkersRef.current.push(marker)
+      }
+    }
+  }, [navigationWaypoints, landTransit, mapStatus])
 
   useEffect(() => {
     try {

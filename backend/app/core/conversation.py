@@ -43,38 +43,67 @@ def synthesize_answer(
 
     if context.get("decision_type") == "pfz" and isinstance(decision, dict):
         parts.append(str(decision.get("assessment", "No current PFZ advisory was returned.")))
+    elif context.get("decision_type") == "simulation" and isinstance(decision, dict) and decision.get("scenario_simulation"):
+        sim = decision["scenario_simulation"]
+        parts.append(f"🧪 Marine Scenario Simulation Report{subject}: {sim.get('scenario_summary')}")
+        sim_msi = sim.get("simulated", {}).get("msi", {})
+        parts.append(f"Projected Marine Safety Index: {sim_msi.get('score')}/100 ({sim_msi.get('tier_label')}), Shift: {sim.get('msi_delta', 0):+d} points.")
+        vessels = sim.get("vessel_advisories", [])
+        if vessels:
+            v_summary = "; ".join(f"{v['category']}: {v['status']} ({v['advisory']})" for v in vessels)
+            parts.append(f"Vessel Category Advisories: {v_summary}.")
+        species = sim.get("species_impacts", [])
+        disrupted = [s for s in species if s.get("severity") in {"high", "critical"}]
+        if disrupted:
+            s_summary = "; ".join(f"{s['species'].split(' (')[0]}: {s['impact']} {s['catch_projection']}" for s in disrupted)
+            parts.append(f"Pelagic Fishery Dispersal Alert: {s_summary}.")
+        port = sim.get("port_impact")
+        if isinstance(port, dict):
+            parts.append(f"Harbor Operations: {port.get('status')} - {port.get('advisory')}")
+    elif context.get("decision_type") == "anomaly" and isinstance(decision, dict) and decision.get("ecosystem_diagnosis"):
+        eco = decision["ecosystem_diagnosis"]
+        parts.append(f"Marine Ecosystem Diagnosis{subject}: {eco.get('diagnosis_summary')}")
     elif incomplete:
         parts.append(
             f"ORCA cannot make a complete safety assessment{subject} "
             f"because required evidence is unavailable or pending: "
             f"{', '.join(incomplete)}."
         )
-
     elif level == "unknown":
         parts.append(
             f"ORCA cannot make a safety assessment{subject} "
             "from the currently available evidence."
         )
-
     else:
         parts.append(
             f"ORCA's combined assessment{subject} is {level} risk."
         )
 
     # ---------------------------------------------------------
+    # Marine Safety Index (MSI) & Tide
+    # ---------------------------------------------------------
+    if isinstance(decision, dict):
+        msi = decision.get("marine_safety_index")
+        if isinstance(msi, dict) and msi.get("score") is not None:
+            parts.append(f"Marine Safety Index: {msi['score']}/100 ({msi.get('tier_label', '')}).")
+
+        tide = decision.get("tide")
+        if isinstance(tide, dict) and tide.get("status") == "available":
+            parts.append(
+                f"Tide conditions: {tide.get('tide_state')} (Level: {tide.get('current_height_m')}m, {tide.get('spring_neap_phase')}). "
+                f"Next High Tide: {tide.get('next_high_tide', {}).get('time_display')} ({tide.get('next_high_tide', {}).get('height_m')}m)."
+            )
+
+    # ---------------------------------------------------------
     # Domain evidence
     # ---------------------------------------------------------
 
     for domain in ("ocean", "weather", "gis"):
-
         result = results.get(domain)
 
         if not isinstance(result, dict):
             continue
 
-        # If only a place name was supplied and no coordinates
-        # are available, do not present location-dependent data
-        # as retrieved evidence.
         if (
             not location
             and requested_place
@@ -86,19 +115,13 @@ def synthesize_answer(
             )
             continue
 
-        # -----------------------------------------------------
-        # Available evidence
-        # -----------------------------------------------------
-
         if result.get("data_status") in {
             "live",
             "cached",
             "demo",
             "static",
         }:
-
             observation = result.get("observation") or {}
-
             facts = _facts(
                 domain,
                 observation,
@@ -114,11 +137,6 @@ def synthesize_answer(
                 parts.append(
                     result.get("summary", "")
                 )
-
-        # -----------------------------------------------------
-        # Unavailable evidence
-        # -----------------------------------------------------
-
         else:
             parts.append(
                 f"{domain.title()} data is unavailable: "
@@ -149,54 +167,24 @@ def synthesize_answer(
             and result["observation"].get("timestamp")
             for result in results.values()
         )
+
+        if has_forecast_evidence:
+            parts.append(
+                f"Forecast evidence matching “{time_expression}” was retrieved."
+            )
+        else:
+            parts.append(
+                f"“{time_expression}” was requested, but only current observations were retrieved."
+            )
+
+    # ---------------------------------------------------------
+    # Pending capability notice
+    # ---------------------------------------------------------
+
+    if pending:
         parts.append(
-            f"These are the available provider forecasts for {time_expression}; "
-            "conditions can change, so check the latest advisories before deciding."
-            if has_forecast_evidence
-            else f"You asked about {time_expression}, but no forecast evidence was returned for that time."
-        )
-
-    # ---------------------------------------------------------
-    # PFZ pending information
-    # ---------------------------------------------------------
-
-    if "pfz" in pending:
-        parts.append(
-            "PFZ information is unavailable because no current authorized advisory is loaded. Ask ORCA can refresh the official INCOIS source when network access is available."
-        )
-
-    # ---------------------------------------------------------
-    # Other pending capabilities
-    # ---------------------------------------------------------
-
-    other_pending = [
-        name
-        for name in pending
-        if name not in {"pfz", "safety"}
-    ]
-
-    if other_pending:
-        parts.append(
-            "Pending capability: "
-            + ", ".join(other_pending)
-            + "."
-        )
-
-    # ---------------------------------------------------------
-    # Risk concerns
-    # ---------------------------------------------------------
-
-    concerns = [
-        concern
-        for result in results.values()
-        if isinstance(result, dict)
-        for concern in result.get("concerns", [])
-    ]
-
-    if concerns:
-        parts.append(
-            "Risk factors: "
-            + "; ".join(concerns)
+            "Some requested capability domains remain pending: "
+            + ", ".join(pending)
             + "."
         )
 
@@ -208,15 +196,16 @@ def synthesize_answer(
     # ---------------------------------------------------------
 
     if isinstance(decision, dict) and not (context.get("decision_type") == "pfz" and decision.get("assessment")):
-        parts.append(
-            "Decision intelligence: "
-            + str(
-                decision.get(
-                    "assessment",
-                    "No decision assessment available.",
+        if context.get("decision_type") not in {"anomaly", "simulation"}:
+            parts.append(
+                "Decision intelligence: "
+                + str(
+                    decision.get(
+                        "assessment",
+                        "No decision assessment available.",
+                    )
                 )
             )
-        )
 
         if decision.get("unavailable_data"):
             parts.append(
@@ -226,7 +215,7 @@ def synthesize_answer(
             )
 
     # ---------------------------------------------------------
-    # Telugu & Hindi response
+    # Regional Languages (Telugu, Hindi, Tamil)
     # ---------------------------------------------------------
 
     lang_lower = language.lower()
@@ -262,10 +251,6 @@ def synthesize_answer(
             location_name=place,
             decision=decision,
         )
-
-    # ---------------------------------------------------------
-    # Unsupported language
-    # ---------------------------------------------------------
 
     if lang_lower not in {"en", "en-in"}:
         parts.append(
@@ -372,11 +357,17 @@ def _hindi_answer(
     status = status_map.get(level, "अज्ञात")
     loc_suffix = f" [{location_name}]" if location_name else ""
 
-    opening = (
-        f"ORCA का संयुक्त समुद्री जोखिम आकलन{loc_suffix}: {status}।"
-        if not incomplete
-        else f"ORCA का सुरक्षा आकलन{loc_suffix} सीमित है।"
-    )
+    is_sim = isinstance(decision, dict) and bool(decision.get("scenario_simulation"))
+
+    if is_sim:
+        sim = decision["scenario_simulation"]
+        opening = f"🧪 ORCA समुद्री परिदृश्य सिमुलेशन रिपोर्ट{loc_suffix}: {sim.get('scenario_summary')}"
+    else:
+        opening = (
+            f"ORCA का संयुक्त समुद्री जोखिम आकलन{loc_suffix}: {status}।"
+            if not incomplete
+            else f"ORCA का सुरक्षा आकलन{loc_suffix} सीमित है।"
+        )
 
     facts = []
     for domain, label in (("ocean", "🌊 समुद्री आंकड़े"), ("weather", "🌤️ मौसम आंकड़े")):
@@ -389,12 +380,36 @@ def _hindi_answer(
             facts.append(f"{label}: डेटा उपलब्ध नहीं है।")
 
     guidance = []
-    if level == "low":
-        guidance.append("💡 सलाह: तटीय गतिविधियां, नौकायन और मछली पकड़ने के लिए समुद्र अनुकूल है।")
-    elif level == "moderate":
-        guidance.append("💡 सलाह: समुद्र में गतिविधियां करते समय सावधानी बरतें और मौसम अपडेट पर नजर रखें।")
-    elif level in {"high", "critical"}:
-        guidance.append("⚠️ चेतावनी: समुद्र में जाने से बचें। तेज हवाएं और ऊंची लहरें सक्रिय हैं।")
+    if is_sim:
+        sim = decision["scenario_simulation"]
+        sim_msi = sim.get("simulated", {}).get("msi", {})
+        guidance.append(f"🛡️ अनुमानित समुद्री सुरक्षा सूचकांक (MSI): {sim_msi.get('score')}/100 ({sim_msi.get('tier_label')}), बदलाव: {sim.get('msi_delta', 0):+d} अंक।")
+        vessels = sim.get("vessel_advisories", [])
+        if vessels:
+            guidance.append("नाव/नौका परामर्श: " + "; ".join(f"{v['category']}: {v['status']} ({v['advisory']})" for v in vessels))
+        species = sim.get("species_impacts", [])
+        disrupted = [s for s in species if s.get("severity") in {"high", "critical"}]
+        if disrupted:
+            guidance.append("मत्स्य फैलाव चेतावनी: " + "; ".join(f"{s['species'].split(' (')[0]}: {s['impact']} {s['catch_projection']}" for s in disrupted))
+        port = sim.get("port_impact")
+        if isinstance(port, dict):
+            guidance.append(f"बंदरगाह स्थिति: {port.get('status')} - {port.get('advisory')}")
+    elif isinstance(decision, dict):
+        msi = decision.get("marine_safety_index")
+        if isinstance(msi, dict) and msi.get("score") is not None:
+            guidance.append(f"🛡️ समुद्री सुरक्षा सूचकांक (MSI): {msi['score']}/100 ({msi.get('tier_label', '')})")
+
+        tide = decision.get("tide")
+        if isinstance(tide, dict) and tide.get("status") == "available":
+            guidance.append(f"🌊 ज्वार-भाटा: {tide.get('tide_state')} (जल स्तर: {tide.get('current_height_m')}m)")
+
+    if not is_sim:
+        if level == "low":
+            guidance.append("💡 सलाह: तटीय गतिविधियां, नौकायन और मछली पकड़ने के लिए समुद्र अनुकूल है।")
+        elif level == "moderate":
+            guidance.append("💡 सलाह: समुद्र में गतिविधियां करते समय सावधानी बरतें और मौसम अपडेट पर नजर रखें।")
+        elif level in {"high", "critical"}:
+            guidance.append("⚠️ चेतावनी: समुद्र में जाने से बचें। तेज हवाएं और ऊंची लहरें सक्रिय हैं।")
 
     if isinstance(decision, dict) and decision.get("assessment"):
         guidance.append(f"📌 निर्णय विश्लेषण: {decision.get('assessment')}")
@@ -434,11 +449,17 @@ def _telugu_answer(
     status = status_map.get(level, "అజ్ఞాతం")
     loc_suffix = f" [{location_name}]" if location_name else ""
 
-    opening = (
-        f"ORCA సముద్ర ప్రమాద అంచనా{loc_suffix}: {status}."
-        if not incomplete
-        else f"ORCA భద్రతా అంచనా{loc_suffix} పరిమితంగా ఉంది."
-    )
+    is_sim = isinstance(decision, dict) and bool(decision.get("scenario_simulation"))
+
+    if is_sim:
+        sim = decision["scenario_simulation"]
+        opening = f"🧪 ORCA సముద్ర దృశ్య సిమ్యులేషన్ నివేదిక{loc_suffix}: {sim.get('scenario_summary')}"
+    else:
+        opening = (
+            f"ORCA సముద్ర ప్రమాద అంచనా{loc_suffix}: {status}."
+            if not incomplete
+            else f"ORCA భద్రతా అంచనా{loc_suffix} పరిమితంగా ఉంది."
+        )
 
     facts = []
     for domain, label in (("ocean", "🌊 సముద్ర వివరాలు"), ("weather", "🌤️ వాతావరణ వివరాలు")):
@@ -451,12 +472,36 @@ def _telugu_answer(
             facts.append(f"{label}: సమాచారం అందుబాటులో లేదు.")
 
     guidance = []
-    if level == "low":
-        guidance.append("💡 సలహా: తీరప్రాంత కార్యకలాపాలు, పడవ ప్రయాణం మరియు చేపల వేటకు సముద్రం అనుకూలంగా ఉంది.")
-    elif level == "moderate":
-        guidance.append("💡 సలహా: సముద్రంలో కార్యకలాపాలు నిర్వహించేటప్పుడు జాగ్రత్త వహించండి. చిన్న పడవలు అప్రమత్తంగా ఉండాలి.")
-    elif level in {"high", "critical"}:
-        guidance.append("⚠️ హెచ్చరిక: సముద్రంలోకి వెళ్లవద్దు. ఈదురు గాలులు మరియు ఎత్తైన అలలు ఉన్నాయి.")
+    if is_sim:
+        sim = decision["scenario_simulation"]
+        sim_msi = sim.get("simulated", {}).get("msi", {})
+        guidance.append(f"🛡️ అంచనా వేసిన సముద్ర భద్రతా సూచిక (MSI): {sim_msi.get('score')}/100 ({sim_msi.get('tier_label')}), మార్పు: {sim.get('msi_delta', 0):+d} పాయింట్లు.")
+        vessels = sim.get("vessel_advisories", [])
+        if vessels:
+            guidance.append("పడవ కార్యకలాపాల సలహా: " + "; ".join(f"{v['category']}: {v['status']} ({v['advisory']})" for v in vessels))
+        species = sim.get("species_impacts", [])
+        disrupted = [s for s in species if s.get("severity") in {"high", "critical"}]
+        if disrupted:
+            guidance.append("చేపల వలసల హెచ్చరిక: " + "; ".join(f"{s['species'].split(' (')[0]}: {s['impact']} {s['catch_projection']}" for s in disrupted))
+        port = sim.get("port_impact")
+        if isinstance(port, dict):
+            guidance.append(f"ఓడరేవు స్థితి: {port.get('status')} - {port.get('advisory')}")
+    elif isinstance(decision, dict):
+        msi = decision.get("marine_safety_index")
+        if isinstance(msi, dict) and msi.get("score") is not None:
+            guidance.append(f"🛡️ సముద్ర భద్రతా సూచిక (MSI): {msi['score']}/100 ({msi.get('tier_label', '')})")
+
+        tide = decision.get("tide")
+        if isinstance(tide, dict) and tide.get("status") == "available":
+            guidance.append(f"🌊 పోటు-పాటు (Tide): {tide.get('tide_state')} (స్థాయి: {tide.get('current_height_m')}m)")
+
+    if not is_sim:
+        if level == "low":
+            guidance.append("💡 సలహా: తీరప్రాంత కార్యకలాపాలు, పడవ ప్రయాణం మరియు చేపల వేటకు సముద్రం అనుకూలంగా ఉంది.")
+        elif level == "moderate":
+            guidance.append("💡 సలహా: సముద్రంలో కార్యకలాపాలు నిర్వహించేటప్పుడు జాగ్రత్త వహించండి. చిన్న పడవలు అప్రమత్తంగా ఉండాలి.")
+        elif level in {"high", "critical"}:
+            guidance.append("⚠️ హెచ్చరిక: సముద్రంలోకి వెళ్లవద్దు. ఈదురు గాలులు మరియు ఎత్తైన అలలు ఉన్నాయి.")
 
     if isinstance(decision, dict) and decision.get("assessment"):
         guidance.append(f"📌 విశ్లేషణ: {decision.get('assessment')}")
@@ -498,11 +543,17 @@ def _tamil_answer(
     status = status_map.get(level, "தெரியவில்லை")
     loc_suffix = f" [{location_name}]" if location_name else ""
 
-    opening = (
-        f"ORCA கடல்சார் இடர் மதிப்பீடு{loc_suffix}: {status}."
-        if not incomplete
-        else f"ORCA பாதுகாப்பு மதிப்பீடு{loc_suffix} வரம்பிற்குட்பட்டது."
-    )
+    is_sim = isinstance(decision, dict) and bool(decision.get("scenario_simulation"))
+
+    if is_sim:
+        sim = decision["scenario_simulation"]
+        opening = f"🧪 ORCA கடல்சார் மாதிரி உருவகப்படுத்தல் அறிக்கை{loc_suffix}: {sim.get('scenario_summary')}"
+    else:
+        opening = (
+            f"ORCA கடல்சார் இடர் மதிப்பீடு{loc_suffix}: {status}."
+            if not incomplete
+            else f"ORCA பாதுகாப்பு மதிப்பீடு{loc_suffix} வரம்பிற்குட்பட்டது."
+        )
 
     facts = []
     for domain, label in (("ocean", "🌊 கடல் விவரங்கள்"), ("weather", "🌤️ வானிலை விவரங்கள்")):
@@ -515,12 +566,36 @@ def _tamil_answer(
             facts.append(f"{label}: தரவு கிடைக்கவில்லை.")
 
     guidance = []
-    if level == "low":
-        guidance.append("💡 ஆலோசனை: கடலோர நடவடிக்கைகள், படகு போக்குவரத்து மற்றும் மீன்பிடித்தலுக்கு கடல் சாதகமாக உள்ளது.")
-    elif level == "moderate":
-        guidance.append("💡 ஆலோசனை: கடலில் செயல்படும் போது எச்சரிக்கையுடன் இருக்கவும். சிறிய படகுகள் விழிப்புடன் செயல்படவும்.")
-    elif level in {"high", "critical"}:
-        guidance.append("⚠️ எச்சரிக்கை: கடலுக்குள் செல்ல வேண்டாம். கடுமையான காற்று மற்றும் உயர்ந்த அலைகள் உள்ளன.")
+    if is_sim:
+        sim = decision["scenario_simulation"]
+        sim_msi = sim.get("simulated", {}).get("msi", {})
+        guidance.append(f"🛡️ கணிக்கப்பட்ட கடல் பாதுகாப்பு குறியீடு (MSI): {sim_msi.get('score')}/100 ({sim_msi.get('tier_label')}), மாற்றம்: {sim.get('msi_delta', 0):+d} புள்ளிகள்.")
+        vessels = sim.get("vessel_advisories", [])
+        if vessels:
+            guidance.append("படகு செயல்பாட்டு வழிகாட்டுதல்: " + "; ".join(f"{v['category']}: {v['status']} ({v['advisory']})" for v in vessels))
+        species = sim.get("species_impacts", [])
+        disrupted = [s for s in species if s.get("severity") in {"high", "critical"}]
+        if disrupted:
+            guidance.append("மீன் வள இடம்பெயர்வு எச்சரிக்கை: " + "; ".join(f"{s['species'].split(' (')[0]}: {s['impact']} {s['catch_projection']}" for s in disrupted))
+        port = sim.get("port_impact")
+        if isinstance(port, dict):
+            guidance.append(f"துறைமுக நிலை: {port.get('status')} - {port.get('advisory')}")
+    elif isinstance(decision, dict):
+        msi = decision.get("marine_safety_index")
+        if isinstance(msi, dict) and msi.get("score") is not None:
+            guidance.append(f"🛡️ கடல் பாதுகாப்பு குறியீடு (MSI): {msi['score']}/100 ({msi.get('tier_label', '')})")
+
+        tide = decision.get("tide")
+        if isinstance(tide, dict) and tide.get("status") == "available":
+            guidance.append(f"🌊 ஓதம் (Tide): {tide.get('tide_state')} (அளவு: {tide.get('current_height_m')}m)")
+
+    if not is_sim:
+        if level == "low":
+            guidance.append("💡 ஆலோசனை: கடலோர நடவடிக்கைகள், படகு போக்குவரத்து மற்றும் மீன்பிடித்தலுக்கு கடல் சாதகமாக உள்ளது.")
+        elif level == "moderate":
+            guidance.append("💡 ஆலோசனை: கடலில் செயல்படும் போது எச்சரிக்கையுடன் இருக்கவும். சிறிய படகுகள் விழிப்புடன் செயல்படவும்.")
+        elif level in {"high", "critical"}:
+            guidance.append("⚠️ எச்சரிக்கை: கடலுக்குள் செல்ல வேண்டாம். கடுமையான காற்று மற்றும் உயர்ந்த அலைகள் உள்ளன.")
 
     if isinstance(decision, dict) and decision.get("assessment"):
         guidance.append(f"📌 முடிவு பகுப்பாய்வு: {decision.get('assessment')}")

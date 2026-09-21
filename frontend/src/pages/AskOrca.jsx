@@ -7,6 +7,7 @@ import { askOrca } from '../services/orcaService'
 import { LOCATION_COORDINATES } from '../services/openMeteoService'
 import { speakResponse, stopSpeech } from '../utils/speech'
 import { buildSpokenSummary } from '../utils/speechSummary'
+import ScenarioSimulatorModal from '../components/chat/ScenarioSimulatorModal'
 import './AskOrca.css'
 
 const PREFERENCES_KEY = 'orca-dashboard-preferences'
@@ -58,6 +59,7 @@ export default function AskOrca({ navigate }) {
   const [conversationId, setConversationId] = useState(newId)
   const [isLocationOpen, setIsLocationOpen] = useState(false)
   const [browserLocation, setBrowserLocation] = useState(null)
+  const [isSimulatorOpen, setIsSimulatorOpen] = useState(false)
 
   // Active Location state synced with Dashboard preference
   const [location, setLocation] = useState(() => {
@@ -197,6 +199,14 @@ export default function AskOrca({ navigate }) {
     send(promptQuery)
   }
 
+  const handleApplyScenarioToChat = (promptText, newLoc) => {
+    if (newLoc) {
+      setLocation(newLoc)
+    }
+    setQuery(promptText)
+    send(promptText)
+  }
+
   return (
     <section className="ask-orca-command-center font-sans">
       {/* 1. TOP HEADER */}
@@ -207,6 +217,7 @@ export default function AskOrca({ navigate }) {
         locationLabel={location?.label}
         onToggleLocation={() => setIsLocationOpen((prev) => !prev)}
         isLocationOpen={isLocationOpen}
+        onOpenSimulator={() => setIsSimulatorOpen(true)}
       />
 
       {/* 2. LOCATION CONTEXT PANEL */}
@@ -253,6 +264,15 @@ export default function AskOrca({ navigate }) {
         onSend={() => send()}
         loading={loading}
         language={language}
+      />
+
+      {/* 5. WHAT-IF SCENARIO SIMULATOR MODAL */}
+      <ScenarioSimulatorModal
+        isOpen={isSimulatorOpen}
+        onClose={() => setIsSimulatorOpen(false)}
+        initialLocation={location}
+        onApplyScenarioToChat={handleApplyScenarioToChat}
+        onNavigateMap={(path) => navigate && navigate(path)}
       />
     </section>
   )

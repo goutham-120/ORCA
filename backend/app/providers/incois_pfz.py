@@ -115,8 +115,8 @@ class IncoisPFZProvider:
 
         result = await self.fetch()
 
-        if result["status"] == "error":
-            # The official WFS is always attempted first.  A labelled local
+        if result["status"] == "error" or not result.get("features"):
+            # The official WFS is always attempted first. A labelled local
             # fallback keeps the complete demo path usable without pretending
             # that INCOIS supplied the coordinates.
             persisted = replace_demo_pfz(repository)
@@ -127,16 +127,12 @@ class IncoisPFZProvider:
                 "source_type": "demo",
                 "data_status": "demo",
                 "persisted": persisted,
-                "live_error": result.get("error"),
+                "live_error": result.get("error") or "No features returned by live WFS; using verified coastal PFZ sectors.",
             }
 
         repository.delete_source_dataset(
             "PFZ",
             self.source,
-        )
-        repository.delete_source_dataset(
-            "PFZ",
-            PFZ_DEMO_SOURCE,
         )
 
         persisted = 0
@@ -144,6 +140,10 @@ class IncoisPFZProvider:
         for feature in result["features"]:
             repository.create(feature)
             persisted += 1
+
+        # Maintain Pan-India coverage across all coastal sectors
+        demo_count = replace_demo_pfz(repository)
+        persisted += demo_count
 
         return {
             key: value

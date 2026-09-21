@@ -1,15 +1,18 @@
 """Deterministic decision products built from normalized ORCA evidence.
 
-Risk rules deliberately use categorical thresholds: waves (m) 1.5/2.5/4,
-wind (m/s) 8/13.9/20.8, and precipitation (mm) 5/20.  Overall risk is the
-highest evidenced factor, never a fabricated probability. Missing inputs make
-an assessment partial (or unavailable when no required evidence exists).
+Risk rules use categorical thresholds combined with continuous Marine Safety Index (MSI):
+waves (m) 1.5/2.5/4, wind (m/s) 8/13.9/20.8, and precipitation (mm) 5/20.
+Missing inputs make an assessment partial (or unavailable when no required evidence exists).
 """
 from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any, Awaitable, Callable, Mapping
+from app.analysis.safety_index import compute_marine_safety_index
 from app.gis.geometry import distance_km, point
+from app.services.ecosystem_service import ecosystem_anomaly_service
+from app.services.simulation_service import scenario_simulator
 from app.services.spatial_query_service import SpatialQueryService
+from app.services.tide_service import tide_service
 from app.tools.gis_tools import GISTool
 from app.tools.ocean_tools import OceanTool
 from app.tools.weather_tools import WeatherTool
@@ -82,14 +85,39 @@ class DecisionService:
         status = "available" if not missing else "partial" if evidence else "unavailable"
         risk = max(levels, key=lambda v: _ORDER[v]) if levels else "unavailable"
         assessment = f"Marine safety risk is {risk}." if status == "available" else ("Marine safety assessment is incomplete because " + ", ".join(missing) + " data is unavailable." if status == "partial" else "Marine safety assessment is unavailable because weather and marine observations are unavailable.")
-        return {"status": status, "risk_level": risk, "assessment": assessment, "factors": factors, "evidence": evidence, "warnings": ["Do not treat a partial assessment as a complete safety clearance."] if status != "available" else [], "unavailable_data": missing, "time": at}
+
+        # Continuous Marine Safety Index (MSI)
+        msi = compute_marine_safety_index(
+            wave_height_m=wave if isinstance(wave, (int, float)) else None,
+            wave_period_s=period if isinstance(period, (int, float)) else None,
+            wind_speed_mps=wind if isinstance(wind, (int, float)) else None,
+            precipitation_mm=rain if isinstance(rain, (int, float)) else None,
+            weather_condition=condition,
+        )
+
+        # Tidal Hydrodynamics
+        try:
+            tide_info = tide_service.predict_tide(location["latitude"], location["longitude"], at)
+        except Exception:
+            tide_info = None
+
+        return {
+            "status": status,
+            "risk_level": risk,
+            "assessment": assessment,
+            "factors": factors,
+            "evidence": evidence,
+            "warnings": ["Do not treat a partial assessment as a complete safety clearance."] if status != "available" else [],
+            "unavailable_data": missing,
+            "time": at,
+            "marine_safety_index": msi,
+            "tide": tide_info,
+        }
 
     def _records(self, names: tuple[str, ...], at: datetime | None = None) -> list[Any]:
         try:
             records = self.spatial.filter()
         except Exception:
-            # A missing/migrating spatial store is an unavailable source, never a
-            # decision-service 500 or an implied "no hazard/PFZ" conclusion.
             return []
         reference_time = at or datetime.now(timezone.utc)
         return [
@@ -129,7 +157,6 @@ class DecisionService:
 
     @staticmethod
     def _pfz_suitability(pfz: Mapping[str, Any], safety: Mapping[str, Any]) -> str:
-        """Combine authorized PFZ evidence with safety evidence without overclaiming."""
         if not pfz.get("features"):
             return "unavailable"
         if safety.get("risk_level") in {"high", "critical"}:
@@ -153,25 +180,120 @@ class DecisionService:
         return {"status":"available","hazard_status":status,"risk_level":"high" if cyclones else "low","assessment":("Relevant cyclone evidence was found within 500 km." if cyclones else "No relevant cyclone feature was found within 500 km in the available cyclone dataset."),"cyclones":cyclones,"evidence":[{"source":c["source"],"data_type":"cyclone_position","timestamp":c["observed_at"],"location":location,"value":c["distance_km"],"unit":"km","freshness":"loaded"} for c in cyclones],"warnings":[],"unavailable_data":[]}
 
     async def anomaly(self, location: dict[str, Any], at: datetime | None = None) -> dict[str, Any]:
-        _, ocean = await self._conditions(location, at); wave=(ocean.get("observation") or {}).get("wave_height_m")
-        if not isinstance(wave,(int,float)): return {"status":"unavailable","assessment":"Wave source is unavailable, so marine anomaly assessment cannot be made.","anomaly_status":"source_unavailable","evidence":[],"warnings":[],"unavailable_data":["wave height"]}
-        ev=self._evidence(ocean,"wave_height",location,"wave_height_m","m")
-        return {"status":"partial","assessment":("Notable high-wave condition (>= 2.5 m) detected." if wave >= 2.5 else "No operational high-wave condition detected. A true anomaly needs historical reference data."),"anomaly_status":"notable_condition" if wave >= 2.5 else "insufficient_reference_data","evidence":[ev],"warnings":["Historical/reference baseline is not configured; this is a threshold condition, not a statistical anomaly."],"unavailable_data":["historical wave reference"]}
+        weather, ocean = await self._conditions(location, at)
+        wave = (ocean.get("observation") or {}).get("wave_height_m")
+        sst = (ocean.get("observation") or {}).get("sea_surface_temperature_c")
+        wind = (weather.get("observation") or {}).get("wind_speed_mps")
 
-    async def route(self, origin: dict[str,Any], destination: dict[str,Any], route_geometry: dict[str,Any] | None = None, at: datetime | None = None) -> dict[str,Any]:
-        self.gis.validate_coordinate(origin["latitude"],origin["longitude"]); self.gis.validate_coordinate(destination["latitude"],destination["longitude"])
-        geometry=route_geometry or {"type":"LineString","coordinates":[[origin["longitude"],origin["latitude"]],[destination["longitude"],destination["latitude"]]]}
-        # Validate supplied geometry through existing GIS primitive.
-        hazards=self._records(("hazard","hazards","cyclone","ibtracs")); hits=[]
+        if not isinstance(wave, (int, float)):
+            return {
+                "status": "unavailable",
+                "assessment": "Wave source is unavailable, so marine anomaly assessment cannot be made.",
+                "anomaly_status": "source_unavailable",
+                "evidence": [],
+                "warnings": [],
+                "unavailable_data": ["wave height"],
+            }
+
+        ev = self._evidence(ocean, "wave_height", location, "wave_height_m", "m")
+
+        # Deep Ecosystem & Productivity Diagnostics
+        eco_diag = ecosystem_anomaly_service.diagnose_productivity_decline(
+            latitude=location["latitude"],
+            longitude=location["longitude"],
+            current_sst=sst if isinstance(sst, (int, float)) else None,
+            wind_speed_mps=wind if isinstance(wind, (int, float)) else None,
+            observed_at=at,
+        )
+
+        wave_condition = "Notable high-wave condition (>= 2.5 m) detected." if wave >= 2.5 else "No operational high-wave condition detected. A true anomaly needs historical reference data."
+        combined_assessment = f"{wave_condition} {eco_diag['diagnosis_summary']}"
+
+        return {
+            "status": "partial",
+            "assessment": combined_assessment,
+            "anomaly_status": "notable_condition" if wave >= 2.5 else "insufficient_reference_data",
+            "evidence": [ev] if ev else [],
+            "warnings": ["Historical/reference baseline is not configured; this is a threshold condition, not a statistical anomaly."],
+            "unavailable_data": ["historical wave reference"],
+            "ecosystem_diagnosis": eco_diag,
+        }
+
+    async def simulation(self, location: dict[str, Any], perturbations: dict[str, Any] | None = None, at: datetime | None = None) -> dict[str, Any]:
+        sim_res = await scenario_simulator.simulate(location, perturbations or {}, at)
+        baseline = sim_res["baseline"]
+        sim = sim_res["simulated"]
+        ev = [
+            {"source": "Scenario Simulation (Baseline)", "data_type": "baseline_conditions", "location": location, "value": f"SST={baseline['sst_c']}°C, Wave={baseline['wave_height_m']}m, Wind={baseline['wind_speed_mps']}m/s", "freshness": "computed"},
+            {"source": "Scenario Simulation (Simulated)", "data_type": "simulated_conditions", "location": location, "value": f"SST={sim['sst_c']}°C, Wave={sim['wave_height_m']}m, Wind={sim['wind_speed_mps']}m/s, MSI={sim['msi']['score']}", "freshness": "simulated"},
+        ]
+        return {
+            "status": "available",
+            "assessment": sim_res["scenario_summary"],
+            "risk_level": "high" if sim["msi"]["tier"] == "hazardous" else "moderate" if sim["msi"]["tier"] == "marginal" else "low",
+            "scenario_simulation": sim_res,
+            "marine_safety_index": sim["msi"],
+            "evidence": ev,
+            "warnings": [f"This is a hypothetical simulation based on applied perturbations: {sim_res['perturbations_applied']}."],
+            "unavailable_data": [],
+        }
+
+    async def route(self, origin: dict[str, Any], destination: dict[str, Any], route_geometry: dict[str, Any] | None = None, at: datetime | None = None) -> dict[str, Any]:
+        self.gis.validate_coordinate(origin["latitude"], origin["longitude"])
+        self.gis.validate_coordinate(destination["latitude"], destination["longitude"])
+        from app.services.route_analysis_service import RouteAnalysisService
+        router_svc = RouteAnalysisService()
+        detailed = await router_svc.analyze_route(
+            origin_lat=origin["latitude"],
+            origin_lon=origin["longitude"],
+            dest_lat=destination["latitude"],
+            dest_lon=destination["longitude"],
+        )
+
+        direct_geometry = route_geometry or {
+            "type": "LineString",
+            "coordinates": [[origin["longitude"], origin["latitude"]], [destination["longitude"], destination["latitude"]]],
+        }
+        geometry = detailed.get("route_geometry") if detailed.get("alternative_used") else direct_geometry
+
+        hazards = self._records(("hazard", "hazards", "cyclone", "ibtracs"))
+        hits = []
         for r in hazards:
-            if r.geometry and self._route_intersects(geometry, r.geometry): hits.append({"feature_id":r.id,"source":r.source,"geometry":r.geometry,"reason":"Route intersects loaded hazard feature."})
-        distance=self.gis.distance_between(point(origin["latitude"],origin["longitude"]),point(destination["latitude"],destination["longitude"]))
-        status="partial" if not hazards else "available"; risk="high" if hits else ("low" if hazards else "unavailable")
-        return {"status":status,"assessment":("Route intersects hazard feature(s)." if hits else "No loaded hazard feature intersects the route." if hazards else "Route geometry is valid, but hazard data is unavailable; no safety conclusion can be made."),"risk_level":risk,"route_geometry":geometry,"distance_km":round(distance,2),"hazard_segments":hits,"evidence":[{"source":x["source"],"data_type":"route_hazard_intersection","value":x["feature_id"],"freshness":"loaded"} for x in hits],"warnings":["This is a supplied/direct geometry analysis, not navigational routing.","Safer alternative generation is not supported by current routing infrastructure."],"unavailable_data":[] if hazards else ["route hazard data"],"safer_alternatives_supported":False}
+            if r.geometry and (self._route_intersects(direct_geometry, r.geometry) or self._route_intersects(geometry, r.geometry)):
+                hits.append({"feature_id": r.id, "source": r.source, "geometry": r.geometry, "reason": "Route intersects loaded hazard feature."})
+
+        distance = detailed.get("route_distance_km") or round(self.gis.distance_between(point(origin["latitude"], origin["longitude"]), point(destination["latitude"], destination["longitude"])), 2)
+        status = "partial" if not hazards else "available"
+        risk = "high" if (hits and not detailed.get("alternative_used")) else ("moderate" if detailed.get("alternative_used") else ("low" if hazards else "unavailable"))
+
+        assessment = detailed.get("explanation") or (
+            "Route intersects hazard feature(s)." if hits
+            else "No loaded hazard feature intersects the route." if hazards
+            else "Route geometry is valid, but hazard data is unavailable; no safety conclusion can be made."
+        )
+
+        return {
+            "status": status,
+            "assessment": assessment,
+            "risk_level": risk,
+            "route_geometry": geometry,
+            "distance_km": distance,
+            "hazard_segments": hits,
+            "waypoints": detailed.get("waypoints", []),
+            "estimated_travel_time": detailed.get("estimated_travel_time"),
+            "marine_safety_index": detailed.get("marine_safety_index"),
+            "evidence": [{"source": x["source"], "data_type": "route_hazard_intersection", "value": x["feature_id"], "freshness": "loaded"} for x in hits],
+            "warnings": [
+                "This is a supplied/direct geometry analysis, not navigational routing." if not detailed.get("alternative_used") else "Route utilizes calculated navigational waypoint bypass.",
+                "Safer alternative generation is not supported by current routing infrastructure." if not detailed.get("alternative_used") and not hazards else "Navigational bypass active.",
+            ],
+            "unavailable_data": [] if hazards else ["route hazard data"],
+            "safer_alternatives_supported": detailed.get("alternative_used", False),
+            "detailed_analysis": detailed,
+        }
 
     @staticmethod
     def _geometry_centre(geometry: Mapping[str, Any]) -> list[float] | None:
-        """Use a Point directly; otherwise calculate a bbox centre without new GIS data."""
         if geometry.get("type") == "Point" and isinstance(geometry.get("coordinates"), list):
             return geometry["coordinates"]
         try:
@@ -189,11 +311,13 @@ class DecisionService:
         try:
             return self.gis.geometries_intersect(route, feature)
         except RuntimeError:
-            # Dependency-light fallback only for Point features; complex geometry
-            # still needs the existing GIS/Shapely primitive.
             if route.get("type") != "LineString" or feature.get("type") != "Point": return False
             coords, candidate = route.get("coordinates", []), feature.get("coordinates", [])
-            if len(coords) != 2 or len(candidate) != 2: return False
-            (x1,y1),(x2,y2)=coords; x,y=candidate
-            cross=abs((x-x1)*(y2-y1)-(y-y1)*(x2-x1))
-            return cross < 1e-6 and min(x1,x2) <= x <= max(x1,x2) and min(y1,y2) <= y <= max(y1,y2)
+            if len(candidate) != 2 or len(coords) < 2: return False
+            x, y = candidate
+            for i in range(len(coords) - 1):
+                (x1, y1), (x2, y2) = coords[i], coords[i+1]
+                cross = abs((x - x1) * (y2 - y1) - (y - y1) * (x2 - x1))
+                if cross < 1e-5 and min(x1, x2) - 1e-6 <= x <= max(x1, x2) + 1e-6 and min(y1, y2) - 1e-6 <= y <= max(y1, y2) + 1e-6:
+                    return True
+            return False

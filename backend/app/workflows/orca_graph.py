@@ -48,7 +48,7 @@ class OrcaWorkflow:
     async def _understand(self,state: OrcaState)->dict[str,Any]: return {}
     async def _plan(self,state: OrcaState)->dict[str,Any]:
         ctx=state["context"]; p=ctx.parsed_query; domains=[d for d in p.requested_domains if d in {"ocean","weather","gis","pfz"}]
-        fallback=QueryPlan(intent=p.intent,requested_domains=domains,location_required=bool(domains),time_expression=p.time_expression,decision_type=p.decision_type if p.decision_type in {"safety", "fishing", "pfz", "hazard", "route", "anomaly"} else None,subtasks=[Subtask(id=f"{d}-evidence",domain=d,purpose=f"retrieve {d} evidence",evidence_required=[f"{d} evidence"]) for d in domains if d in self._agents],response_focus=self._persona_focus(str(ctx.metadata.get("persona","general_user"))))
+        fallback=QueryPlan(intent=p.intent,requested_domains=domains,location_required=bool(domains),time_expression=p.time_expression,decision_type=p.decision_type if p.decision_type in {"safety", "fishing", "pfz", "hazard", "route", "anomaly", "simulation"} else None,subtasks=[Subtask(id=f"{d}-evidence",domain=d,purpose=f"retrieve {d} evidence",evidence_required=[f"{d} evidence"]) for d in domains if d in self._agents],response_focus=self._persona_focus(str(ctx.metadata.get("persona","general_user"))))
         llm_plan=await self.llm.plan(p.normalized,fallback,str(ctx.metadata.get("persona","general_user")))
         plan=fallback
         if llm_plan and set(llm_plan.requested_domains) == set(domains):
@@ -153,6 +153,9 @@ class OrcaWorkflow:
             decision=await self.decision_service.hazard(location, at)
         elif decision_type == "anomaly":
             decision=await self.decision_service.anomaly(location, at)
+        elif decision_type == "simulation":
+            perturbations = getattr(state["context"].parsed_query, "perturbations", None)
+            decision=await self.decision_service.simulation(location, perturbations, at)
         else:
             decision=None
         return {"decision": decision}

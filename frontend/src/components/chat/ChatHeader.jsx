@@ -14,7 +14,8 @@ export default function ChatHeader({
   onClearSession,
   locationLabel,
   onToggleLocation,
-  isLocationOpen
+  isLocationOpen,
+  onOpenSimulator
 }) {
   const [systemOnline, setSystemOnline] = useState(true)
   const [isLangOpen, setIsLangOpen] = useState(false)
@@ -152,6 +153,19 @@ export default function ChatHeader({
             </ul>
           )}
         </div>
+
+        {/* Scenario Simulator Button */}
+        {onOpenSimulator && (
+          <button
+            type="button"
+            className="header-action-btn simulator-trigger-btn font-inter"
+            onClick={onOpenSimulator}
+            title="Launch What-If Marine Scenario Simulator"
+          >
+            <span className="icon">🧪</span>
+            <span className="btn-label">Scenario Simulator</span>
+          </button>
+        )}
 
         {/* New Session Button */}
         <button
