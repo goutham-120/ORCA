@@ -135,7 +135,12 @@ export default function ScenarioSimulatorModal({
 
   const handleInspectMap = () => {
     if (onNavigateMap) {
-      onNavigateMap(`/map?latitude=${activePort.lat}&longitude=${activePort.lng}&label=${encodeURIComponent(activePort.name)}`)
+      const conditionParam = stormCondition !== 'normal' ? `&condition=${stormCondition}` : ''
+      const waveParam = `&delta_wave=${deltaWave}`
+      const windParam = `&wind_kts=${windKnots}`
+      const presetParam = activePreset ? `&preset=${activePreset}` : ''
+      const scenarioParam = (stormCondition === 'cyclone' || activePreset === 'pre_cyclone') ? '&scenario=cyclone' : ''
+      onNavigateMap(`/map?latitude=${activePort.lat}&longitude=${activePort.lng}&label=${encodeURIComponent(activePort.name)}${scenarioParam}${presetParam}${conditionParam}${waveParam}${windParam}`)
     }
     onClose()
   }

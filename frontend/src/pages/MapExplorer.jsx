@@ -116,6 +116,21 @@ function findNearestPFZCoordinate(origin, layers) {
   return nearest
 }
 
+function makeCircleCoords(centerLon, centerLat, radiusKm, numPoints = 28) {
+  const latRad = (centerLat * Math.PI) / 180
+  const dLat = radiusKm / 111.0
+  const dLon = radiusKm / (111.0 * Math.max(0.1, Math.cos(latRad)))
+  const coords = []
+  for (let i = 0; i < numPoints; i++) {
+    const angle = (2.0 * Math.PI * i) / numPoints
+    const lon = Number((centerLon + dLon * Math.cos(angle)).toFixed(5))
+    const lat = Number((centerLat + dLat * Math.sin(angle)).toFixed(5))
+    coords.push([lon, lat])
+  }
+  coords.push(coords[0])
+  return coords
+}
+
 export default function MapExplorer({ navigate }) {
   const searchParams = useMemo(() => new URLSearchParams(window.location.search), [])
   const initialLatitudeValue = searchParams.get('latitude') || searchParams.get('lat')
@@ -127,6 +142,11 @@ export default function MapExplorer({ navigate }) {
     Boolean(initialLatitudeValue?.trim() && initialLongitudeValue?.trim()) &&
     Number.isFinite(initialLatitude) &&
     Number.isFinite(initialLongitude)
+
+  const scenarioParam = searchParams.get('scenario') || searchParams.get('condition') || searchParams.get('preset')
+  const [isSimulatedCycloneActive, setIsSimulatedCycloneActive] = useState(() => {
+    return scenarioParam === 'cyclone' || scenarioParam === 'pre_cyclone'
+  })
 
   const [locationId, setLocationId] = useState('chennai')
   const [layers, setLayers] = useState([])
@@ -342,6 +362,65 @@ export default function MapExplorer({ navigate }) {
       })
     return () => controller.abort()
   }, [fetchLayers])
+
+  const renderedLayers = useMemo(() => {
+    if (!isSimulatedCycloneActive || !Number.isFinite(activeLat) || !Number.isFinite(activeLon)) {
+      return layers
+    }
+
+    const cyclonePolygon = {
+      type: 'Feature',
+      id: 'simulated-cyclone-cone',
+      layer: 'hazards',
+      dataset: 'ORCA_SIMULATED_CYCLONE',
+      properties: {
+        id: 'simulated-cyclone-cone',
+        name: '🌀 SIMULATED CYCLONE DANGER CONE (Category-2 Storm Surge)',
+        layer: 'hazards',
+        severity: 'CRITICAL',
+        wind_knots: searchParams.get('wind_kts') || '45',
+        wave_surge_m: searchParams.get('delta_wave') || '3.8',
+        notice: 'Active What-If Simulation: Severe storm surge & hazardous sea state. Small craft prohibited.',
+      },
+      geometry: {
+        type: 'Polygon',
+        coordinates: [makeCircleCoords(activeLon + 0.18, activeLat + 0.1, 35.0)],
+      },
+    }
+
+    let hazardsFound = false
+    const next = layers.map((layer) => {
+      if (String(layer?.id || '').toLowerCase() === 'hazards') {
+        hazardsFound = true
+        const existingFeatures = Array.isArray(layer.features) ? layer.features : []
+        const hasSim = existingFeatures.some((f) => f?.id === 'simulated-cyclone-cone')
+        const features = hasSim ? existingFeatures : [cyclonePolygon, ...existingFeatures]
+        return {
+          ...layer,
+          enabled: true,
+          available: true,
+          feature_count: features.length,
+          features,
+        }
+      }
+      return layer
+    })
+
+    if (!hazardsFound) {
+      next.push({
+        id: 'hazards',
+        name: 'Hazards & Cyclones',
+        description: 'Active storm tracks, cyclone danger cones, and navigation hazards',
+        layer_type: 'vector',
+        available: true,
+        enabled: true,
+        feature_count: 1,
+        features: [cyclonePolygon],
+      })
+    }
+
+    return next
+  }, [layers, isSimulatedCycloneActive, activeLat, activeLon, searchParams])
 
   useEffect(() => {
     const handleCustomCoord = (event) => {
@@ -1172,6 +1251,53 @@ export default function MapExplorer({ navigate }) {
 
           <ComponentErrorBoundary name="Map Canvas">
             <div style={{ position: 'relative' }}>
+              {isSimulatedCycloneActive && (
+                <div
+                  className="simulated-cyclone-banner"
+                  style={{
+                    background: 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%)',
+                    color: '#ffffff',
+                    padding: '12px 18px',
+                    borderRadius: '8px',
+                    marginBottom: '14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    border: '1.5px solid #ef4444',
+                    boxShadow: '0 4px 12px rgba(220, 38, 38, 0.25)',
+                    flexWrap: 'wrap',
+                    gap: '10px'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontSize: '24px' }}>🌀</span>
+                    <div>
+                      <strong style={{ fontSize: '13px', display: 'block', letterSpacing: '0.02em' }}>
+                        ACTIVE SIMULATION: CYCLONIC STORM SURGE & HAZARD CONE (RED OVERLAY)
+                      </strong>
+                      <span style={{ fontSize: '12px', opacity: 0.95 }}>
+                        Displaying projected 35 km offshore cyclone hazard zone ({searchParams.get('wind_kts') || '45'} kts gale, +{searchParams.get('delta_wave') || '3.8'}m surge). Vessel navigation prohibited inside this perimeter.
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsSimulatedCycloneActive(false)}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.15)',
+                      color: '#ffffff',
+                      border: '1px solid rgba(255, 255, 255, 0.4)',
+                      borderRadius: '6px',
+                      padding: '5px 12px',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    ✕ Dismiss Simulation Overlay
+                  </button>
+                </div>
+              )}
               {liveNavigation.isActive && (
                 <LiveNavigationHUD
                   navigationData={liveNavigation.data}
@@ -1191,7 +1317,7 @@ export default function MapExplorer({ navigate }) {
               )}
               <MapCanvas
                 selectedLocation={selectedLocation}
-                layers={layers}
+                layers={renderedLayers}
                 routeGeometry={liveNavigation.data?.route?.route_geometry || detailedRoute.data?.route_geometry || routeGeometry}
                 detailedRouteStatus={liveNavigation.data?.route?.overall_status || detailedRoute.data?.overall_status || null}
                 radiusKm={Number(searchRadius) || 50}
@@ -1210,7 +1336,7 @@ export default function MapExplorer({ navigate }) {
           </ComponentErrorBoundary>
 
           <ComponentErrorBoundary name="Map Legend">
-            <MapLegend layers={layers} routeGeometry={routeGeometry} />
+            <MapLegend layers={renderedLayers} routeGeometry={routeGeometry} />
           </ComponentErrorBoundary>
 
           {/* NEAREST SUITABLE PFZ SEARCH CONTROLS & RESULTS PANEL */}
@@ -1795,7 +1921,7 @@ export default function MapExplorer({ navigate }) {
           </ComponentErrorBoundary>
           <ComponentErrorBoundary name="Map Layers Control">
             <MapLayersControl
-              layers={layers}
+              layers={renderedLayers}
               loading={layersState.loading}
               error={layersState.error}
               onToggleLayer={handleToggleLayer}
