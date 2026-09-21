@@ -138,6 +138,11 @@
   outline-offset: 2px;
 }
 
+.btn-nav {
+  padding: 6px 14px;
+  font-size: 0.85rem;
+}
+
 .btn-secondary {
   background-color: transparent;
   color: var(--sky-white);

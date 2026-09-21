@@ -2,7 +2,7 @@ import { useAuth } from '../hooks/useAuth'
 import './Home.css'
 
 export default function Home({ navigate }) {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
 
   const handleNav = (path) => {
     if (navigate) {
@@ -42,7 +42,7 @@ export default function Home({ navigate }) {
 
   return (
     <div className="orca-home-page">
-      {/* 1. MINIMAL NAVIGATION HEADER (LOCKED & UNTOUCHED) */}
+      {/* 1. MINIMAL NAVIGATION HEADER */}
       <header className="home-header">
         <div className="header-inner">
           <div
@@ -71,14 +71,41 @@ export default function Home({ navigate }) {
             >
               Ask ORCA
             </button>
-            {!user && (
-              <button
-                type="button"
-                className="nav-btn"
-                onClick={() => handleNav('/login')}
-              >
-                Sign In
-              </button>
+            {!user ? (
+              <>
+                <button
+                  type="button"
+                  className="nav-btn"
+                  onClick={() => handleNav('/login')}
+                >
+                  Sign In
+                </button>
+                <button
+                  type="button"
+                  className="btn-primary btn-nav"
+                  onClick={() => handleNav('/register')}
+                >
+                  Sign Up
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className="btn-primary btn-nav"
+                  onClick={() => handleNav('/dashboard')}
+                >
+                  Dashboard
+                </button>
+                <button
+                  type="button"
+                  className="nav-btn"
+                  onClick={logout}
+                  title="Sign out of current account"
+                >
+                  Sign Out
+                </button>
+              </>
             )}
           </nav>
         </div>
@@ -110,13 +137,22 @@ export default function Home({ navigate }) {
 
             <div className="hero-actions">
               {user ? (
-                <button
-                  type="button"
-                  className="btn-primary btn-large"
-                  onClick={() => handleNav('/ask-orca')}
-                >
-                  Get Started
-                </button>
+                <>
+                  <button
+                    type="button"
+                    className="btn-primary btn-large"
+                    onClick={() => handleNav('/dashboard')}
+                  >
+                    Open Dashboard
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary btn-large"
+                    onClick={() => handleNav('/ask-orca')}
+                  >
+                    Ask ORCA
+                  </button>
+                </>
               ) : (
                 <>
                   <button
@@ -124,7 +160,7 @@ export default function Home({ navigate }) {
                     className="btn-primary btn-large"
                     onClick={() => handleNav('/register')}
                   >
-                    Get Started
+                    Sign Up (Free)
                   </button>
                   <button
                     type="button"

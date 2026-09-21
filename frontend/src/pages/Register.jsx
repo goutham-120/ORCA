@@ -14,7 +14,7 @@ export default function Register({ navigate }) {
     setError('')
     try {
       await register(form)
-      navigate('/personalization')
+      navigate('/dashboard')
     } catch (err) {
       setError(err.message || 'Unable to create your account.')
     } finally {

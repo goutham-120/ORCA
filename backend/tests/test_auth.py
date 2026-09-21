@@ -62,3 +62,40 @@ class AuthenticationTests(unittest.TestCase):
         second = self.register("other@example.com")
         update_profile(ProfileUpdateRequest(user_category="coastal_authority"), f"Bearer {second.access_token}")
         self.assertEqual(users.by_email("user@example.com").user_category, "general_user")
+
+    def test_personalization_preferences(self):
+        token = self.register().access_token
+        prefs = {"default_location": {"latitude": 13.0827, "longitude": 80.2707}, "alert_sound": True}
+        response = update_profile(ProfileUpdateRequest(preferences=prefs), f"Bearer {token}")
+        self.assertEqual(response.preferences.get("alert_sound"), True)
+        self.assertEqual(response.preferences.get("default_location", {}).get("latitude"), 13.0827)
+
+        # Retrieve via /me
+        user_me = me(f"Bearer {token}")
+        self.assertEqual(user_me.preferences.get("alert_sound"), True)
+
+    def test_reports_persistence(self):
+        from app.services.report_service import ReportService
+        from app.schemas.resources import ReportCreateRequest
+
+        report_service = ReportService()
+        req = ReportCreateRequest(title="Marine Safety Briefing - Chennai Coast", query_id="query-101", content={"risk_score": 0.2, "status": "favorable"})
+        created = report_service.create(req)
+        self.assertIsNotNone(created.id)
+        self.assertEqual(created.title, "Marine Safety Briefing - Chennai Coast")
+
+        # Fetch report
+        fetched = report_service.get(created.id)
+        self.assertIsNotNone(fetched)
+        self.assertEqual(fetched.title, "Marine Safety Briefing - Chennai Coast")
+        self.assertEqual(fetched.content.get("risk_score"), 0.2)
+
+        # List reports
+        all_reports = report_service.list()
+        self.assertTrue(any(r.id == created.id for r in all_reports))
+
+        # Delete report
+        deleted = report_service.delete(created.id)
+        self.assertTrue(deleted)
+        self.assertIsNone(report_service.get(created.id))
+

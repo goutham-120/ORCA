@@ -45,21 +45,66 @@ class Database:
 
     def initialize(self) -> bool:
         try:
-            id_column = "BIGSERIAL PRIMARY KEY" if self.is_postgres else "INTEGER PRIMARY KEY AUTOINCREMENT"
             with self.connection() as connection:
                 cursor = connection.cursor()
-                cursor.execute(
-                    f"""
-                    CREATE TABLE IF NOT EXISTS users (
-                        id {id_column},
-                        email VARCHAR(255) NOT NULL UNIQUE,
-                        display_name VARCHAR(100) NOT NULL,
-                        password_hash TEXT NOT NULL,
-                        user_category VARCHAR(64),
-                        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                if self.is_postgres:
+                    cursor.execute(
+                        """
+                        CREATE TABLE IF NOT EXISTS users (
+                            id BIGSERIAL PRIMARY KEY,
+                            email VARCHAR(255) NOT NULL UNIQUE,
+                            display_name VARCHAR(100) NOT NULL,
+                            password_hash TEXT NOT NULL,
+                            user_category VARCHAR(64),
+                            preferences JSONB NOT NULL DEFAULT '{}'::jsonb,
+                            created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+                        )
+                        """
                     )
-                    """
-                )
+                    cursor.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS preferences JSONB NOT NULL DEFAULT '{}'::jsonb")
+                    cursor.execute(
+                        """
+                        CREATE TABLE IF NOT EXISTS reports (
+                            id VARCHAR(64) PRIMARY KEY,
+                            user_id BIGINT,
+                            title VARCHAR(255) NOT NULL,
+                            query_id VARCHAR(128),
+                            content JSONB NOT NULL DEFAULT '{}'::jsonb,
+                            created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+                        )
+                        """
+                    )
+                    cursor.execute("CREATE INDEX IF NOT EXISTS ix_reports_created_at ON reports (created_at DESC)")
+                else:
+                    cursor.execute(
+                        """
+                        CREATE TABLE IF NOT EXISTS users (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            email VARCHAR(255) NOT NULL UNIQUE,
+                            display_name VARCHAR(100) NOT NULL,
+                            password_hash TEXT NOT NULL,
+                            user_category VARCHAR(64),
+                            preferences_json TEXT NOT NULL DEFAULT '{}',
+                            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                        )
+                        """
+                    )
+                    try:
+                        cursor.execute("ALTER TABLE users ADD COLUMN preferences_json TEXT NOT NULL DEFAULT '{}'")
+                    except Exception:
+                        pass
+                    cursor.execute(
+                        """
+                        CREATE TABLE IF NOT EXISTS reports (
+                            id TEXT PRIMARY KEY,
+                            user_id INTEGER,
+                            title TEXT NOT NULL,
+                            query_id TEXT,
+                            content_json TEXT NOT NULL DEFAULT '{}',
+                            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                        )
+                        """
+                    )
                 self._initialize_spatial_schema(cursor)
             self.last_error = None
             return True

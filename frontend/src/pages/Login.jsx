@@ -14,7 +14,7 @@ export default function Login({ navigate }) {
     setError('')
     try {
       await login(form)
-      navigate('/personalization')
+      navigate('/dashboard')
     } catch (err) {
       setError(err.message || 'Unable to sign in. Check that the API is available.')
     } finally {
