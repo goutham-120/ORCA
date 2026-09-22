@@ -66,9 +66,11 @@ class OrcaOrchestrator:
         client_prior = metadata.get("conversation_context") if isinstance(metadata.get("conversation_context"), dict) else {}
         if not prior:
             prior = client_prior
-        location = request.location.model_dump() if request.location else None
-        if location is None and parsed.requested_location and self.location_resolver:
+        location = None
+        if parsed.requested_location and self.location_resolver:
             location = await self.location_resolver.resolve(parsed.requested_location)
+        if location is None and request.location:
+            location = request.location.model_dump()
         if location is None:
             location = self._valid_location(prior.get("location"))
         if location is None:
@@ -92,7 +94,45 @@ class OrcaOrchestrator:
         for domain in required_domains:
             if domain not in result.get("analysis_results", {}) and domain not in pending_domains:
                 pending_domains.append(domain)
-        assessment = assess_results(result.get("analysis_results", {}), required_domains=required_domains, pending_domains=pending_domains)
+        decision = result.get("decision")
+        if decision and parsed.decision_type == "pfz":
+            pending_domains = [domain for domain in pending_domains if domain != "pfz"]
+
+        if parsed.decision_type == "simulation" or (isinstance(decision, dict) and decision.get("scenario_simulation")):
+            sim_res = decision.get("scenario_simulation") or {}
+            simulated = sim_res.get("simulated") or {}
+            sim_msi = simulated.get("msi") or {}
+            msi_score = sim_msi.get("score")
+            if msi_score is not None:
+                sim_risk_score = round(max(0.0, min(1.0, (100.0 - float(msi_score)) / 100.0)), 2)
+                if msi_score >= 75:
+                    sim_level = "low"
+                elif msi_score >= 50:
+                    sim_level = "moderate"
+                elif msi_score >= 25:
+                    sim_level = "high"
+                else:
+                    sim_level = "critical"
+
+                sim_factors = [
+                    f"Simulated Marine Safety Index (MSI): {msi_score}/100 ({sim_msi.get('tier_label', sim_level.title())})",
+                    f"MSI Shift: {sim_res.get('msi_delta', 0):+d} pts from baseline ({sim_res.get('baseline', {}).get('msi', {}).get('score', 0)}/100)",
+                ]
+                for row in sim_res.get("comparison_matrix", []):
+                    sim_factors.append(f"Simulated {row.get('parameter')}: {row.get('simulated')} {row.get('unit')} (Δ {row.get('delta')}) — {str(row.get('severity', '')).upper()}")
+
+                assessment = {
+                    "level": sim_level,
+                    "summary": sim_res.get("scenario_summary") or f"What-If Simulation: Marine Safety Index is {msi_score}/100 ({sim_level.upper()} Risk)",
+                    "factors": sim_factors,
+                    "score": sim_risk_score,
+                    "incomplete_domains": [],
+                }
+            else:
+                assessment = assess_results(result.get("analysis_results", {}), required_domains=required_domains, pending_domains=pending_domains)
+        else:
+            assessment = assess_results(result.get("analysis_results", {}), required_domains=required_domains, pending_domains=pending_domains)
+
         recommendations = build_recommendations(assessment, result.get("analysis_results"))
         response_context = {
             "location": location,
@@ -107,9 +147,6 @@ class OrcaOrchestrator:
         response_context["llm_synthesis_attempted"] = bool(getattr(self.workflow.llm, "api_key", None) and getattr(self.workflow.llm, "synthesize", None))
         response_context["selected_agents"] = result.get("selected", result.get("agents_used", []))
         selected_agents = result.get("selected", result.get("agents_used", []))
-        decision = result.get("decision")
-        if decision and parsed.decision_type == "pfz":
-            pending_domains = [domain for domain in pending_domains if domain != "pfz"]
         response_context["decision_type"] = parsed.decision_type
         if location and ("gis" in selected_agents or parsed.decision_type in {"pfz", "fishing", "hazard", "route"}):
             response_context["map_follow_up"] = {
@@ -122,7 +159,38 @@ class OrcaOrchestrator:
         answer = answer or synthesize_answer(request.query, assessment, result.get("analysis_results", {}), pending_domains, response_context, resp_lang, decision)
         conversation_id = request.conversation_id or str(uuid4())
         self.conversations.put(conversation_id, response_context)
-        return OrcaQueryResponse(query_id=str(uuid4()), answer=answer, intent=parsed.intent, agents_used=selected_agents, selected_agents=selected_agents, decision=decision, assessment=assessment, recommendations=recommendations, evidence=result.get("evidence", []), created_at=datetime.now(timezone.utc), conversation_id=conversation_id, language=resp_lang, context=response_context, pending_domains=pending_domains, unavailable_domains=unavailable_domains, response_kind="specialized")
+        self.conversations.append_message(conversation_id, "user", request.query)
+        self.conversations.append_message(conversation_id, "assistant", answer, {"decision_type": parsed.decision_type})
+        execution_steps = result.get("execution_steps", [])
+        spatial_data = result.get("spatial_data")
+        trace = {
+            "plan_intent": parsed.intent,
+            "decision_type": parsed.decision_type,
+            "agents_activated": selected_agents,
+            "steps": execution_steps,
+        }
+        return OrcaQueryResponse(
+            query_id=str(uuid4()),
+            answer=answer,
+            intent=parsed.intent,
+            agents_used=selected_agents,
+            selected_agents=selected_agents,
+            decision=decision,
+            assessment=assessment,
+            recommendations=recommendations,
+            evidence=result.get("evidence", []),
+            created_at=datetime.now(timezone.utc),
+            conversation_id=conversation_id,
+            language=resp_lang,
+            context=response_context,
+            pending_domains=pending_domains,
+            unavailable_domains=unavailable_domains,
+            response_kind="specialized",
+            execution_steps=execution_steps,
+            trace=trace,
+            spatial_data=spatial_data,
+        )
+
 
     @staticmethod
     def _safety_required_domains(parsed) -> list[str]:

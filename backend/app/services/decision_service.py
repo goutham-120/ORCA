@@ -227,14 +227,40 @@ class DecisionService:
             {"source": "Scenario Simulation (Baseline)", "data_type": "baseline_conditions", "location": location, "value": f"SST={baseline['sst_c']}°C, Wave={baseline['wave_height_m']}m, Wind={baseline['wind_speed_mps']}m/s", "freshness": "computed"},
             {"source": "Scenario Simulation (Simulated)", "data_type": "simulated_conditions", "location": location, "value": f"SST={sim['sst_c']}°C, Wave={sim['wave_height_m']}m, Wind={sim['wind_speed_mps']}m/s, MSI={sim['msi']['score']}", "freshness": "simulated"},
         ]
+        msi_score = sim["msi"]["score"]
+        if msi_score >= 75:
+            sim_risk = "low"
+        elif msi_score >= 50:
+            sim_risk = "moderate"
+        elif msi_score >= 25:
+            sim_risk = "high"
+        else:
+            sim_risk = "critical"
+
+        applied = sim_res.get("perturbations_applied") or {}
+        parts = []
+        if applied.get("delta_sst_c"):
+            parts.append(f"ΔSST: {applied['delta_sst_c']:+g}°C")
+        if applied.get("delta_wave_m"):
+            parts.append(f"ΔWave: +{applied['delta_wave_m']:g}m")
+        if applied.get("target_wind_mps"):
+            parts.append(f"Target Wind: {float(applied['target_wind_mps']):.1f} m/s ({round(float(applied['target_wind_mps']) * 1.94384, 1)} kts)")
+        elif applied.get("delta_wind_mps"):
+            parts.append(f"ΔWind: {applied['delta_wind_mps']:+g} m/s")
+        if applied.get("storm_condition") and applied["storm_condition"] != "normal":
+            parts.append(f"Condition: {str(applied['storm_condition']).title()}")
+
+        pert_desc = ", ".join(parts) if parts else "Baseline parameters"
+        warning_msg = f"Hypothetical What-If simulation based on applied parameters: {pert_desc}."
+
         return {
             "status": "available",
             "assessment": sim_res["scenario_summary"],
-            "risk_level": "high" if sim["msi"]["tier"] == "hazardous" else "moderate" if sim["msi"]["tier"] == "marginal" else "low",
+            "risk_level": sim_risk,
             "scenario_simulation": sim_res,
             "marine_safety_index": sim["msi"],
             "evidence": ev,
-            "warnings": [f"This is a hypothetical simulation based on applied perturbations: {sim_res['perturbations_applied']}."],
+            "warnings": [warning_msg],
             "unavailable_data": [],
         }
 

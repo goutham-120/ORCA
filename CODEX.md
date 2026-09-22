@@ -139,10 +139,15 @@ Completed: Runnable FastAPI foundation, schemas, routers, services, workflow int
 Files Changed: backend/app/{main,config,api,core,workflows,services,models,schemas,database,utils,analysis}; docs/api_contracts.md
 Integration Notes: Agents register through workflow/data-coordination interfaces; database remains optional until ORCA_DATABASE_URL is supplied.
 
-### Sprint 1 — Core Agentic AI Reasoning & Deep Marine Analytics
+### Sprint 2 — Conversational Intelligence, Dynamic Agentic Execution & Proactive Safety
 Status: Completed
-Branch: route-opt
-Completed: Added 4 core agentic AI reasoning capabilities: (1) Marine Ecosystem Anomaly & Fish Productivity Diagnostics Agent (MHW/SST anomalies, Chlorophyll depletion, and upwelling disruption), (2) Dynamic Maritime Safe Route Optimization Engine with grid A* obstacle bypass, nautical waypoints, and fuel metrics, (3) Harmonic Tide & Hydrodynamic Current Prediction Engine for 12 Indian coastal ports, and (4) Unified Marine Safety Index (0-100 continuous MSI scoring).
-Files Changed: backend/app/{analysis/{safety_index.py,safety_analysis.py,investigation.py,route_analysis.py},services/{ecosystem_service.py,tide_service.py,route_analysis_service.py,decision_service.py},core/{query_parser.py,conversation.py},schemas/{decisions.py,map.py},api/map.py}, backend/tests/{test_safety_index.py,test_tide_service.py,test_ecosystem_anomaly.py,test_route_optimization.py}, frontend/src/{services/mapService.js,pages/MapExplorer.jsx}
-Integration Notes: Fully backwards-compatible. All 86 unit tests passing (100% success rate). Frontend builds clean with 0 errors.
+Completed: Added complete end-to-end conversational intelligence compliance fulfilling all 16 Problem Statement requirements:
+1. Dynamic Step-by-Step Agentic Execution Tracking (`execution_steps`, tool call inputs/outputs, dynamic status) in `orca_graph.py` and `ReasoningTrace.jsx`.
+2. Proactive Hazard & Geofencing Intelligence (`/alerts/check` endpoint in `alerts.py` & `alert_service.py`, proactive safety toast banner in `ProactiveAlertBanner.jsx` with action directives).
+3. Stateful Rolling Multi-turn Conversation Memory (`history` payload, `ConversationStore` session history).
+4. Inline Geospatial Situational Mini-Maps (`ChatMiniMap.jsx` MapLibre integration in chat message cards with route lines, waypoints, PFZ coordinates, hazards, and full-map deep-link navigation).
+5. Persona-adapted multi-lingual spoken summaries & safety reasoning for Fishermen, Navigators, Port Authorities, and Scientists.
+Files Changed: backend/app/{schemas/{ai.py,orca.py},core/{conversation_store.py,orchestrator.py},services/alert_service.py,api/alerts.py,workflows/orca_graph.py}, frontend/src/{services/orcaService.js,components/chat/{ChatMiniMap.jsx,ChatMiniMap.css,ProactiveAlertBanner.jsx,ProactiveAlertBanner.css,ReasoningTrace.jsx,Message.jsx},pages/AskOrca.jsx}
+Integration Notes: Clean frontend build (`npm run build`) and zero python compilation errors. Seamlessly backwards-compatible with existing API contracts.
+
 

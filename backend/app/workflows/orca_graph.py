@@ -28,6 +28,8 @@ class OrcaState(TypedDict, total=False):
     answer: str
     llm_mode: str
     decision: dict[str, Any]
+    execution_steps: list[dict[str, Any]]
+    spatial_data: dict[str, Any]
 
 class OrcaWorkflow:
     stages=("context_preparation","query_understanding","planning","agent_selection","agent_execution","evidence_collection","evidence_validation","grounded_synthesis","final_response")
@@ -43,8 +45,20 @@ class OrcaWorkflow:
         graph.add_conditional_edges("planning",self._route,{"agents":"agent_execution","no_agents":"evidence_collection"})
         graph.add_edge("agent_execution","evidence_collection"); graph.add_edge("evidence_collection","evidence_validation"); graph.add_edge("evidence_validation","decision"); graph.add_edge("decision","grounded_synthesis"); graph.add_edge("grounded_synthesis","final_response"); graph.add_edge("final_response",END)
         return graph.compile()
-    async def run(self, context: QueryContext) -> dict[str, Any]: return await self.graph.ainvoke({"context":context})
-    async def _prepare(self,state: OrcaState)->dict[str,Any]: return {"pending_domains":[]}
+    async def run(self, context: QueryContext) -> dict[str, Any]: return await self.graph.ainvoke({"context":context, "execution_steps": []})
+    async def _prepare(self,state: OrcaState)->dict[str,Any]:
+        steps = list(state.get("execution_steps", []))
+        ctx = state["context"]
+        loc_str = f"Lat {ctx.location['latitude']:.4f}, Lon {ctx.location['longitude']:.4f}" if ctx.location else "Coordinate pending"
+        steps.append({
+            "step": 1,
+            "agent": "ContextSupervisor",
+            "action": "context_preparation",
+            "status": "completed",
+            "description": f"Ingested query context: Location ({loc_str}), Time ({ctx.metadata.get('time_expression') or 'Current'}), Language ({ctx.metadata.get('response_language', 'en')}).",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+        return {"pending_domains":[], "execution_steps": steps}
     async def _understand(self,state: OrcaState)->dict[str,Any]: return {}
     async def _plan(self,state: OrcaState)->dict[str,Any]:
         ctx=state["context"]; p=ctx.parsed_query; domains=[d for d in p.requested_domains if d in {"ocean","weather","gis","pfz"}]
@@ -55,16 +69,8 @@ class OrcaWorkflow:
             plan=llm_plan
         if p.decision_type and plan.decision_type != p.decision_type:
             plan=plan.model_copy(update={"decision_type": p.decision_type})
-        # GIS cannot operate without coordinates. Ocean/weather are still called
-        # through their provider boundary so they can return their explicit
-        # unavailable state (and no place name is ever geocoded here).
-        # PFZ is spatial evidence, so it deliberately executes through the
-        # GIS agent rather than becoming a metadata-only domain.
         selected=[]
         for domain in plan.requested_domains:
-            # Fishing decisions keep PFZ evidence pending unless the user
-            # explicitly asks for a PFZ lookup; conditions still run through
-            # the ocean and weather agents.
             if domain == "pfz" and p.decision_type != "pfz":
                 continue
             agent_domain = "gis" if domain == "pfz" else domain
@@ -72,13 +78,23 @@ class OrcaWorkflow:
                 selected.append(agent_domain)
         pending=[d for d in p.requested_domains if d in {"ocean", "weather", "gis", "pfz"} and ("gis" if d == "pfz" else d) not in selected]
         ctx.metadata["plan"]=plan.model_dump(); ctx.metadata["pending_domains"]=pending
-        return {"plan":plan,"selected":selected,"agents_used":selected,"pending_domains":pending,"llm_mode":"llm" if llm_plan else "deterministic_fallback"}
+
+        steps = list(state.get("execution_steps", []))
+        steps.append({
+            "step": 2,
+            "agent": "PlannerAgent",
+            "action": "autonomous_planning",
+            "status": "completed",
+            "description": f"Autonomous plan formed for '{p.intent}' intent: activated specialized agents [{', '.join(selected) or 'direct-response'}], {len(plan.subtasks)} subtasks scheduled.",
+            "details": {"intent": p.intent, "selected_agents": selected, "subtasks": [s.id for s in plan.subtasks]},
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+
+        return {"plan":plan,"selected":selected,"agents_used":selected,"pending_domains":pending,"llm_mode":"llm" if llm_plan else "deterministic_fallback", "execution_steps": steps}
     def _route(self,state: OrcaState)->str: return "agents" if state.get("selected") else "no_agents"
     async def _execute(self,state: OrcaState)->dict[str,Any]:
         ctx=state["context"]; selected=state.get("selected",[])
         if "pfz" in ctx.parsed_query.requested_domains and self.auto_sync_pfz:
-            # This attempts INCOIS first and only uses the explicit demo
-            # fallback when the official request fails.
             await incois_pfz_provider.sync()
         if "gis" in selected and not ctx.metadata.get("gis_layers"):
             ctx.metadata["gis_layers"], gis_error = self._persisted_gis_layers(ctx)
@@ -88,7 +104,21 @@ class OrcaWorkflow:
         for d in selected:
             try: results[d]=self._agents[d].interpret(ctx.as_dict() if d=="gis" else collected.get(d,{}))
             except Exception as exc: results[d]={"summary":f"{d.title()} analysis failed.","data_status":"unavailable","error":str(exc),"concerns":[],"risk_score":None}
-        ctx.agent_results.update(results); return {"collected":collected,"analysis_results":results}
+        ctx.agent_results.update(results)
+
+        steps = list(state.get("execution_steps", []))
+        for d in selected:
+            agent_summary = results.get(d, {}).get("summary", f"{d.title()} telemetry fetched")
+            steps.append({
+                "step": len(steps) + 1,
+                "agent": f"{d.title()}Agent",
+                "action": f"{d}_telemetry_acquisition",
+                "status": "completed" if results.get(d, {}).get("data_status") in {"live", "cached", "demo", "static"} else "failed",
+                "description": agent_summary,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            })
+
+        return {"collected":collected,"analysis_results":results, "execution_steps": steps}
 
     def _persisted_gis_layers(self, ctx: QueryContext | None = None) -> tuple[dict[str, dict[str, Any]], str | None]:
         try:
@@ -114,8 +144,15 @@ class OrcaWorkflow:
     async def _decision(self,state: OrcaState)->dict[str,Any]:
         decision_type=state.get("plan").decision_type if state.get("plan") else None
         location=state["context"].location
+        spatial_data = None
         if not decision_type or not location:
-            return {"decision": None}
+            if location:
+                spatial_data = {
+                    "type": "Point",
+                    "coordinates": [location["longitude"], location["latitude"]],
+                    "label": location.get("label", "Selected Location"),
+                }
+            return {"decision": None, "spatial_data": spatial_data}
         at=None
         time_range=state["context"].time_range
         if time_range:
@@ -143,8 +180,6 @@ class OrcaWorkflow:
             decision=await self.decision_service.fishing(location, at)
         elif decision_type == "pfz":
             if self.auto_sync_pfz and not pfz_records_loaded:
-                # Explicit PFZ questions may refresh the authorized source on demand.
-                # Provider failures are returned as unavailable evidence below.
                 await incois_pfz_provider.sync()
             decision=await self.decision_service.nearby_pfz(location, 50, at)
         elif decision_type == "safety":
@@ -158,7 +193,43 @@ class OrcaWorkflow:
             decision=await self.decision_service.simulation(location, perturbations, at)
         else:
             decision=None
-        return {"decision": decision}
+
+        # Extract spatial visualization payload for inline chat mini-map
+        if decision:
+            features = decision.get("features") or decision.get("cyclones") or []
+            route_geom = decision.get("route_geometry")
+            waypoints = decision.get("waypoints") or []
+            spatial_data = {
+                "center": [location["longitude"], location["latitude"]],
+                "location_label": location.get("label", "Selected Coordinate"),
+                "features": features,
+                "route_geometry": route_geom,
+                "waypoints": waypoints,
+                "decision_type": decision_type,
+            }
+        elif location:
+            spatial_data = {
+                "center": [location["longitude"], location["latitude"]],
+                "location_label": location.get("label", "Selected Coordinate"),
+                "features": [],
+                "decision_type": decision_type,
+            }
+
+        steps = list(state.get("execution_steps", []))
+        msi_score = decision.get("marine_safety_index", {}).get("score") if isinstance(decision, dict) else None
+        msi_desc = f", MSI Computed: {msi_score}/100 ({decision.get('marine_safety_index', {}).get('tier_label', '')})" if msi_score is not None else ""
+        steps.append({
+            "step": len(steps) + 1,
+            "agent": "DecisionEngine",
+            "action": "domain_correlation_and_risk_assessment",
+            "status": "completed",
+            "description": f"Synthesized heterogeneous marine evidence ({decision_type or 'general'}{msi_desc}).",
+            "details": {"decision_type": decision_type, "msi": decision.get("marine_safety_index") if isinstance(decision, dict) else None},
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+
+        return {"decision": decision, "spatial_data": spatial_data, "execution_steps": steps}
+
     async def _synthesize(self,state: OrcaState)->dict[str,Any]:
         unavailable=[d for d,r in state.get("analysis_results",{}).items() if r.get("data_status") not in {"live","cached","demo","static"}]
         ctx=state["context"]
@@ -168,7 +239,19 @@ class OrcaWorkflow:
         fallback="ORCA could not complete a full evidence-based response."
         if unavailable:
             fallback += " Unavailable evidence: " + ", ".join(unavailable) + "."
-        return {"answer":answer or fallback,"llm_synthesis":bool(answer)}
+
+        steps = list(state.get("execution_steps", []))
+        steps.append({
+            "step": len(steps) + 1,
+            "agent": "SynthesizerAgent",
+            "action": "grounded_synthesis",
+            "status": "completed",
+            "description": f"Generated evidence-grounded maritime briefing in {ctx.metadata.get('response_language', 'en')}.",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+
+        return {"answer":answer or fallback,"llm_synthesis":bool(answer), "execution_steps": steps}
     async def _final(self,state: OrcaState)->dict[str,Any]: return {}
     @staticmethod
     def _persona_focus(persona:str)->str: return {"fisher_marine_operator":"practical fishing suitability and safety","researcher_scientist":"measurements, timestamps, and provenance","coastal_authority":"risk severity and monitoring implications"}.get(persona,"clear, understandable conditions")
+

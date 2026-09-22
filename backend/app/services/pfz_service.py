@@ -226,6 +226,10 @@ class PFZDiscoveryService:
             # Candidates exist inside radius, but failed safety thresholds (e.g. hazard conflicts or wind/waves)
             selected = evaluated_candidates[0]
             overall_status = "unsuitable"
+            reason = (
+                f"PFZ candidate(s) found within {radius_km:g} km radius (nearest: {selected['name']} at {selected['distance_km']} km), "
+                f"but failed safety or environmental suitability thresholds."
+            )
         route_geom = None
         if selected and selected.get("rep_point"):
             if land_transit.get("land_transit_needed") and land_transit.get("harbor"):

@@ -288,16 +288,44 @@ class QueryParser:
 
     @staticmethod
     def _location_mention(query: str) -> str | None:
-        match = re.search(r"\b(?:near|at|around|off|in|for)\s+([A-Za-z][A-Za-z .'-]{1,60}?)(?=\s+(?:today|tomorrow|tonight|this|next|at|for|and|with|if|when|under|assuming)\b|[?.!,]|$)", query, re.IGNORECASE)
+        # 1. Preposition pattern (e.g. "in Kochi", "at Visakhapatnam", "near Chennai", "off Goa", "for Mumbai", "about Paradip", "of Digha")
+        match = re.search(
+            r"\b(?:near|at|around|off|in|for|of|about)\s+([A-Za-z\u0900-\u097F\u0C00-\u0C7F\u0B80-\u0BFF\u0B00-\u0B7F\u0980-\u09FF\u0C80-\u0CFF\u0A80-\u0AFF][A-Za-z\u0900-\u097F\u0C00-\u0C7F\u0B80-\u0BFF\u0B00-\u0B7F\u0980-\u09FF\u0C80-\u0CFF\u0A80-\u0AFF .'-]{1,60}?)(?=\s+(?:today|tomorrow|tonight|this|next|at|for|and|with|if|when|under|assuming|weather|waves?|wind|sst|risk|safety|simulation|forecast|status|condition|report)\b|[?.!,]|$)",
+            query,
+            re.IGNORECASE,
+        )
         if match:
-            return match.group(1).strip()
+            candidate = match.group(1).strip()
+            if candidate and len(candidate) > 1:
+                return candidate
+
+        # 2. Indic postposition pattern (e.g. "విశాఖపట్నం దగ్గర", "चेन्नई के पास")
         match_indic = re.search(r"([A-Za-z\u0900-\u097F\u0C00-\u0C7F\u0B80-\u0BFF\u0B00-\u0B7F\u0980-\u09FF\u0C80-\u0CFF\u0A80-\u0AFF][A-Za-z\u0900-\u097F\u0C00-\u0C7F\u0B80-\u0BFF\u0B00-\u0B7F\u0980-\u09FF\u0C80-\u0CFF\u0A80-\u0AFF .'-]{1,60}?)\s+(?:ਕੇ\s+पास|दग्गर|దగ్గర|అరుగిల్|அருகில்|ପାଖରେ|ନିକଟରେ|কাছে|নিকটে|लागीं|ಕೈತಲ್|પાસે|નજીક|जवळ)(?:\s+|[?.!,]|$)", query)
         if match_indic:
             raw_loc = match_indic.group(1).strip()
             for prefix in ("क्या आज", "क्या कल", "क्या", "आज", "कल", "उद्या", "ఈ రోజు", "ఈరోజు", "నేడు", "రేపు", "இன்று", "நாளை", "ଆଜି", "କାଲି", "আজ", "কাল", "आयज", "फाल्यां", "ಇನಿ", "ಎಲ್ಲೆ", "આજે", "કાલે"):
                 if raw_loc.startswith(prefix):
                     raw_loc = raw_loc[len(prefix):].strip()
-            return raw_loc if raw_loc else None
+            if raw_loc:
+                return raw_loc
+
+        # 3. Direct matching against known coastal ports & Indic aliases
+        try:
+            from app.providers.open_meteo import INDIAN_COASTAL_REGISTRY, INDIC_COASTAL_ALIASES
+            lowered = query.lower()
+
+            # Check Indic aliases first
+            for indic_key in sorted(INDIC_COASTAL_ALIASES.keys(), key=len, reverse=True):
+                if indic_key in query:
+                    return indic_key
+
+            # Check known English coastal registry keys (longest port names first)
+            for key in sorted(INDIAN_COASTAL_REGISTRY.keys(), key=len, reverse=True):
+                if re.search(r"(?:\b|^)" + re.escape(key) + r"(?:\b|$)", lowered):
+                    return key
+        except ImportError:
+            pass
+
         return None
 
     @staticmethod

@@ -522,7 +522,7 @@ def _facts(
             ),
             "weather": (
                 ("condition", "condition", ""),
-                ("wind_speed_mps", "wind", "m/s"),
+                ("wind_speed_mps", "wind speed", "m/s"),
                 ("precipitation_mm", "precipitation", "mm"),
                 ("air_temperature_c", "air temperature", "°C"),
             ),
@@ -532,7 +532,10 @@ def _facts(
 
     for key, label, unit in fields.get(domain, ()):
         value = observation.get(key)
-        if isinstance(value, (str, int, float)):
+        if isinstance(value, float):
+            val_str = f"{value:.1f}" if value.is_integer() else f"{round(value, 1)}"
+            facts.append(f"{label}: {val_str}{(' ' + unit) if unit else ''}")
+        elif isinstance(value, (int, str)):
             facts.append(f"{label}: {value}{(' ' + unit) if unit else ''}")
 
     return facts

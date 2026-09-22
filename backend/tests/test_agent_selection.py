@@ -102,9 +102,17 @@ class AgentSelectionTests(unittest.IsolatedAsyncioTestCase):
         coordinator.register("ocean", Source(OCEAN))
         workflow = OrcaWorkflow(coordinator, NoNetworkLLM(), DecisionSpy())
         orchestrator = OrcaOrchestrator(workflow=workflow, location_resolver=resolver)
+        # Query with explicit location name in text resolves that place
         resolved = await orchestrator.handle(OrcaQueryRequest(query="What are the wave conditions near Vishakhapatnam?"))
         self.assertEqual(resolver.places, ["Vishakhapatnam"])
         self.assertEqual(resolved.context["location"]["label"], "Vishakhapatnam")
-        explicit = await orchestrator.handle(OrcaQueryRequest(query="What are the wave conditions near Hyderabad?", location={"latitude": 17.4, "longitude": 78.5, "label": "Map location"}))
+        
+        # Query without place name in text falls back to request.location
+        explicit = await orchestrator.handle(OrcaQueryRequest(query="What are the wave conditions?", location={"latitude": 17.4, "longitude": 78.5, "label": "Map location"}))
         self.assertEqual(explicit.context["location"]["label"], "Map location")
         self.assertEqual(resolver.places, ["Vishakhapatnam"])
+        
+        # Query with place in text overrides ambient request.location
+        override = await orchestrator.handle(OrcaQueryRequest(query="What are the wave conditions near Kochi?", location={"latitude": 13.08, "longitude": 80.27, "label": "Chennai"}))
+        self.assertEqual(override.context["location"]["label"], "Kochi")
+        self.assertEqual(resolver.places, ["Vishakhapatnam", "Kochi"])

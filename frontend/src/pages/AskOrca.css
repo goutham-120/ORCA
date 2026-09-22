@@ -11,7 +11,7 @@
   margin: 0 auto;
   min-height: calc(100vh - 100px);
   padding: 16px 20px 24px;
-  color: #e2eef9;
+  color: #1e293b;
 }
 
 /* --------------------------------------------------------------------------
@@ -777,6 +777,18 @@
   padding: 22px 26px;
   box-shadow: 0 4px 20px rgba(58, 95, 110, 0.08);
   color: #1e293b;
+}
+
+.structured-orca-card p,
+.structured-orca-card span,
+.structured-orca-card li,
+.structured-orca-card strong,
+.structured-orca-card div {
+  color: inherit;
+}
+
+.structured-orca-card strong {
+  color: #0f172a;
 }
 
 .orca-message .message-header {
@@ -1625,6 +1637,32 @@
   color: #0284c7;
 }
 
+.action-btn.sim-trigger-btn {
+  background: #f3e8ff;
+  border: 1px solid #d8b4fe;
+  color: #6b21a8;
+  font-weight: 700;
+}
+
+.action-btn.sim-trigger-btn:hover {
+  background: #e9d5ff;
+  border-color: #c084fc;
+  color: #581c87;
+}
+
+.action-btn.pfz-link-btn {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #047857;
+  font-weight: 700;
+}
+
+.action-btn.pfz-link-btn:hover {
+  background: #d1fae5;
+  border-color: #6ee7b7;
+  color: #065f46;
+}
+
 .action-btn.is-copied {
   border-color: #6ee7b7;
   color: #065f46;
@@ -1650,15 +1688,15 @@
 }
 
 .orca-title {
-  color: #3A5F6E;
+  color: #0f172a;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 1px;
 }
 
 .live-spinner {
-  width: 14px;
-  height: 14px;
+  width: 15px;
+  height: 15px;
   border: 2px solid #B7DCE4;
   border-top-color: #0284c7;
   border-radius: 50%;
@@ -1672,24 +1710,53 @@
 .steps-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 9px;
 }
 
 .step-item {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 13px;
+  font-size: 13.5px;
+  color: #1e293b;
 }
 
-.step-item.completed { color: #059669; font-weight: 600; }
-.step-item.in-progress { color: #0284c7; font-weight: 700; }
-.step-item.pending { color: #94a3b8; }
+.step-item.completed { 
+  color: #065f46; 
+  font-weight: 700; 
+}
+.step-item.completed .step-icon { 
+  color: #059669; 
+  font-weight: 800; 
+}
+
+.step-item.in-progress { 
+  color: #0284c7; 
+  font-weight: 700; 
+}
+.step-item.in-progress .step-icon { 
+  color: #0284c7; 
+  font-weight: 800; 
+  animation: pulseDot 1.2s infinite ease-in-out;
+}
+
+.step-item.pending { 
+  color: #475569; 
+  font-weight: 500;
+}
+.step-item.pending .step-icon { 
+  color: #94a3b8; 
+}
 
 .step-icon {
-  font-size: 12px;
-  width: 14px;
+  font-size: 13px;
+  width: 16px;
   text-align: center;
+  flex-shrink: 0;
+}
+
+.step-label {
+  color: inherit;
 }
 
 /* --------------------------------------------------------------------------
@@ -1882,195 +1949,300 @@
 }
 
 /* ==========================================================================
-   SCENARIO SIMULATION REPORT CARD STYLES
+   SCENARIO SIMULATION REPORT CARD STYLES (Light Marine Theme)
    ========================================================================== */
-.simulation-result-card {
-  background: rgba(11, 21, 38, 0.85);
-  border: 1px solid rgba(0, 212, 255, 0.3);
-  border-radius: 12px;
-  padding: 1.15rem 1.25rem;
-  margin: 0.85rem 0;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4), 0 0 15px rgba(0, 212, 255, 0.08);
+.sim-report-wrapper {
+  margin: 12px 0;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 10px;
+}
+
+.sim-report-trigger-row {
+  display: flex;
+  width: 100%;
+}
+
+.sim-report-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: #F0F7F9;
+  border: 1.5px solid #B7DCE4;
+  border-radius: 10px;
+  color: #0369a1;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(58, 95, 110, 0.06);
+}
+
+.sim-report-btn:hover {
+  background: #e0f2fe;
+  border-color: #0284c7;
+  color: #0c4a6e;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.15);
+}
+
+.sim-report-btn.active {
+  background: #0284c7;
+  border-color: #0369a1;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.25);
+}
+
+.sim-report-btn.active .sim-pill-badge {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.sim-report-btn.active .sim-btn-chevron {
+  color: #ffffff;
+}
+
+.sim-btn-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sim-btn-icon {
+  font-size: 16px;
+}
+
+.sim-pill-badge {
+  font-size: 11px;
+  font-weight: 700;
+  background: #e0f2fe;
+  color: #0284c7;
+  padding: 2px 8px;
+  border-radius: 12px;
+  border: 1px solid #bae6fd;
+}
+
+.sim-btn-chevron {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0369a1;
+}
+
+.simulation-result-card {
+  background: #ffffff;
+  border: 1px solid #B7DCE4;
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin: 4px 0 10px 0;
+  box-shadow: 0 4px 16px rgba(58, 95, 110, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  color: #1e293b;
+  animation: fadeInModal 0.2s ease-out;
 }
 
 .sim-card-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  padding-bottom: 0.75rem;
+  gap: 16px;
+  border-bottom: 1px solid #DDEEF2;
+  padding-bottom: 14px;
 }
 
 .sim-tag {
-  font-size: 0.65rem;
-  letter-spacing: 0.06em;
-  background: rgba(0, 212, 255, 0.15);
-  color: #00d4ff;
-  border: 1px solid rgba(0, 212, 255, 0.3);
-  padding: 2px 7px;
-  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  background: #e0f2fe;
+  color: #0284c7;
+  border: 1px solid #7dd3fc;
+  padding: 3px 8px;
+  border-radius: 6px;
   display: inline-block;
-  margin-bottom: 0.25rem;
+  margin-bottom: 6px;
 }
 
 .sim-summary-title {
   margin: 0;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #f1f5f9;
-  line-height: 1.35;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.4;
+  font-family: 'Sora', sans-serif;
 }
 
 .sim-msi-delta-box {
-  background: #0f172a;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 0.45rem 0.75rem;
+  background: #F7FBFC;
+  border: 1px solid #B7DCE4;
+  border-radius: 10px;
+  padding: 8px 14px;
   text-align: center;
   display: flex;
   flex-direction: column;
-  min-width: 85px;
+  min-width: 95px;
+  box-shadow: 0 1px 4px rgba(58, 95, 110, 0.05);
 }
 
 .delta-label {
-  font-size: 0.6rem;
+  font-size: 10px;
   color: #64748b;
+  font-weight: 700;
   letter-spacing: 0.05em;
 }
 
 .delta-val {
-  font-size: 1.1rem;
+  font-size: 18px;
   font-weight: 800;
+  margin-top: 2px;
 }
 
-.delta-val.drop { color: #f87171; }
-.delta-val.rise { color: #34d399; }
+.delta-val.drop { color: #dc2626; }
+.delta-val.rise { color: #059669; }
 
 .sim-table-wrap {
   overflow-x: auto;
+  border: 1px solid #DDEEF2;
+  border-radius: 10px;
+  background: #ffffff;
 }
 
 .sim-comparison-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.78rem;
+  font-size: 13px;
 }
 
 .sim-comparison-table th {
-  background: rgba(15, 23, 42, 0.6);
-  color: #94a3b8;
-  font-weight: 600;
+  background: #F0F7F9;
+  color: #3A5F6E;
+  font-weight: 700;
   text-align: left;
-  padding: 0.5rem 0.65rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 10px 12px;
+  border-bottom: 1px solid #B7DCE4;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .sim-comparison-table td {
-  padding: 0.5rem 0.65rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  color: #cbd5e1;
+  padding: 10px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
 }
 
 .sim-comparison-table .param-name {
-  color: #f8fafc;
-  font-weight: 500;
-}
-
-.sim-sev-pill {
-  font-size: 0.65rem;
-  padding: 2px 6px;
-  border-radius: 4px;
+  color: #0f172a;
   font-weight: 700;
 }
 
-.sim-sev-pill.critical { background: rgba(239, 68, 68, 0.2); color: #f87171; }
-.sim-sev-pill.high { background: rgba(249, 115, 22, 0.2); color: #fb923c; }
-.sim-sev-pill.moderate { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
-.sim-sev-pill.nominal { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+.sim-sev-pill {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-weight: 700;
+  display: inline-block;
+}
+
+.sim-sev-pill.critical { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+.sim-sev-pill.high { background: #ffedd5; color: #9a3412; border: 1px solid #fed7aa; }
+.sim-sev-pill.moderate { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.sim-sev-pill.nominal { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
 
 .sim-section-sub {
-  margin: 0 0 0.5rem 0;
-  font-size: 0.85rem;
-  color: #e2e8f0;
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 6px;
+  font-family: 'Sora', sans-serif;
 }
 
 .sim-species-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 0.5rem;
+  gap: 10px;
 }
 
 .sim-species-card {
-  background: rgba(15, 23, 42, 0.6);
-  border-left: 3px solid #64748b;
-  border-radius: 0 6px 6px 0;
-  padding: 0.5rem 0.75rem;
+  background: #F7FBFC;
+  border: 1px solid #B7DCE4;
+  border-left: 4px solid #64748b;
+  border-radius: 8px;
+  padding: 12px 14px;
+  transition: all 0.2s ease;
 }
 
-.sim-species-card.critical { border-left-color: #ef4444; }
-.sim-species-card.high { border-left-color: #f97316; }
-.sim-species-card.moderate { border-left-color: #f59e0b; }
-.sim-species-card.nominal { border-left-color: #10b981; }
+.sim-species-card.critical { border-left-color: #ef4444; background: #fef2f2; }
+.sim-species-card.high { border-left-color: #f97316; background: #fff7ed; }
+.sim-species-card.moderate { border-left-color: #f59e0b; background: #fffbeb; }
+.sim-species-card.nominal { border-left-color: #10b981; background: #f0fdf4; }
 
 .species-card-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.8rem;
-  color: #f1f5f9;
+  font-size: 13.5px;
+  color: #0f172a;
+}
+
+.species-card-head strong {
+  color: #0f172a;
+  font-weight: 700;
 }
 
 .species-thermal-badge {
-  font-size: 0.65rem;
-  padding: 1px 6px;
-  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
 }
 
-.species-thermal-badge.critical { background: rgba(239, 68, 68, 0.2); color: #f87171; }
-.species-thermal-badge.high { background: rgba(249, 115, 22, 0.2); color: #fb923c; }
-.species-thermal-badge.moderate { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
-.species-thermal-badge.nominal { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+.species-thermal-badge.critical { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+.species-thermal-badge.high { background: #ffedd5; color: #9a3412; border: 1px solid #fed7aa; }
+.species-thermal-badge.moderate { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.species-thermal-badge.nominal { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
 
 .species-impact-desc {
-  margin: 0.2rem 0 0.15rem 0;
-  font-size: 0.75rem;
-  color: #94a3b8;
+  margin: 6px 0 4px 0;
+  font-size: 13px;
+  color: #334155;
+  line-height: 1.45;
 }
 
 .species-catch-alert {
-  font-size: 0.72rem;
-  color: #38bdf8;
+  font-size: 12px;
+  font-weight: 700;
+  color: #0284c7;
   display: block;
+  margin-top: 4px;
 }
 
 .sim-vessels-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 0.5rem;
-}
-
-@media (max-width: 768px) {
-  .sim-vessels-grid {
-    grid-template-columns: 1fr;
-  }
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
 }
 
 .sim-vessel-card {
-  background: rgba(15, 23, 42, 0.6);
-  border-radius: 6px;
-  padding: 0.5rem 0.65rem;
+  background: #F7FBFC;
+  border-radius: 8px;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  gap: 6px;
+  border: 1px solid #B7DCE4;
 }
+
+.sim-vessel-card.prohibited { border-top: 3px solid #ef4444; background: #fef2f2; }
+.sim-vessel-card.caution { border-top: 3px solid #f59e0b; background: #fffbeb; }
+.sim-vessel-card.safe { border-top: 3px solid #10b981; background: #f0fdf4; }
 
 .vessel-head {
   display: flex;
@@ -2079,56 +2251,57 @@
 }
 
 .vessel-title {
-  font-size: 0.72rem;
-  color: #cbd5e1;
-  font-weight: 600;
+  font-size: 13px;
+  color: #0f172a;
+  font-weight: 700;
 }
 
 .vessel-status-tag {
-  font-size: 0.62rem;
-  font-weight: 700;
-  padding: 1px 5px;
-  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 4px;
 }
 
-.vessel-status-tag.prohibited { background: rgba(239, 68, 68, 0.25); color: #f87171; }
-.vessel-status-tag.caution { background: rgba(245, 158, 11, 0.25); color: #fbbf24; }
-.vessel-status-tag.safe { background: rgba(16, 185, 129, 0.25); color: #34d399; }
+.vessel-status-tag.prohibited { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+.vessel-status-tag.caution { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.vessel-status-tag.safe { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
 
 .vessel-adv-text {
   margin: 0;
-  font-size: 0.68rem;
-  color: #94a3b8;
-  line-height: 1.25;
+  font-size: 12.5px;
+  color: #334155;
+  line-height: 1.45;
 }
 
 .sim-port-alert {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
-  padding: 0.6rem 0.75rem;
+  background: #F7FBFC;
+  border: 1px solid #B7DCE4;
+  border-radius: 8px;
+  padding: 12px 16px;
 }
 
 .sim-port-alert.critical {
-  border-color: rgba(239, 68, 68, 0.4);
-  background: rgba(239, 68, 68, 0.1);
+  border-color: #fecaca;
+  background: #fef2f2;
 }
 
 .sim-port-alert.moderate {
-  border-color: rgba(245, 158, 11, 0.4);
-  background: rgba(245, 158, 11, 0.1);
+  border-color: #fde68a;
+  background: #fffbeb;
 }
 
 .port-label {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #f1f5f9;
+  font-size: 12px;
+  font-weight: 800;
+  color: #0369a1;
   display: block;
 }
 
 .port-desc {
-  margin: 0.2rem 0 0 0;
-  font-size: 0.72rem;
-  color: #94a3b8;
+  margin: 4px 0 0 0;
+  font-size: 13px;
+  color: #1e293b;
+  line-height: 1.45;
 }
 

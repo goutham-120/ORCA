@@ -9,6 +9,11 @@ from app.schemas.map import NavigateNearestPFZRequest
 
 
 class TestLivePFZNavigation(unittest.IsolatedAsyncioTestCase):
+    async def asyncSetUp(self):
+        from app.models.spatial_feature import spatial_features
+        from app.providers.demo_spatial import replace_demo_pfz
+        replace_demo_pfz(spatial_features)
+
     async def test_successful_pfz_navigation_route_generation(self):
         req = NavigateNearestPFZRequest(
             latitude=13.0827,

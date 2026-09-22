@@ -1,70 +1,158 @@
+import './MapLegend.css'
+
 const LAYER_META = {
-  hazards: { icon: '⚠️', color: '#dc2626', bg: '#fee2e2', border: '#f87171', label: 'Marine Hazard (Danger)' },
-  restricted_zones: { icon: '🚫', color: '#d97706', bg: '#fef3c7', border: '#fbbf24', label: 'Restricted Maritime Zone' },
-  marine_areas: { icon: '⚓', color: '#059669', bg: '#d1fae5', border: '#34d399', label: 'Marine Monitoring Area' },
-  pfz: { icon: '🐟', color: '#0891b2', bg: '#cffafe', border: '#22d3ee', label: 'Potential Fishing Zone' },
-  routes: { icon: '🧭', color: '#2563eb', bg: '#dbeafe', border: '#60a5fa', label: 'Navigation Route' },
+  hazards: {
+    icon: '⚠️',
+    color: '#dc2626',
+    bg: '#fee2e2',
+    border: '#fca5a5',
+    tag: 'Marine Hazard',
+    title: 'Hazards & Storm Danger Cones',
+    description: 'Active storm tracks, projected cyclone surge cones, underwater reefs, and prohibited danger zones.',
+  },
+  restricted_zones: {
+    icon: '🚫',
+    color: '#b45309',
+    bg: '#fef3c7',
+    border: '#fde68a',
+    tag: 'Restricted Zone',
+    title: 'Restricted & Maritime Boundaries',
+    description: 'Protected waters, naval security corridors, marine national parks, and seasonal no-trawl zones.',
+  },
+  marine_areas: {
+    icon: '⚓',
+    color: '#059669',
+    bg: '#d1fae5',
+    border: '#a7f3d0',
+    tag: 'Marine Area',
+    title: 'Marine Monitoring Areas',
+    description: 'Coastal sector boundaries, port jurisdiction waters, and hydrographic monitoring zones.',
+  },
+  pfz: {
+    icon: '🐟',
+    color: '#0284c7',
+    bg: '#e0f2fe',
+    border: '#bae6fd',
+    tag: 'PFZ Forecast',
+    title: 'Potential Fishing Zones (INCOIS)',
+    description: 'Chlorophyll-a ocean color & sea surface temperature frontal lines validated by INCOIS satellite telemetry.',
+  },
+  routes: {
+    icon: '🗺️',
+    color: '#16a34a',
+    bg: '#dcfce7',
+    border: '#86efac',
+    tag: 'Navigation Route',
+    title: 'Shore-to-PFZ Navigation Route',
+    description: 'Computed road transit from land to port + shortest safe marine passage with live GPS waypoints.',
+  },
 }
 
 export default function MapLegend({ layers = [], routeGeometry }) {
   const safeLayers = Array.isArray(layers) ? layers : []
-  const active = safeLayers.filter((layer) => layer?.enabled)
+  // Only display active layers and exclude dummy routes if not geometry
+  const activeLayers = safeLayers.filter((layer) => layer?.enabled && String(layer?.id || '').toLowerCase() !== 'routes')
+  const isRouteActive = Boolean(routeGeometry)
+  const totalActive = activeLayers.length + (isRouteActive ? 1 : 0)
 
   return (
     <div className="map-legend-box panel">
-      <div className="legend-header">
-        <p className="eyebrow">MAP LEGEND & OVERLAYS</p>
+      <div className="map-legend-header">
+        <div>
+          <p className="eyebrow">MAP LEGEND & OVERLAYS</p>
+          <h3>Active Map Symbology & GIS Overlays</h3>
+        </div>
+        <span className="legend-active-badge">
+          {totalActive} {totalActive === 1 ? 'Layer' : 'Layers'} Active
+        </span>
       </div>
-      <div className="legend-items-list">
-        {active.map((layer) => {
-          const key = String(layer?.id || '').toLowerCase()
-          const meta = LAYER_META[key] || { icon: '📍', color: '#0284c7', bg: '#e0f2fe', border: '#38bdf8', label: layer?.name || 'GIS Layer' }
-          return (
-            <div className="legend-item" key={layer?.id || Math.random()}>
-              <div className="legend-item-title-row">
-                <span
-                  className="legend-color-chip"
-                  style={{ background: meta.bg, color: meta.color, borderColor: meta.border }}
-                >
-                  <span className="legend-icon">{meta.icon}</span>
-                  <span className="legend-type-tag">{meta.label}</span>
-                </span>
-                <span className="legend-label">{layer?.name || 'Layer'}</span>
-              </div>
-              {key === 'pfz' && (
-                <div style={{ display: 'flex', gap: '6px', marginTop: '5px', flexWrap: 'wrap' }}>
-                  <span className="legend-color-chip" style={{ background: '#dcfce7', color: '#15803d', borderColor: '#22c55e', fontSize: '9.5px', fontWeight: 700 }}>
-                    🟢 GREEN PFZ: Within selected radius
+
+      {totalActive > 0 ? (
+        <div className="legend-grid-container">
+          {/* STANDARD ACTIVE GIS LAYERS */}
+          {activeLayers.map((layer) => {
+            const key = String(layer?.id || '').toLowerCase()
+            const meta = LAYER_META[key] || {
+              icon: '📍',
+              color: '#0284c7',
+              bg: '#e0f2fe',
+              border: '#bae6fd',
+              tag: layer?.name || 'GIS Layer',
+              title: layer?.name || 'Layer',
+              description: layer?.description || 'Source-backed spatial vector GIS dataset.',
+            }
+            const isPFZ = key === 'pfz'
+
+            return (
+              <div className="legend-card" key={layer?.id || Math.random()}>
+                <div className="legend-card-header">
+                  <span
+                    className="legend-pill-tag"
+                    style={{ background: meta.bg, color: meta.color, borderColor: meta.border }}
+                  >
+                    <span>{meta.icon}</span>
+                    <span>{meta.tag}</span>
                   </span>
-                  <span className="legend-color-chip" style={{ background: '#dcfce7', color: '#047857', borderColor: '#10b981', fontSize: '9.5px', fontWeight: 700 }}>
-                    ⭐ 🟢 Selected Nearest Suitable PFZ
-                  </span>
-                  <span className="legend-color-chip" style={{ background: '#ecfeff', color: '#0e7490', borderColor: '#06b6d4', fontSize: '9.5px' }}>
-                    🐟 PFZ outside selected radius
-                  </span>
+                  <span className="legend-layer-name">{layer?.name || meta.title}</span>
                 </div>
-              )}
-              <small>{layer?.description || ''}</small>
+
+                <p className="legend-card-desc">{layer?.description || meta.description}</p>
+
+                {isPFZ && (
+                  <div className="legend-sub-badges-row">
+                    <span className="pfz-symbology-pill in-radius">
+                      🟢 Inside Search Radius
+                    </span>
+                    <span className="pfz-symbology-pill nearest-selected">
+                      ⭐ Nearest Suitable PFZ
+                    </span>
+                    <span className="pfz-symbology-pill outside-radius">
+                      🐟 Outside Radius
+                    </span>
+                    <span className="pfz-symbology-pill in-radius" style={{ background: '#ecfdf5', color: '#047857', borderColor: '#34d399' }}>
+                      🟢 ╌ 4 km Operational Catch Zone
+                    </span>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+
+          {/* ACTIVE ROUTE & WAYPOINTS SYMBOLOGY */}
+          {isRouteActive && (
+            <div className="legend-card">
+              <div className="legend-card-header">
+                <span
+                  className="legend-pill-tag"
+                  style={{
+                    background: LAYER_META.routes.bg,
+                    color: LAYER_META.routes.color,
+                    borderColor: LAYER_META.routes.border,
+                  }}
+                >
+                  <span>{LAYER_META.routes.icon}</span>
+                  <span>{LAYER_META.routes.tag}</span>
+                </span>
+                <span className="legend-layer-name">Road Transit & Marine Passage</span>
+              </div>
+              <p className="legend-card-desc">{LAYER_META.routes.description}</p>
+              <div className="legend-sub-badges-row">
+                <span className="pfz-symbology-pill in-radius" style={{ background: '#f0fdf4', color: '#166534', borderColor: '#86efac' }}>
+                  ━━ Road Transit (Land)
+                </span>
+                <span className="pfz-symbology-pill outside-radius" style={{ background: '#eff6ff', color: '#1e40af', borderColor: '#93c5fd' }}>
+                  ╍╍ Marine Route (PFZ)
+                </span>
+              </div>
             </div>
-          )
-        })}
-        {routeGeometry && (
-          <div className="legend-item">
-            <div className="legend-item-title-row">
-              <span
-                className="legend-color-chip"
-                style={{ background: '#dbeafe', color: '#2563eb', borderColor: '#60a5fa' }}
-              >
-                <span className="legend-icon">🧭</span>
-                <span className="legend-type-tag">Calculated Route</span>
-              </span>
-              <span className="legend-label">Navigation Waypoints</span>
-            </div>
-            <small>Active computed marine voyage path between selected endpoints</small>
-          </div>
-        )}
-        {!active.length && !routeGeometry && <span className="no-layers-text">No GIS overlays active</span>}
-      </div>
+          )}
+        </div>
+      ) : (
+        <div className="legend-empty-state">
+          <span>ℹ️</span>
+          <span>No GIS overlays or routes are currently active. Enable layers from the GIS Overlays panel to display map symbology.</span>
+        </div>
+      )}
     </div>
   )
 }

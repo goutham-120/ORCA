@@ -727,6 +727,88 @@
   box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.2), 0 4px 12px rgba(14, 116, 144, 0.25);
 }
 
+/* ORCA Map Pointer with Pulsing Radar Ring */
+.orca-map-pointer-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.orca-pointer-pulse-ring {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(14, 165, 233, 0.45) 0%, rgba(2, 132, 199, 0.08) 70%, transparent 100%);
+  border: 2px solid rgba(14, 165, 233, 0.85);
+  animation: orcaPointerPing 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+  pointer-events: none;
+}
+
+@keyframes orcaPointerPing {
+  0% {
+    transform: scale(0.35);
+    opacity: 1;
+  }
+  70% {
+    transform: scale(1.6);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+.orca-pointer-core {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #0284c7;
+  border: 3px solid #ffffff;
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.6), 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 2;
+  transition: transform 0.2s ease;
+}
+
+.orca-pointer-core:hover {
+  transform: scale(1.2);
+}
+
+.orca-pointer-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.orca-radius-badge {
+  background: rgba(15, 23, 42, 0.9);
+  color: #38bdf8;
+  border: 1.5px solid rgba(56, 189, 248, 0.6);
+  backdrop-filter: blur(8px);
+  padding: 3px 10px;
+  border-radius: 14px;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  white-space: nowrap;
+  transform: translateY(-8px);
+}
+
+
 /* Legend Styling */
 .legend-item-title-row {
   display: flex;

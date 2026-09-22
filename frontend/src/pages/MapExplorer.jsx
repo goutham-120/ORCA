@@ -1,5 +1,4 @@
 import { Component, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import MapSearch from '../components/mapExplorer/MapSearch'
 import MapLayersControl from '../components/mapExplorer/MapLayersControl'
 import MapLegend from '../components/mapExplorer/MapLegend'
 import LocationInfoPanel from '../components/mapExplorer/LocationInfoPanel'
@@ -182,7 +181,9 @@ export default function MapExplorer({ navigate }) {
   const [isPickerOpen, setIsPickerOpen] = useState(false)
 
   // Live Navigation & Real-time GPS Vessel Tracking State
-  const [liveNavigation, setLiveNavigation] = useState({ loading: false, error: '', data: null, isActive: false })
+  const [liveNavigation, setLiveNavigation] = useState({ loading: false, error: '', data: null })
+  const [isRouteVisible, setIsRouteVisible] = useState(false)
+  const [isHudOpen, setIsHudOpen] = useState(false)
   const [liveVesselLocation, setLiveVesselLocation] = useState(null)
   const [isGpsTracking, setIsGpsTracking] = useState(false)
   const watchIdRef = useRef(null)
@@ -422,6 +423,53 @@ export default function MapExplorer({ navigate }) {
     return next
   }, [layers, isSimulatedCycloneActive, activeLat, activeLon, searchParams])
 
+  // Trigger Navigation to Nearest Safe PFZ from Selected Map Location
+  const startLivePFZNavigation = useCallback(async (targetCoord = null) => {
+    setLiveNavigation({ loading: true, error: '', data: null })
+    setDetailedRoute((prev) => ({ ...prev, data: null }))
+    setRoute((prev) => ({ ...prev, data: null }))
+    setIsRouteVisible(true)
+    setIsHudOpen(true)
+
+    const currentLoc = targetCoord || liveVesselLocation || selectedCoordinate || activeLocation
+    const lat = Number(currentLoc?.latitude ?? currentLoc?.lat ?? activeLat)
+    const lon = Number(currentLoc?.longitude ?? currentLoc?.lng ?? activeLon)
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+      setLiveNavigation({
+        loading: false,
+        error: 'Please select a location on the map or coastal harbor.',
+        data: null,
+      })
+      setIsRouteVisible(false)
+      setIsHudOpen(false)
+      return
+    }
+
+    try {
+      const res = await navigateNearestPFZ({
+        latitude: lat,
+        longitude: lon,
+        radiusKm: Number(searchRadius) || 50,
+        vesselSpeedKnots: 12.0,
+      })
+
+      setLiveNavigation({
+        loading: false,
+        error: res.has_pfz ? '' : (res.message || 'No suitable Potential Fishing Zone found nearby.'),
+        data: res,
+      })
+      setIsRouteVisible(true)
+      setIsHudOpen(true)
+    } catch (err) {
+      setLiveNavigation({
+        loading: false,
+        error: mapErrorMessage(err),
+        data: null,
+      })
+    }
+  }, [liveVesselLocation, selectedCoordinate, activeLocation, activeLat, activeLon, searchRadius])
+
   useEffect(() => {
     const handleCustomCoord = (event) => {
       if (
@@ -429,22 +477,32 @@ export default function MapExplorer({ navigate }) {
         Number.isFinite(event.detail.latitude) &&
         Number.isFinite(event.detail.longitude)
       ) {
-        setSelectedCoordinate({
+        const coord = {
           latitude: event.detail.latitude,
           longitude: event.detail.longitude,
           label: event.detail.label || 'Selected map coordinate',
-        })
+        }
+        setSelectedCoordinate(coord)
         setLiveVesselLocation(null)
         if (watchIdRef.current !== null) {
           navigator.geolocation?.clearWatch(watchIdRef.current)
           watchIdRef.current = null
         }
         setIsGpsTracking(false)
+
+        // Clear previous routes immediately
+        setLiveNavigation((prev) => ({ ...prev, data: null }))
+        setDetailedRoute((prev) => ({ ...prev, data: null }))
+        setRoute((prev) => ({ ...prev, data: null }))
+
+        if (isRouteVisible) {
+          startLivePFZNavigation(coord)
+        }
       }
     }
     window.addEventListener('orca-select-coord', handleCustomCoord)
     return () => window.removeEventListener('orca-select-coord', handleCustomCoord)
-  }, [])
+  }, [isRouteVisible, startLivePFZNavigation])
 
   const handleMapLocation = useCallback((coordinate) => {
     setSelectedCoordinate(coordinate)
@@ -454,8 +512,18 @@ export default function MapExplorer({ navigate }) {
       watchIdRef.current = null
     }
     setIsGpsTracking(false)
-  }, [])
-  const handleSelectLocation = (id) => {
+
+    // Clear previous routes immediately
+    setLiveNavigation((prev) => ({ ...prev, data: null }))
+    setDetailedRoute((prev) => ({ ...prev, data: null }))
+    setRoute((prev) => ({ ...prev, data: null }))
+
+    if (isRouteVisible) {
+      startLivePFZNavigation(coordinate)
+    }
+  }, [isRouteVisible, startLivePFZNavigation])
+
+  const handleSelectLocation = useCallback((id) => {
     setLocationId(id)
     setSelectedCoordinate(null)
     setLiveVesselLocation(null)
@@ -464,7 +532,21 @@ export default function MapExplorer({ navigate }) {
       watchIdRef.current = null
     }
     setIsGpsTracking(false)
-  }
+
+    // Clear previous routes immediately
+    setLiveNavigation((prev) => ({ ...prev, data: null }))
+    setDetailedRoute((prev) => ({ ...prev, data: null }))
+    setRoute((prev) => ({ ...prev, data: null }))
+
+    if (isRouteVisible) {
+      const match = safeDashboardLocations.find((item) => item.id === id)
+      const coords = LOCATION_COORDINATES[id] || (match ? { latitude: match.latitude, longitude: match.longitude } : null)
+      if (coords) {
+        startLivePFZNavigation(coords)
+      }
+    }
+  }, [isRouteVisible, safeDashboardLocations, startLivePFZNavigation])
+
   const handleToggleLayer = (id) =>
     setLayers((current) =>
       (Array.isArray(current) ? current : []).map((layer) => (layer?.id === id ? { ...layer, enabled: !layer.enabled } : layer))
@@ -646,6 +728,15 @@ export default function MapExplorer({ navigate }) {
       setIsGpsTracking(false)
       setLiveVesselLocation(null)
       setSelectedCoordinate(null)
+
+      // Clear previous routes immediately
+      setLiveNavigation((prev) => ({ ...prev, data: null }))
+      setDetailedRoute((prev) => ({ ...prev, data: null }))
+      setRoute((prev) => ({ ...prev, data: null }))
+
+      if (isRouteVisible) {
+        startLivePFZNavigation(curatedLocation)
+      }
       return
     }
 
@@ -659,6 +750,15 @@ export default function MapExplorer({ navigate }) {
         const loc = { latitude, longitude, label: `Live GPS Position (±${Math.round(accuracy)}m)`, accuracy, heading, speed }
         setSelectedCoordinate(loc)
         setLiveVesselLocation(loc)
+
+        // Clear previous routes immediately
+        setLiveNavigation((prev) => ({ ...prev, data: null }))
+        setDetailedRoute((prev) => ({ ...prev, data: null }))
+        setRoute((prev) => ({ ...prev, data: null }))
+
+        if (isRouteVisible) {
+          startLivePFZNavigation(loc)
+        }
       },
       (err) => {
         console.warn('Geolocation error:', err)
@@ -666,7 +766,7 @@ export default function MapExplorer({ navigate }) {
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     )
-  }, [liveVesselLocation, isGpsTracking, selectedCoordinate])
+  }, [liveVesselLocation, isGpsTracking, selectedCoordinate, isRouteVisible, startLivePFZNavigation, curatedLocation])
 
   // Toggle continuous GPS tracking
   const toggleGpsTracking = useCallback(() => {
@@ -707,51 +807,19 @@ export default function MapExplorer({ navigate }) {
     }
   }, [])
 
-  // Trigger Navigation to Nearest Safe PFZ from Selected Map Location
-  const startLivePFZNavigation = useCallback(async () => {
-    setLiveNavigation({ loading: true, error: '', data: null, isActive: true })
-
-    const currentLoc = liveVesselLocation || selectedCoordinate || activeLocation
-    const lat = Number(currentLoc?.latitude ?? activeLat)
-    const lon = Number(currentLoc?.longitude ?? activeLon)
-
-    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
-      setLiveNavigation({
-        loading: false,
-        error: 'Please select a location on the map or coastal harbor.',
-        data: null,
-        isActive: false,
-      })
-      return
+  const toggleRouteVisibility = useCallback(() => {
+    if (isRouteVisible) {
+      setIsRouteVisible(false)
+      setIsHudOpen(false)
+    } else {
+      if (liveNavigation.data) {
+        setIsRouteVisible(true)
+        setIsHudOpen(true)
+      } else {
+        startLivePFZNavigation()
+      }
     }
-
-    try {
-      const res = await navigateNearestPFZ({
-        latitude: lat,
-        longitude: lon,
-        radiusKm: Number(searchRadius) || 50,
-        vesselSpeedKnots: 12.0,
-      })
-
-      setLiveNavigation({
-        loading: false,
-        error: res.has_pfz ? '' : (res.message || 'No suitable Potential Fishing Zone found nearby.'),
-        data: res,
-        isActive: true,
-      })
-    } catch (err) {
-      setLiveNavigation({
-        loading: false,
-        error: mapErrorMessage(err),
-        data: null,
-        isActive: true,
-      })
-    }
-  }, [liveVesselLocation, selectedCoordinate, activeLocation, activeLat, activeLon, searchRadius])
-
-  const stopLiveNavigation = useCallback(() => {
-    setLiveNavigation({ loading: false, error: '', data: null, isActive: false })
-  }, [])
+  }, [isRouteVisible, liveNavigation.data, startLivePFZNavigation])
 
   return (
     <div className={`map-explorer-page ${isExpanded ? 'page-is-expanded' : ''}`}>
@@ -769,27 +837,6 @@ export default function MapExplorer({ navigate }) {
           <p className="subhead">Explore configured GIS overlays, 84 coastal fishing harbors, and run source-backed spatial checks.</p>
         </div>
         <div className="map-header-controls">
-          <button
-            type="button"
-            className="coastal-picker-btn"
-            onClick={() => setIsPickerOpen(true)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '8px 12px',
-              background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-              color: '#ffffff',
-              border: '1px solid rgba(56, 189, 248, 0.4)',
-              borderRadius: '6px',
-              fontWeight: 700,
-              fontSize: '12px',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap'
-            }}
-          >
-            <span>🌊</span> Change Location (84)
-          </button>
           <button
             type="button"
             className="locate-me-btn"
@@ -836,19 +883,38 @@ export default function MapExplorer({ navigate }) {
           >
             <span>📡</span> {isGpsTracking ? 'Tracking: ON' : 'Track Boat'}
           </button>
-          <MapSearch locations={safeDashboardLocations} onSelectLocation={handleSelectLocation} />
-          <label className="location-dropdown-wrap">
-            <span>MONITORING AREA</span>
-            <select value={locationId} onChange={(event) => handleSelectLocation(event.target.value)}>
-              {Object.entries(locationsByState).map(([st, locs]) => (
-                <optgroup key={st} label={st}>
-                  {locs.map((item) => (
-                    <option key={item.id} value={item.id}>📍 {item.name}</option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
-          </label>
+          <button
+            type="button"
+            className="location-dropdown-wrap"
+            onClick={() => setIsPickerOpen(true)}
+            title="Click to select from 84 verified Indian coastal fishing harbors across all maritime states"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'flex-start',
+              gap: '2px',
+              padding: '6px 12px',
+              border: '1px solid #d5e4ef',
+              borderRadius: '7px',
+              background: '#ffffff',
+              cursor: 'pointer',
+              textAlign: 'left',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <span style={{ color: '#7890a6', fontSize: '8px', fontWeight: 800, letterSpacing: '0.8px', textTransform: 'uppercase' }}>
+              MONITORING AREA (84 PORTS)
+            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#0f172a', fontWeight: 700, fontSize: '12px' }}>
+              <span>📍</span>
+              <span style={{ maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {curatedLocation?.name || 'Chennai / Kasimedu'}
+              </span>
+              <span style={{ fontSize: '9px', color: '#64748b', marginLeft: '2px' }}>▼</span>
+            </div>
+          </button>
           <button
             type="button"
             className="expand-toggle-btn"
@@ -897,6 +963,12 @@ export default function MapExplorer({ navigate }) {
                               watchIdRef.current = null
                             }
                             setIsGpsTracking(false)
+                            setLiveNavigation((prev) => ({ ...prev, data: null }))
+                            setDetailedRoute((prev) => ({ ...prev, data: null }))
+                            setRoute((prev) => ({ ...prev, data: null }))
+                            if (isRouteVisible) {
+                              startLivePFZNavigation(curatedLocation)
+                            }
                           }}
                           title="Clear GPS/custom coordinate and return to default harbor"
                           style={{
@@ -920,30 +992,6 @@ export default function MapExplorer({ navigate }) {
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                  <button
-                    type="button"
-                    onClick={startLivePFZNavigation}
-                    disabled={liveNavigation.loading}
-                    title="Calculate road route from land to nearest harbor and marine passage to PFZ"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      padding: '8px 14px',
-                      background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-                      color: '#ffffff',
-                      border: '1px solid #38bdf8',
-                      borderRadius: '8px',
-                      fontSize: '12px',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      boxShadow: '0 2px 8px rgba(2, 132, 199, 0.4)',
-                    }}
-                  >
-                    <span>🗺️</span>
-                    {liveNavigation.loading ? 'Planning Multi-Modal Route…' : 'Show Route (Shore & PFZ)'}
-                  </button>
-
                   <button
                     type="button"
                     onClick={() => {
@@ -1298,7 +1346,7 @@ export default function MapExplorer({ navigate }) {
                   </button>
                 </div>
               )}
-              {liveNavigation.isActive && (
+              {isRouteVisible && isHudOpen && (
                 <LiveNavigationHUD
                   navigationData={liveNavigation.data}
                   currentLocation={liveVesselLocation || selectedLocation}
@@ -1310,27 +1358,57 @@ export default function MapExplorer({ navigate }) {
                       setSelectedCoordinate({ ...loc })
                     }
                   }}
-                  onStopNavigation={stopLiveNavigation}
+                  onStopNavigation={() => setIsHudOpen(false)}
                   onRecalculate={startLivePFZNavigation}
                   isLoading={liveNavigation.loading}
                 />
               )}
+              {isRouteVisible && !isHudOpen && (
+                <button
+                  type="button"
+                  className="reopen-hud-pill-btn"
+                  onClick={() => setIsHudOpen(true)}
+                  title="Open Live Navigation HUD panel"
+                  style={{
+                    position: 'absolute',
+                    top: '12px',
+                    left: '12px',
+                    zIndex: 10,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '7px 14px',
+                    background: '#0f172a',
+                    color: '#38bdf8',
+                    border: '1px solid #0284c7',
+                    borderRadius: '20px',
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 14px rgba(0,0,0,0.35)',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <span>🧭</span> Show Navigation HUD
+                </button>
+              )}
               <MapCanvas
                 selectedLocation={selectedLocation}
                 layers={renderedLayers}
-                routeGeometry={liveNavigation.data?.route?.route_geometry || detailedRoute.data?.route_geometry || routeGeometry}
-                detailedRouteStatus={liveNavigation.data?.route?.overall_status || detailedRoute.data?.overall_status || null}
+                routeGeometry={isRouteVisible ? (liveNavigation.data?.route?.route_geometry || detailedRoute.data?.route_geometry || routeGeometry) : (detailedRoute.data?.route_geometry || null)}
+                detailedRouteStatus={isRouteVisible ? (liveNavigation.data?.route?.overall_status || detailedRoute.data?.overall_status || null) : (detailedRoute.data?.overall_status || null)}
                 radiusKm={Number(searchRadius) || 50}
                 pfzEvaluations={pfzEvaluations}
-                selectedPFZGeometry={liveNavigation.data?.selected_pfz?.geometry || nearestPFZ.data?.selected_geometry || null}
-                pfzRouteGeometry={nearestPFZ.data?.route_geometry || null}
+                selectedPFZId={nearestPFZ.data?.selected_pfz?.id || liveNavigation.data?.selected_pfz?.id || null}
+                selectedPFZGeometry={nearestPFZ.data?.selected_pfz?.geometry || liveNavigation.data?.selected_pfz?.geometry || null}
+                pfzRouteGeometry={isRouteVisible ? (nearestPFZ.data?.route_geometry || null) : null}
                 onMapLocation={handleMapLocation}
                 isExpanded={isExpanded}
                 onToggleExpanded={() => setIsExpanded((value) => !value)}
                 liveVesselLocation={liveVesselLocation}
-                navigationWaypoints={liveNavigation.data?.route?.waypoints || []}
+                navigationWaypoints={isRouteVisible ? (liveNavigation.data?.route?.waypoints || []) : []}
                 isTracking={isGpsTracking}
-                landTransit={liveNavigation.data?.land_transit || nearestPFZ.data?.land_transit || null}
+                landTransit={isRouteVisible ? (liveNavigation.data?.land_transit || null) : null}
               />
             </div>
           </ComponentErrorBoundary>
@@ -1339,67 +1417,21 @@ export default function MapExplorer({ navigate }) {
             <MapLegend layers={renderedLayers} routeGeometry={routeGeometry} />
           </ComponentErrorBoundary>
 
-          {/* NEAREST SUITABLE PFZ SEARCH CONTROLS & RESULTS PANEL */}
+          {/* NEAREST SUITABLE PFZ ASSESSMENT & RESULTS PANEL */}
           <section className="pfz-discovery-section panel" style={{ marginTop: '16px' }}>
-            <div className="pfz-discovery-header">
+            <div className="pfz-discovery-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', borderBottom: '1px solid #e2e8f0', paddingBottom: '14px', marginBottom: '14px' }}>
               <div>
                 <p className="eyebrow">POTENTIAL FISHING ZONE (PFZ) ENGINE</p>
-                <h2>Nearest Suitable PFZ Discovery</h2>
-                <p style={{ fontSize: '13px', color: 'var(--text-muted, #64748b)', marginTop: '4px' }}>
-                  Find the closest INCOIS PFZ within your search radius evaluated against Weather, Ocean, and GIS evidence.
+                <h2 style={{ margin: '2px 0 0 0', fontSize: '18px', color: '#0f172a' }}>Nearest Suitable PFZ Discovery</h2>
+                <p style={{ fontSize: '13px', color: 'var(--text-muted, #64748b)', marginTop: '4px', margin: '4px 0 0 0' }}>
+                  Live INCOIS Potential Fishing Zones within your active search radius (<strong>{searchRadius} km</strong>) evaluated against Weather, Ocean, and GIS evidence.
                 </p>
               </div>
-            </div>
-
-            <div className="pfz-controls-bar">
-              <div className="radius-control-wrap">
-                <label htmlFor="search-radius-slider">
-                  Search Radius: <strong>{searchRadius} km</strong>
-                </label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <input
-                    id="search-radius-slider"
-                    type="range"
-                    min="5"
-                    max="200"
-                    step="5"
-                    value={searchRadius}
-                    onChange={(e) => setSearchRadius(Number(e.target.value) || 50)}
-                    style={{ flex: 1, accentColor: '#0284c7' }}
-                  />
-                  <input
-                    id="search-radius-number"
-                    type="number"
-                    min="5"
-                    max="200"
-                    value={searchRadius}
-                    onChange={(e) => setSearchRadius(Math.max(5, Math.min(200, Number(e.target.value) || 50)))}
-                    style={{ width: '70px', padding: '6px 8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                  />
-                  <span style={{ fontSize: '12px', color: '#64748b' }}>km</span>
-                </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '12px', background: '#f0fdf4', color: '#166534', border: '1px solid #86efac', padding: '5px 12px', borderRadius: '20px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>🎯</span> {nearestPFZ.loading ? 'Evaluating Zones…' : `${searchRadius} km Radius Active`}
+                </span>
               </div>
-
-              <button
-                type="button"
-                className="find-pfz-btn"
-                disabled={nearestPFZ.loading}
-                onClick={runNearestSuitablePFZ}
-                style={{
-                  background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-                  color: '#ffffff',
-                  fontWeight: 600,
-                  fontSize: '14px',
-                  padding: '10px 20px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  boxShadow: '0 2px 6px rgba(2, 132, 199, 0.3)',
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                {nearestPFZ.loading ? '⚡ Evaluating Weather + Ocean + GIS…' : '🐟 Find Nearest Suitable PFZ'}
-              </button>
             </div>
 
             {nearestPFZ.error && (
@@ -1925,6 +1957,13 @@ export default function MapExplorer({ navigate }) {
               loading={layersState.loading}
               error={layersState.error}
               onToggleLayer={handleToggleLayer}
+              isRouteVisible={isRouteVisible}
+              isRouteLoading={liveNavigation.loading}
+              onToggleRoute={toggleRouteVisibility}
+              routeData={liveNavigation.data}
+              isPFZSyncing={pfzSync.loading}
+              searchRadius={searchRadius}
+              onRadiusChange={(val) => setSearchRadius(val)}
             />
           </ComponentErrorBoundary>
         </div>

@@ -234,6 +234,7 @@ export default function MapCanvas({
   radiusKm = 50,
   pfzEvaluations = {},
   selectedPFZGeometry = null,
+  selectedPFZId = null,
   pfzRouteGeometry = null,
   onMapLocation,
   isExpanded,
@@ -246,12 +247,14 @@ export default function MapCanvas({
   const containerRef = useRef(null)
   const mapRef = useRef(null)
   const markerRef = useRef(null)
+  const radiusMarkerRef = useRef(null)
   const vesselMarkerRef = useRef(null)
   const waypointMarkersRef = useRef([])
   const harborMarkerRef = useRef(null)
   const gisMarkersRef = useRef([])
   const initialLocationRef = useRef(selectedLocation)
   const locationHandlerRef = useRef(onMapLocation)
+  const [inspectedPFZ, setInspectedPFZ] = useState(null)
 
   const [mapStatus, setMapStatus] = useState('loading')
 
@@ -380,7 +383,7 @@ export default function MapCanvas({
           })
         }
 
-        // 4. Search Radius Circle
+        // 4. Search Radius Circle & Outer Glow Ring (High Contrast)
         if (!map.getLayer('orca-fill-search-radius')) {
           map.addLayer({
             id: 'orca-fill-search-radius',
@@ -389,7 +392,20 @@ export default function MapCanvas({
             filter: ['==', ['get', 'kind'], 'search-radius'],
             paint: {
               'fill-color': '#0284c7',
-              'fill-opacity': 0.08,
+              'fill-opacity': 0.12,
+            },
+          })
+        }
+        if (!map.getLayer('orca-line-search-radius-glow')) {
+          map.addLayer({
+            id: 'orca-line-search-radius-glow',
+            type: 'line',
+            source: 'orca-layers',
+            filter: ['==', ['get', 'kind'], 'search-radius'],
+            paint: {
+              'line-color': '#38bdf8',
+              'line-width': 7,
+              'line-opacity': 0.4,
             },
           })
         }
@@ -401,9 +417,37 @@ export default function MapCanvas({
             filter: ['==', ['get', 'kind'], 'search-radius'],
             paint: {
               'line-color': '#0284c7',
-              'line-width': 2.2,
+              'line-width': 2.8,
               'line-dasharray': [4, 2],
-              'line-opacity': 0.85,
+              'line-opacity': 0.95,
+            },
+          })
+        }
+
+        // 4.5. PFZ Operational Fishing Buffer Zone (4 km Catch Corridor Halo)
+        if (!map.getLayer('orca-pfz-buffer-fill')) {
+          map.addLayer({
+            id: 'orca-pfz-buffer-fill',
+            type: 'fill',
+            source: 'orca-layers',
+            filter: ['==', ['get', 'kind'], 'pfz-operational-buffer'],
+            paint: {
+              'fill-color': '#10b981',
+              'fill-opacity': 0.2,
+            },
+          })
+        }
+        if (!map.getLayer('orca-pfz-buffer-line')) {
+          map.addLayer({
+            id: 'orca-pfz-buffer-line',
+            type: 'line',
+            source: 'orca-layers',
+            filter: ['==', ['get', 'kind'], 'pfz-operational-buffer'],
+            paint: {
+              'line-color': '#059669',
+              'line-width': 2.5,
+              'line-dasharray': [3, 2],
+              'line-opacity': 0.9,
             },
           })
         }
@@ -414,7 +458,7 @@ export default function MapCanvas({
             id: 'orca-fill-default',
             type: 'fill',
             source: 'orca-layers',
-            filter: ['all', ['==', '$type', 'Polygon'], ['!=', ['get', 'layer'], 'marine_areas'], ['!=', ['get', 'layer'], 'restricted_zones'], ['!=', ['get', 'layer'], 'hazards'], ['!=', ['get', 'kind'], 'search-radius']],
+            filter: ['all', ['==', '$type', 'Polygon'], ['!=', ['get', 'layer'], 'marine_areas'], ['!=', ['get', 'layer'], 'restricted_zones'], ['!=', ['get', 'layer'], 'hazards'], ['!=', ['get', 'kind'], 'search-radius'], ['!=', ['get', 'kind'], 'pfz-operational-buffer']],
             paint: {
               'fill-color': '#0ea5e9',
               'fill-opacity': 0.2,
@@ -716,8 +760,19 @@ export default function MapCanvas({
         'top-right'
       )
 
-      map.once('style.load', activateOverlay)
-      map.once('load', activateOverlay)
+      if (map.isStyleLoaded()) {
+        activateOverlay()
+      } else {
+        map.once('style.load', activateOverlay)
+        map.once('load', activateOverlay)
+      }
+
+      map.on('styledata', () => {
+        if (!map.getSource('orca-layers')) {
+          styleReady = false
+          activateOverlay()
+        }
+      })
 
       map.on('click', (event) => {
         if (!map || !map.getLayer) return
@@ -752,6 +807,8 @@ export default function MapCanvas({
 
     return () => {
       window.clearTimeout(timeoutId)
+      markerRef.current?.remove()
+      radiusMarkerRef.current?.remove()
       gisMarkersRef.current.forEach((m) => {
         try { m.remove() } catch {}
       })
@@ -853,6 +910,40 @@ export default function MapCanvas({
       })
     }
 
+    // 4 km Operational Fishing Buffer Zone (Halo around Selected or Clicked PFZ)
+    let bufferCenter = null
+    let bufferName = 'Nearest Suitable PFZ'
+
+    if (inspectedPFZ && (inspectedPFZ.geometry || inspectedPFZ.rep_point)) {
+      bufferCenter = inspectedPFZ.rep_point || representativePoint(inspectedPFZ.geometry)
+      bufferName = inspectedPFZ.name || inspectedPFZ.properties?.name || 'Inspected PFZ'
+    } else if (selectedPFZGeometry) {
+      bufferCenter = representativePoint(selectedPFZGeometry)
+      bufferName = 'Nearest Suitable PFZ'
+    } else if (selectedPFZId) {
+      const allPFZFeatures = visibleLayers.filter((l) => String(l?.id || '').toLowerCase() === 'pfz').flatMap((l) => l.features || [])
+      const found = allPFZFeatures.find((f) => String(f.id || f.properties?.id || '').toLowerCase() === String(selectedPFZId).toLowerCase())
+      if (found) {
+        bufferCenter = representativePoint(found.geometry || found)
+        bufferName = found.properties?.name || found.name || 'Nearest Suitable PFZ'
+      }
+    }
+
+    if (bufferCenter && Array.isArray(bufferCenter) && bufferCenter.length >= 2 && Number.isFinite(bufferCenter[0]) && Number.isFinite(bufferCenter[1])) {
+      const bufferGeom = createCirclePolygon(bufferCenter, 4.0, 48)
+      if (bufferGeom) {
+        features.push({
+          type: 'Feature',
+          geometry: bufferGeom,
+          properties: {
+            kind: 'pfz-operational-buffer',
+            name: `${bufferName} (4 km Fishing Corridor)`,
+            radius_km: 4.0,
+          },
+        })
+      }
+    }
+
     if (pfzRouteGeometry) {
       features.push({
         type: 'Feature',
@@ -897,7 +988,6 @@ export default function MapCanvas({
       try { marker.remove() } catch {}
     })
     gisMarkersRef.current = []
-    const placedPFZCoords = []
 
     visibleLayers.forEach((layer) => {
       if (!layer) return
@@ -1021,31 +1111,39 @@ export default function MapCanvas({
             isInRadius = distVal <= radiusKm
           }
 
-          const isDuplicateNearby = placedPFZCoords.some((coord) => distanceKm(coord, repCoord) < 35)
-          if (isDuplicateNearby && !isInRadius) {
-            return
-          }
-          placedPFZCoords.push(repCoord)
+          const isSelectedPFZ = Boolean(
+            selectedPFZId &&
+            (String(feature.id || '').toLowerCase() === String(selectedPFZId).toLowerCase() ||
+             String(props.id || '').toLowerCase() === String(selectedPFZId).toLowerCase() ||
+             featIdKey === String(selectedPFZId).toLowerCase())
+          )
 
-          el.className = `gis-interactive-marker pfz-marker ${isInRadius ? 'pfz-marker-in-radius' : 'pfz-marker-outside'}`
-
-          const borderCol = isInRadius ? '#22c55e' : '#06b6d4'
-          const bgCol = isInRadius ? '#dcfce7' : '#ecfeff'
-          const textCol = isInRadius ? '#15803d' : '#0e7490'
-          const badgeLabel = isInRadius
+          const isStarPFZ = isSelectedPFZ
+          const borderCol = isStarPFZ ? '#f59e0b' : (isInRadius ? '#22c55e' : '#06b6d4')
+          const bgCol = isStarPFZ ? '#fef9c3' : (isInRadius ? '#dcfce7' : '#ecfeff')
+          const textCol = isStarPFZ ? '#854d0e' : (isInRadius ? '#15803d' : '#0e7490')
+          const badgeLabel = isStarPFZ
+            ? `<span>⭐ 🟢</span><strong>NEAREST PFZ (${Number.isFinite(distVal) && distVal !== Infinity ? `${distVal.toFixed(1)} km` : ''})</strong>`
+            : isInRadius
             ? `<span>🟢</span><strong>PFZ (${Number.isFinite(distVal) && distVal !== Infinity ? `${distVal.toFixed(1)} km` : ''})</strong>`
-            : `<span>🐟</span><strong>PFZ (${Number.isFinite(distVal) && distVal !== Infinity ? `${distVal.toFixed(1)} km` : ''})</strong>`
+            : '<span>🐟</span><strong>PFZ</strong>'
 
+          el.className = `gis-interactive-marker pfz-marker ${isStarPFZ ? 'pfz-marker-selected-star' : (isInRadius ? 'pfz-marker-in-radius' : 'pfz-marker-outside')}`
+          const shadowStyle = isStarPFZ
+            ? 'box-shadow: 0 0 16px rgba(245, 158, 11, 0.85), 0 0 0 3px rgba(34, 197, 94, 0.65); z-index: 10;'
+            : (isInRadius ? 'box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.45);' : '')
 
-          el.innerHTML = `<div class="gis-marker-bubble pfz-bubble" style="background: ${bgCol}; color: ${textCol}; border-color: ${borderCol}; font-weight: ${isInRadius ? '800' : '600'}; ${isInRadius ? 'box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.45);' : ''}">${badgeLabel}</div>`
+          el.innerHTML = `<div class="gis-marker-bubble pfz-bubble ${isStarPFZ ? 'star-bubble' : ''}" style="background: ${bgCol}; color: ${textCol}; border-color: ${borderCol}; font-weight: ${isStarPFZ || isInRadius ? '800' : '600'}; ${shadowStyle}">${badgeLabel}</div>`
 
-          const popup = new Popup({ offset: 15, maxWidth: '290px' }).setHTML(`
+          const popup = new Popup({ offset: 15, maxWidth: '300px' }).setHTML(`
             <div style="font-family: system-ui, sans-serif; color: #0f172a; padding: 4px;">
               <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
-                <span style="font-size: 20px;">${isInRadius ? '🟢' : '🐟'}</span>
+                <span style="font-size: 22px;">${isStarPFZ ? '⭐ 🟢' : (isInRadius ? '🟢' : '🐟')}</span>
                 <div>
-                  <strong style="color: ${borderCol}; font-size: 13px; display: block;">Potential Fishing Zone</strong>
-                  <small style="color: ${isInRadius ? '#15803d' : '#64748b'}; font-weight: 700; font-size: 11px;">${isInRadius ? '🟢 Inside Search Radius (GREEN)' : 'Outside Search Radius'}</small>
+                  <strong style="color: ${borderCol}; font-size: 13px; display: block;">${isStarPFZ ? '⭐ NEAREST SUITABLE PFZ' : 'Potential Fishing Zone'}</strong>
+                  <small style="color: ${isStarPFZ ? '#854d0e' : (isInRadius ? '#15803d' : '#64748b')}; font-weight: 700; font-size: 11px;">
+                    ${isStarPFZ ? '⭐ SELECTED OPTIMAL TARGET (Passed Weather + Ocean + GIS)' : (isInRadius ? '🟢 Inside Search Radius (GREEN)' : 'Outside Search Radius')}
+                  </small>
                 </div>
               </div>
               <div style="font-size: 12px; line-height: 1.5; border-top: 1px solid #e2e8f0; padding-top: 6px; color: #334155;">
@@ -1062,6 +1160,9 @@ export default function MapCanvas({
             </div>
           `)
           try {
+            el.addEventListener('click', () => {
+              setInspectedPFZ(feature)
+            })
             const marker = new Marker({ element: el }).setLngLat(repCoord).setPopup(popup).addTo(map)
             gisMarkersRef.current.push(marker)
           } catch {}
@@ -1104,7 +1205,7 @@ export default function MapCanvas({
   ])
 
   /*
-   * Selected location marker.
+   * Selected location marker with radar pulse ring & operational radius badge.
    */
   useEffect(() => {
     const map = mapRef.current
@@ -1130,22 +1231,55 @@ export default function MapCanvas({
 
     try {
       markerRef.current?.remove()
+      radiusMarkerRef.current?.remove()
 
       const locationLabel =
         selectedLocation.label ||
         selectedLocation.name ||
         'Selected map coordinate'
 
+      const el = document.createElement('div')
+      el.className = 'orca-map-pointer-wrap'
+      el.innerHTML = `
+        <div class="orca-pointer-pulse-ring"></div>
+        <div class="orca-pointer-core">
+          <div class="orca-pointer-dot"></div>
+        </div>
+      `
+
       markerRef.current = new Marker({
-        color: '#0ea5e9',
+        element: el,
+        anchor: 'center',
       })
         .setLngLat([longitude, latitude])
         .setPopup(
-          new Popup({ offset: 20 }).setText(
-            locationLabel
-          )
+          new Popup({ offset: 20 }).setHTML(`
+            <div style="font-family: system-ui, -apple-system, sans-serif; padding: 4px; min-width: 170px;">
+              <strong style="color: #0284c7; font-size: 13px; display: block;">📍 ${locationLabel}</strong>
+              <div style="color: #64748b; font-size: 11px; margin-top: 2px;">${latitude.toFixed(4)}°N, ${longitude.toFixed(4)}°E</div>
+              <div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #0369a1; font-weight: 700;">
+                ⭕ Operational Radius: ${radiusKm || 50} km
+              </div>
+            </div>
+          `)
         )
         .addTo(map)
+
+      // Radius Badge Marker at northern perimeter of the radius circle
+      if (radiusKm && radiusKm > 0) {
+        const kmPerLat = 111.32
+        const topLat = latitude + radiusKm / kmPerLat
+        const badgeEl = document.createElement('div')
+        badgeEl.className = 'orca-radius-badge'
+        badgeEl.innerHTML = `⭕ ${radiusKm} km Search Radius`
+
+        radiusMarkerRef.current = new Marker({
+          element: badgeEl,
+          anchor: 'bottom',
+        })
+          .setLngLat([longitude, topLat])
+          .addTo(map)
+      }
 
       map.flyTo({
         center: [longitude, latitude],
@@ -1155,7 +1289,7 @@ export default function MapCanvas({
     } catch (e) {
       console.warn('Failed to update selected location marker:', e)
     }
-  }, [selectedLocation, mapStatus])
+  }, [selectedLocation, radiusKm, mapStatus])
 
   /*
    * Live Vessel GPS Position Marker & Auto-Tracking Camera
