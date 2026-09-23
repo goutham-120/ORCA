@@ -66,6 +66,22 @@ export default function AskOrca({ navigate }) {
   const [browserLocation, setBrowserLocation] = useState(null)
   const [isSimulatorOpen, setIsSimulatorOpen] = useState(false)
   const [isSOSOpen, setIsSOSOpen] = useState(false)
+  const [activeSpeech, setActiveSpeech] = useState(null)
+
+  useEffect(() => {
+    const handleSpeechStart = (e) => {
+      setActiveSpeech(e.detail || { active: true })
+    }
+    const handleSpeechEnd = () => {
+      setActiveSpeech(null)
+    }
+    window.addEventListener('orca-speech-start', handleSpeechStart)
+    window.addEventListener('orca-speech-end', handleSpeechEnd)
+    return () => {
+      window.removeEventListener('orca-speech-start', handleSpeechStart)
+      window.removeEventListener('orca-speech-end', handleSpeechEnd)
+    }
+  }, [])
 
   // Active Location state synced with Dashboard preference
   const [location, setLocation] = useState(() => {
@@ -125,7 +141,7 @@ export default function AskOrca({ navigate }) {
     .reverse()
     .find((m) => m.response?.context)?.response?.context
 
-  const send = async (overrideText = '', isRetry = false) => {
+  const send = async (overrideText = '', isRetry = false, isVoiceInput = false) => {
     const text = (overrideText || query).trim()
 
     if (!text || loading) return
@@ -184,8 +200,12 @@ export default function AskOrca({ navigate }) {
       }
 
       setMessages((prev) => [...prev, assistantMessage])
-      const spokenBriefing = buildSpokenSummary(response, response.answer, response.language || language)
-      speakResponse(spokenBriefing, response.language || language)
+
+      // Only auto-play voice output if the user queried via Voice Input (Mic)
+      if (isVoiceInput) {
+        const spokenBriefing = buildSpokenSummary(response, response.answer, response.language || language)
+        speakResponse(spokenBriefing, response.language || language, null, null, assistantMessage.id)
+      }
 
       // Auto-cache offshore bundle for low-bandwidth / disconnected field use (5.4)
       try {
@@ -300,11 +320,31 @@ export default function AskOrca({ navigate }) {
         </div>
       )}
 
+      {/* ACTIVE SPEECH PLAYBACK BAR WITH 1-CLICK MID-SPEECH STOP */}
+      {activeSpeech && (
+        <div className="active-speech-banner font-inter" role="status">
+          <div className="speech-pulse-indicator">
+            <span className="speech-wave-icon">🔊</span>
+            <span className="speech-live-text">
+              ORCA Spoken Advisory Playing…
+            </span>
+          </div>
+          <button
+            type="button"
+            className="stop-speech-pill-btn font-inter"
+            onClick={() => stopSpeech()}
+            title="Stop voice audio immediately"
+          >
+            ⏹️ Stop Voice
+          </button>
+        </div>
+      )}
+
       {/* 4. BOTTOM COMPOSER */}
       <QueryInput
         value={query}
         onChange={setQuery}
-        onSend={() => send()}
+        onSend={(txt, isVoice) => send(txt, false, isVoice)}
         loading={loading}
         language={language}
       />

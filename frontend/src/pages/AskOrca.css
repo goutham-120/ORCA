@@ -2305,3 +2305,72 @@
   line-height: 1.45;
 }
 
+/* --------------------------------------------------------------------------
+   7. ACTIVE SPEECH PLAYBACK BANNER & MID-SPEECH STOP
+   -------------------------------------------------------------------------- */
+.active-speech-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.3);
+  animation: fadeInSlideUp 0.25s ease-out;
+}
+
+@keyframes fadeInSlideUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.speech-pulse-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #38bdf8;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.speech-wave-icon {
+  font-size: 18px;
+  animation: pulseAudio 1.2s infinite ease-in-out;
+}
+
+@keyframes pulseAudio {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(56, 189, 248, 0.4)); }
+  50% { transform: scale(1.18); filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.9)); }
+}
+
+.speech-live-text {
+  color: #f8fafc;
+  letter-spacing: 0.2px;
+}
+
+.stop-speech-pill-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  border-radius: 20px;
+  color: #fca5a5;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.stop-speech-pill-btn:hover {
+  background: rgba(239, 68, 68, 0.35);
+  border-color: #ef4444;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+}
+
+
