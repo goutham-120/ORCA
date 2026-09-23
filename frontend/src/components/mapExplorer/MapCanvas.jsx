@@ -552,7 +552,7 @@ export default function MapCanvas({
           })
         }
 
-        // 10. Navigation & PFZ Route Connection Line
+        // 10. Navigation & PFZ Route Connection Line (Green Marine Route)
         if (!map.getLayer('orca-pfz-route-line')) {
           map.addLayer({
             id: 'orca-pfz-route-line',
@@ -560,7 +560,7 @@ export default function MapCanvas({
             source: 'orca-layers',
             filter: ['==', ['get', 'kind'], 'pfz-route'],
             paint: {
-              'line-color': '#0284c7',
+              'line-color': '#16a34a',
               'line-width': 4.5,
               'line-dasharray': [3, 1.5],
               'line-opacity': 0.95,
@@ -609,7 +609,7 @@ export default function MapCanvas({
                 'UNSAFE', '#dc2626',
                 'CAUTION', '#d97706',
                 'SAFE', '#16a34a',
-                '#2563eb',
+                '#16a34a',
               ],
               'line-width': 5.5,
               'line-dasharray': [2, 1],

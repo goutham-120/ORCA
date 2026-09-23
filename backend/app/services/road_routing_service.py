@@ -134,6 +134,58 @@ def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return 6371.0088 * 2 * asin(sqrt(a))
 
 
+def is_coordinate_in_water(latitude: float, longitude: float) -> bool:
+    """
+    Determines whether a geographic coordinate is located in the ocean / sea / water
+    surrounding the Indian subcontinent rather than inland.
+    """
+    # 1. South of Kanyakumari (Indian Ocean)
+    if latitude < 8.08 and 65.0 <= longitude <= 95.0:
+        return True
+
+    # 2. Arabian Sea (West Coast of India)
+    if 8.08 <= latitude <= 25.0 and longitude < 77.5:
+        if latitude > 22.8 and longitude < 68.6:  # Kutch / Northwest waters
+            return True
+        if 20.0 <= latitude <= 22.8 and longitude < 69.4:  # Saurashtra West offshore
+            return True
+        if 18.5 <= latitude < 20.0 and longitude < 72.70:  # Mumbai / North Maharashtra waters
+            return True
+        if 15.5 <= latitude < 18.5 and longitude < 73.15:  # South Maharashtra / Goa waters
+            return True
+        if 12.8 <= latitude < 15.5 and longitude < 74.35:  # Karnataka waters
+            return True
+        if 8.08 <= latitude < 12.8:
+            kerala_coast_lon = 77.0 - (latitude - 8.08) * (77.0 - 75.1) / (12.8 - 8.08)
+            if longitude < kerala_coast_lon - 0.04:
+                return True
+
+    # 3. Bay of Bengal / Palk Strait / Gulf of Mannar (East Coast of India)
+    if 8.08 <= latitude <= 23.0 and longitude > 77.5:
+        if 8.08 <= latitude < 10.0 and longitude > (77.55 + (latitude - 8.08) * (79.3 - 77.55) / 1.92 + 0.05):
+            return True
+        if 10.0 <= latitude < 11.5 and longitude > 79.90:  # Central Tamil Nadu offshore
+            return True
+        if 11.5 <= latitude < 13.5 and longitude > 80.32:  # Chennai / North TN offshore
+            return True
+        if 13.5 <= latitude < 15.8 and longitude > (80.15 + (latitude - 13.5) * (80.45 - 80.15) / 2.3 + 0.03):  # South AP offshore
+            return True
+        if 15.8 <= latitude < 17.5 and longitude > (80.40 + (latitude - 15.8) * (82.35 - 80.40) / 1.7 + 0.03):  # Central AP (Kakinada) offshore
+            return True
+        if 17.5 <= latitude < 19.0 and longitude > (83.33 + (latitude - 17.5) * (84.45 - 83.33) / 1.5 + 0.03):  # Visakhapatnam / North AP offshore
+            return True
+        if 19.0 <= latitude < 21.0 and longitude > (84.95 + (latitude - 19.0) * (87.10 - 84.95) / 2.0 + 0.03):  # Odisha offshore
+            return True
+        if 21.0 <= latitude < 23.0 and (longitude > 87.60 or latitude < 21.55):  # Bengal offshore / Bay of Bengal
+            return True
+
+    # 4. Far Oceanic Boundaries
+    if (longitude < 68.0 or longitude > 89.5) and latitude < 25.0:
+        return True
+
+    return False
+
+
 class RoadRoutingService:
     """Provides free land road routing and nearest harbor snapping using OSRM."""
 
@@ -175,8 +227,8 @@ class RoadRoutingService:
             h_type = "Fishing Harbor"
             dist_to_harbor_km = round(_haversine_km(origin_lat, origin_lon, h_lat, h_lon), 2)
 
-        # If user is within 50 meters of the harbor/water, treat as already at port
-        if dist_to_harbor_km <= 0.05:
+        # If user is at sea (in water) or within 100 meters of the harbor/water, treat as direct sea navigation
+        if is_coordinate_in_water(origin_lat, origin_lon) or dist_to_harbor_km <= 0.1:
             return {
                 "land_transit_needed": False,
                 "is_at_sea_or_harbor": True,
@@ -192,7 +244,8 @@ class RoadRoutingService:
                 "formatted_duration": "0 mins",
                 "road_geometry": None,
                 "road_steps": [],
-                "source": "coastal_origin",
+                "source": "sea_origin" if is_coordinate_in_water(origin_lat, origin_lon) else "coastal_harbor",
+                "summary_text": "Direct marine navigation from current water position.",
             }
 
         # Query OSRM Public Driving Routing API with custom User-Agent
@@ -210,6 +263,30 @@ class RoadRoutingService:
                 resp = await client.get(osrm_url)
                 if resp.status_code == 200:
                     data = resp.json()
+                    waypoints = data.get("waypoints", [])
+                    if waypoints and len(waypoints) > 0:
+                        origin_snap_dist = waypoints[0].get("distance", 0.0)
+                        if origin_snap_dist > 400.0:
+                            # Origin coordinate is far out at sea / in open water away from roads
+                            return {
+                                "land_transit_needed": False,
+                                "is_at_sea_or_harbor": True,
+                                "harbor": {
+                                    "name": h_name,
+                                    "latitude": h_lat,
+                                    "longitude": h_lon,
+                                    "state": h_state,
+                                    "type": h_type,
+                                },
+                                "distance_km": 0.0,
+                                "duration_mins": 0.0,
+                                "formatted_duration": "0 mins",
+                                "road_geometry": None,
+                                "road_steps": [],
+                                "source": "sea_origin",
+                                "summary_text": "Direct marine navigation from current water position.",
+                            }
+
                     routes = data.get("routes", [])
                     if routes:
                         primary_route = routes[0]
