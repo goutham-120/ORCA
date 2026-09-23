@@ -92,10 +92,10 @@ def _get_authenticated_user_from_header(authorization: str | None) -> Any | None
         return None
     token = authorization.removeprefix("Bearer ").strip()
     try:
-        import jwt
         from app.api.deps import JWT_ALGORITHM, JWT_SECRET
+        from app.core import jwt_utils
         from app.models.user import users
-        tok_payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        tok_payload = jwt_utils.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         user_id = tok_payload.get("sub")
         if user_id:
             return users.by_id(int(user_id))

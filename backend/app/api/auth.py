@@ -16,11 +16,11 @@ except ImportError:
     bcrypt = None  # type: ignore
     HAS_BCRYPT = False
 
-import jwt
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 
 from app.api.deps import JWT_ALGORITHM, JWT_SECRET, get_current_user, require_admin_user
 from app.config import get_settings
+from app.core import jwt_utils
 from app.models.user import User, users
 from app.schemas.auth import (
     AuthResponse,
@@ -94,7 +94,7 @@ def _issue_token(user: User) -> str:
         "iat": int(now.timestamp()),
         "exp": int((now + timedelta(days=7)).timestamp()),
     }
-    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+    return jwt_utils.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 
 def _response_user(user: User) -> UserResponse:

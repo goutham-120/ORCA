@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from typing import Annotated
 from fastapi import Depends, Header, HTTPException, status
-import jwt
 
 from app.config import get_settings
+from app.core import jwt_utils
 from app.models.user import User, users
 
 JWT_SECRET = get_settings().jwt_secret or "orca-secret-key-change-in-production-32chars-min-jwt-secret"
@@ -23,7 +23,7 @@ def get_current_user(authorization: str | None = Header(default=None)) -> User:
         )
     token = authorization.removeprefix("Bearer ").strip()
     try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        payload = jwt_utils.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         user_id = payload.get("sub")
         if user_id is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token claims.")
@@ -31,13 +31,13 @@ def get_current_user(authorization: str | None = Header(default=None)) -> User:
         if user is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User account not found.")
         return user
-    except jwt.ExpiredSignatureError:
+    except jwt_utils.ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authentication token has expired. Please sign in again.",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    except jwt.InvalidTokenError:
+    except jwt_utils.InvalidTokenError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication token.",
