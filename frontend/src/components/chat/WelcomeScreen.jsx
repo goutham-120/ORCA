@@ -641,23 +641,23 @@ export default function WelcomeScreen({ onSelectPrompt, language = 'en' }) {
     if (langLower.startsWith('or')) return 'ଆପଣ କେଉଁ ସାମୁଦ୍ରିକ ସ୍ଥିତିର ବିଶ୍ଲେଷଣ କରିବାକୁ ଚାହୁଁଛନ୍ତି?'
     if (langLower.startsWith('ta')) return 'நீங்கள் எந்த கடல் நிலையை பகுப்பாய்வு செய்ய விரும்புகிறீர்கள்?'
     if (langLower.startsWith('te')) return 'మీరు ఏ సముద్ర పరిస్థితిని విశ్ಲೇషించాలనుకుంటున్నారు?'
-    if (langLower.startsWith('hi')) return 'आप किस समुद्री स्थिति का विश्लेषण करना चाहते हैं?'
-    return 'What marine intelligence would you like to analyze?'
+    if (langLower.startsWith('hi')) return 'आप क्या जांचना चाहते हैं?'
+    return 'What would you like to check?'
   }
 
   const getSubtitle = () => {
-    if (langLower.startsWith('ml')) return 'ORCA-യോട് സമുദ്ര സുരക്ഷാ സൂചിക (MSI), വേലിയേറ്റം, സുരക്ഷിത റൂട്ടുകൾ, മത്സ്യബന്ധന മേഖലകൾ (PFZ), അല്ലെങ്കിൽ മത്സ്യ ലഭ്യതയിലെ കുറവിനെക്കുറിച്ച് ചോദിക്കുക.'
-    if (langLower.startsWith('kn')) return 'ORCA ನಿಂದ ಸಾಗರ ಸುರಕ್ಷತಾ ಸೂಚ್ಯಂಕ (MSI), ಉಬ್ಬರ-ಇಳಿತ, ಸುರಕ್ಷಿತ ಮಾರ್ಗಗಳು, ಮೀನುಗಾರಿಕಾ ವಲಯಗಳು (PFZ) ಅಥವಾ ಉತ್ಪಾದನೆ ಇಳಿಕೆ ಬಗ್ಗೆ ಕೇಳಿ.'
-    if (langLower.startsWith('mr')) return 'ORCA कडून समुद्री सुरक्षा निर्देशांक (MSI), भरती-ओहोटी, सुरक्षित मार्ग, मासेमारी क्षेत्रे (PFZ) किंवा मासे उत्पादनातील घटीबद्दल विचारा.'
-    if (langLower.startsWith('gu')) return 'ORCA ને દરિયાઈ સુરક્ષા સૂચકાંક (MSI), ભરતી-ઓટ, સુરક્ષિત માર્ગો, માછીમારી વિસ્તારો (PFZ) અથવા ઉત્પાદનમાં ઘટાડા વિશે પૂછો.'
-    if (langLower.startsWith('tcy')) return 'ORCA ಡ್ ಕಡಲ ರಕ್ಷಣೆ ಸೂಚ್ಯಂಕ (MSI), ಉಬ್ಬರ-ಇಳಿತ, ರಕ್ಷಣೆದ ಸಾದಿ, ಮೀನ್ ಪತ್ತುನ ಜಾಗೊಲೆ (PFZ) ಅತ್ತ್ಂಡ ಉತ್ಪಾದನೆ ಕಮ್ಮಿ ಆಯಿನೆಕ್ ಕೇನ್ಲೆ.'
-    if (langLower.startsWith('kok')) return 'ORCA कडल्यान दर्या सुरक्षाय निर्देशांक (MSI), भरती-सुकेती, सुरक्षित मार्ग, मासळी मारपाचे वाठार (PFZ) वा मासळी घटी विशीं विचारात.'
-    if (langLower.startsWith('bn')) return 'ORCA-কে সামুদ্রিক নিরাপত্তা সূচক (MSI), জোয়ার-ভাটা, নিরাপদ রুট, মাছ ধরার অঞ্চল (PFZ) বা মাছের উৎপাদন হ্রাস সম্পর্কে জিজ্ঞাসা করুন।'
-    if (langLower.startsWith('or')) return 'ORCA କୁ ସାମୁଦ୍ରିକ ସୁରକ୍ଷା ସୂଚକାଙ୍କ (MSI), ଜୁଆର-ଭଟ୍ଟା, ସୁରକ୍ଷିତ ମାର୍ଗ, ମାଛ ଧରିବା ଅଞ୍ଚଳ (PFZ) କିମ୍ବା ଉତ୍ପାଦନ ହ୍ରାସ ବିଷୟରେ ପଚାରନ୍ତୁ।'
-    if (langLower.startsWith('ta')) return 'ORCA விடம் கடல் பாதுகாப்பு குறியீடு (MSI), ஓதம், பாதுகாப்பான வழித்தடங்கள், மீன்பிடி மண்டலங்கள் (PFZ) அல்லது மீன் உற்பத்தி குறைவு குறித்து கேளுங்கள்.'
-    if (langLower.startsWith('te')) return 'ORCA ని సముద్ర భద్రతా సూచిక (MSI), పోటు-పాటు, సురಕ್ಷిత మార్గాలు, చేపల వేట ప్రాంతాలు (PFZ) లేదా ఉత్పత్తి క్షీణత గురించి అడಗండి.'
-    if (langLower.startsWith('hi')) return 'ORCA से समुद्री सुरक्षा सूचकांक (MSI), ज्वार-भाटा, सुरक्षित मार्ग, मत्स्य क्षेत्र (PFZ), या मछली उत्पादन में गिरावट के बारे में प्रश्न पूछें।'
-    return 'Ask ORCA about Marine Safety Index (MSI), safe routes with waypoints, tide hydrodynamics, PFZs, or fish productivity decline.'
+    if (langLower.startsWith('ml')) return 'ORCA-യോട് സമുദ്ര സുരക്ഷാ സൂചിക (MSI), വേലിയേറ്റം, സുരക്ഷിത റൂട്ടുകൾ, അല്ലെങ്കിൽ മത്സ്യബന്ധന മേഖലകൾ ചോദിക്കുക.'
+    if (langLower.startsWith('kn')) return 'ORCA ನಿಂದ ಸಾಗರ ಸುರಕ್ಷತಾ ಸೂಚ್ಯಂಕ (MSI), ಉಬ್ಬರ-ಇಳಿತ, ಸುರಕ್ಷಿತ ಮಾರ್ಗಗಳು ಅಥವಾ ಮೀನುಗಾರಿಕಾ ವಲಯಗಳ பற்றி ಕೇಳಿ.'
+    if (langLower.startsWith('mr')) return 'ORCA कडून समुद्री सुरक्षा निर्देशांक (MSI), भरती-ओहोटी, सुरक्षित मार्ग किंवा मासेमारी क्षेत्रांबद्दल विचारा.'
+    if (langLower.startsWith('gu')) return 'ORCA ને દરિયાઈ સુરક્ષા સૂચકાંક (MSI), ભરતી-ઓટ, સુરક્ષિત માર્ગો અથવા માછીમારી વિસ્તારો વિશે પૂછો.'
+    if (langLower.startsWith('tcy')) return 'ORCA ಡ್ ಕಡಲ ರಕ್ಷಣೆ ಸೂಚ್ಯಂಕ (MSI), ಉಬ್ಬರ-ಇಳಿತ, ರಕ್ಷಣೆದ ಸಾದಿ ಅತ್ತ್ಂಡ ಮೀನ್ ಪത്തുನ ಜಾಗೊಲೆ ಕೇನ್ಲೆ.'
+    if (langLower.startsWith('kok')) return 'ORCA कडल्यान दर्या सुरक्षाय निर्देशांक (MSI), भरती-सुकेती, सुरक्षित मार्ग वा मासळी मारपाचे वाठार विचारात.'
+    if (langLower.startsWith('bn')) return 'ORCA-কে সামুদ্রিক নিরাপত্তা সূচক (MSI), জোয়ার-ভাটা, নিরাপদ রুট বা মাছ ধরার অঞ্চল সম্পর্কে জিজ্ঞাসা করুন।'
+    if (langLower.startsWith('or')) return 'ORCA କୁ ସାମୁଦ୍ରିକ ସୁରକ୍ଷା ସୂଚକାଙ୍କ (MSI), ଜୁଆର-ଭଟ୍ଟା, ସୁରକ୍ଷିତ ମାର୍ଗ କିମ୍ବା ମାଛ ଧରିବା ଅଞ୍ଚଳ ବିଷୟରେ ପଚାରନ୍ତୁ।'
+    if (langLower.startsWith('ta')) return 'ORCA விடம் கடல் பாதுகாப்பு குறியீடு (MSI), ஓதம், பாதுகாப்பான வழித்தடங்கள் அல்லது மீன்பிடி மண்டலங்கள் குறித்து கேளுங்கள்.'
+    if (langLower.startsWith('te')) return 'ORCA ని సముద్ర భద్రతా సూచిక (MSI), పోటు-పాటు, సురక్షిత మార్గాలు లేదా చేపల వేట ప్రాంతాల గురించి అడగండి.'
+    if (langLower.startsWith('hi')) return 'ORCA से समुद्री सुरक्षा सूचकांक (MSI), ज्वार-भाटा, सुरक्षित मार्ग या मत्स्य क्षेत्र के बारे में पूछें।'
+    return 'Ask about marine conditions, PFZs, weather, tides, or safe routes.'
   }
 
   const getButtonText = () => {
@@ -680,7 +680,6 @@ export default function WelcomeScreen({ onSelectPrompt, language = 'en' }) {
       <div className="welcome-hero-card">
         <div className="welcome-avatar-orb">
           <img src={orcaLogo} alt="ORCA Logo" className="orb-logo-img" />
-          <div className="orb-pulse-ring"></div>
         </div>
         <h2 className="welcome-title font-sora">{getTitle()}</h2>
         <p className="welcome-subtitle font-inter">{getSubtitle()}</p>

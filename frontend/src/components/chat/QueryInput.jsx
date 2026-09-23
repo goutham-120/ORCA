@@ -146,7 +146,7 @@ export default function QueryInput({ value, onChange, onSend, loading, language 
               ? 'ORCA ને કંઈપણ પૂછો — દરિયાઈ સુરક્ષા, હવામાન અથવા મોજાની સ્થિતિ...'
               : language === 'mr'
               ? 'ORCA લા काहीही विचारा — समुद्री सुरक्षा, हवामान किंवा लाटांची स्थिती...'
-              : 'Ask ORCA anything — general questions or marine intelligence...'
+              : 'Ask about marine conditions, PFZs, weather or routes...'
           }
           rows={1}
           disabled={loading}
@@ -179,7 +179,7 @@ export default function QueryInput({ value, onChange, onSend, loading, language 
             disabled={loading || !value.trim()}
           >
             <span>{loading ? 'Analyzing…' : 'Send'}</span>
-            <i aria-hidden="true">→</i>
+            <i aria-hidden="true">&rarr;</i>
           </button>
         </div>
       </div>
@@ -188,7 +188,7 @@ export default function QueryInput({ value, onChange, onSend, loading, language 
         <span>
           {voiceState === 'listening'
             ? 'Speak now into microphone. Transcript remains editable before sending.'
-            : 'Press Enter to send, Shift+Enter for new line • Evidence-Grounded AI'}
+            : 'Press Enter to send, Shift+Enter for new line'}
         </span>
       </div>
     </div>

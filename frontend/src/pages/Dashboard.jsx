@@ -7,6 +7,7 @@ import SafetyStatus from '../components/dashboard/SafetyStatus'
 import IntelligenceBrief from '../components/dashboard/IntelligenceBrief'
 import ConditionsChart from '../components/dashboard/ConditionsChart'
 import AlertSummary from '../components/dashboard/AlertSummary'
+import PFZSummaryCard from '../components/dashboard/PFZSummaryCard'
 import { dashboardLocations } from '../data/dashboardData'
 import { COASTAL_STATES, COASTAL_LOCATIONS } from '../data/coastalLocations'
 import CoastalLocationPicker from '../components/common/CoastalLocationPicker'
@@ -112,11 +113,31 @@ export default function Dashboard({ navigate }) {
     setLocationId(id)
     setExpandedAlert(null)
     setZoom(1)
+
+    const dashMatch = dashboardLocations.find((item) => item.id === id || item.name?.toLowerCase() === id?.toLowerCase())
+    const coastalMatch = COASTAL_LOCATIONS.find((item) => item.id === id || item.name?.toLowerCase() === id?.toLowerCase())
+    const coords = (id && COASTAL_LOCATIONS_MAP[id]) || dashMatch || coastalMatch
+
+    const lat = Number(coords?.latitude ?? coords?.lat)
+    const lng = Number(coords?.longitude ?? coords?.lng)
+    const name = coords?.name || dashMatch?.name || coastalMatch?.name || id
+
+    const query = `?locationId=${encodeURIComponent(id)}${Number.isFinite(lat) && Number.isFinite(lng) ? `&lat=${lat}&lng=${lng}&name=${encodeURIComponent(name)}` : ''}`
+    navigate(`/map-explorer${query}`)
+  }
+
+  const handleViewPFZ = () => {
+    const lat = activeLocation?.latitude || activeLocation?.lat
+    const lng = activeLocation?.longitude || activeLocation?.lng
+    const name = activeLocation?.name || 'Selected Location'
+    const id = activeLocation?.id || locationId
+    const query = `?locationId=${encodeURIComponent(id)}${Number.isFinite(Number(lat)) && Number.isFinite(Number(lng)) ? `&lat=${lat}&lng=${lng}&name=${encodeURIComponent(name)}` : ''}`
+    navigate(`/map-explorer${query}`)
   }
 
   const ask = (query) => navigate(`/ask-orca${query ? `?query=${encodeURIComponent(query)}` : ''}`)
   const selectActivity = (activity) =>
-    activity.category === 'Route' ? navigate('/map-explorer') : ask(activity.title)
+    activity.category === 'Route' ? handleViewPFZ() : ask(activity.title)
 
   return (
     <div className="orca-dashboard-page font-sans">
@@ -223,6 +244,13 @@ export default function Dashboard({ navigate }) {
         />
         <SafetyStatus safety={activeLocation.safety} />
       </section>
+
+      {/* NEW FULL-WIDTH PFZ / FISHING ZONES CARD */}
+      <PFZSummaryCard
+        location={activeLocation}
+        isLoading={isLoading}
+        onViewPFZ={handleViewPFZ}
+      />
 
       {/* 4. INTELLIGENCE GRID: ORCA INTELLIGENCE + CONDITIONS TREND */}
       <section className="intelligence-grid">

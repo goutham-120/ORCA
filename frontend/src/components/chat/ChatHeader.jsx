@@ -88,18 +88,17 @@ export default function ChatHeader({
       <div className="header-identity">
         <div className="orca-logo-badge">
           <img src={orcaLogo} alt="ORCA Logo" className="logo-img" />
-          <span className="logo-pulse"></span>
         </div>
         <div className="header-titles">
           <div className="title-row">
             <h1 className="font-sora">ASK ORCA</h1>
             <span className="system-status-chip font-inter">
               <span className={`status-dot ${systemOnline ? 'online' : 'offline'}`}></span>
-              {systemOnline ? 'ORCA Systems Online' : 'Offline Mode'}
+              {systemOnline ? 'Systems Online' : 'Offline Mode'}
             </span>
           </div>
           <p className="subtitle font-inter">
-            Marine Intelligence Assistant • Evidence-Grounded Decision Support
+            Marine Operations Assistant & Decision Support
           </p>
         </div>
       </div>

@@ -22,12 +22,12 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 16px 24px;
+  padding: 14px 22px;
   background: #F7FBFC;
   background-image: linear-gradient(135deg, #F7FBFC 0%, #DDEEF2 100%);
   border: 1px solid #B7DCE4;
-  border-radius: 14px;
-  box-shadow: 0 4px 20px rgba(58, 95, 110, 0.08);
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(58, 95, 110, 0.05);
   color: #3A5F6E;
   transition: all 0.25s ease;
 }
@@ -533,9 +533,9 @@
   background: #F7FBFC;
   background-image: linear-gradient(180deg, #F7FBFC 0%, #DDEEF2 100%);
   border: 1px solid #B7DCE4;
-  border-radius: 14px;
-  padding: 24px;
-  box-shadow: 0 4px 20px rgba(58, 95, 110, 0.06);
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 2px 10px rgba(58, 95, 110, 0.04);
 }
 
 .welcome-command-screen {

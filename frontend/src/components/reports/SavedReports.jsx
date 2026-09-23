@@ -35,7 +35,7 @@ export function SavedReports({ savedReports, onViewReport, onDeleteReport, onCle
       {/* Filter and Search controls */}
       <div className="saved-reports-toolbar">
         <div className="search-input-wrapper">
-          <span className="search-icon">🔍</span>
+          <span className="search-icon" aria-hidden="true">🔍</span>
           <input
             type="text"
             placeholder="Search saved reports by title, location, or content..."

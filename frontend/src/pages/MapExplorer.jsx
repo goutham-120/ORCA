@@ -136,7 +136,9 @@ export default function MapExplorer({ navigate }) {
   const initialLongitudeValue = searchParams.get('longitude') || searchParams.get('lon')
   const initialLatitude = Number(initialLatitudeValue)
   const initialLongitude = Number(initialLongitudeValue)
-  const initialLabel = searchParams.get('label') || 'Selected map coordinate'
+  const initialLabel = searchParams.get('label') || searchParams.get('name') || searchParams.get('locationName') || 'Selected map coordinate'
+  const initialLocationId = (searchParams.get('locationId') || searchParams.get('location') || searchParams.get('id'))?.toLowerCase()?.trim()
+
   const hasInitialCoordinate =
     Boolean(initialLatitudeValue?.trim() && initialLongitudeValue?.trim()) &&
     Number.isFinite(initialLatitude) &&
@@ -147,14 +149,80 @@ export default function MapExplorer({ navigate }) {
     return scenarioParam === 'cyclone' || scenarioParam === 'pre_cyclone'
   })
 
-  const [locationId, setLocationId] = useState('chennai')
+  const defaultLocationId = useMemo(() => {
+    if (initialLocationId) {
+      const match = (dashboardLocations || []).find((item) => item.id === initialLocationId || item.name?.toLowerCase() === initialLocationId)
+      if (match) return match.id
+      if (LOCATION_COORDINATES[initialLocationId]) return initialLocationId
+      const coastalMatch = (COASTAL_LOCATIONS || []).find((item) => item.id === initialLocationId || item.name?.toLowerCase() === initialLocationId)
+      if (coastalMatch) return coastalMatch.id
+    }
+    return 'visakhapatnam'
+  }, [initialLocationId])
+
+  const initialCoordinate = useMemo(() => {
+    if (hasInitialCoordinate) {
+      return { latitude: initialLatitude, longitude: initialLongitude, label: initialLabel }
+    }
+    if (initialLocationId) {
+      const coords = LOCATION_COORDINATES[initialLocationId] || (dashboardLocations || []).find((item) => item.id === initialLocationId || item.name?.toLowerCase() === initialLocationId) || (COASTAL_LOCATIONS || []).find((item) => item.id === initialLocationId || item.name?.toLowerCase() === initialLocationId)
+      if (coords) {
+        const lat = Number(coords.latitude ?? coords.lat)
+        const lng = Number(coords.longitude ?? coords.lng)
+        if (Number.isFinite(lat) && Number.isFinite(lng)) {
+          return { latitude: lat, longitude: lng, label: coords.name || initialLabel }
+        }
+      }
+    }
+    return null
+  }, [hasInitialCoordinate, initialLatitude, initialLongitude, initialLabel, initialLocationId])
+
+  const [locationId, setLocationId] = useState(defaultLocationId)
   const [layers, setLayers] = useState([])
   const [layersState, setLayersState] = useState({ loading: true, error: '' })
-  const [selectedCoordinate, setSelectedCoordinate] = useState(() =>
-    hasInitialCoordinate
-      ? { latitude: initialLatitude, longitude: initialLongitude, label: initialLabel }
-      : null
-  )
+  const [selectedCoordinate, setSelectedCoordinate] = useState(initialCoordinate)
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const paramId = (params.get('locationId') || params.get('location') || params.get('id'))?.toLowerCase()?.trim()
+    const latVal = params.get('latitude') || params.get('lat')
+    const lonVal = params.get('longitude') || params.get('lon')
+    const nameVal = params.get('label') || params.get('name') || params.get('locationName')
+
+    if (paramId) {
+      const match = (dashboardLocations || []).find((item) => item.id === paramId || item.name?.toLowerCase() === paramId)
+      const coastalMatch = (COASTAL_LOCATIONS || []).find((item) => item.id === paramId || item.name?.toLowerCase() === paramId)
+      const targetId = match?.id || coastalMatch?.id || (LOCATION_COORDINATES[paramId] ? paramId : null)
+      if (targetId) {
+        setLocationId(targetId)
+      }
+    }
+
+    if (latVal && lonVal) {
+      const lat = Number(latVal)
+      const lon = Number(lonVal)
+      if (Number.isFinite(lat) && Number.isFinite(lon)) {
+        setSelectedCoordinate({
+          latitude: lat,
+          longitude: lon,
+          label: nameVal || 'Selected location',
+        })
+      }
+    } else if (paramId) {
+      const coords = LOCATION_COORDINATES[paramId] || (dashboardLocations || []).find((item) => item.id === paramId || item.name?.toLowerCase() === paramId) || (COASTAL_LOCATIONS || []).find((item) => item.id === paramId || item.name?.toLowerCase() === paramId)
+      if (coords) {
+        const lat = Number(coords.latitude ?? coords.lat)
+        const lng = Number(coords.longitude ?? coords.lng)
+        if (Number.isFinite(lat) && Number.isFinite(lng)) {
+          setSelectedCoordinate({
+            latitude: lat,
+            longitude: lng,
+            label: coords.name || paramId,
+          })
+        }
+      }
+    }
+  }, [searchParams])
   const [analysis, setAnalysis] = useState({ loading: false, error: '', data: null })
   const [route, setRoute] = useState({ loading: false, error: '', data: null })
   const routeGeometry = route.data?.route?.geometry || null
@@ -932,62 +1000,60 @@ export default function MapExplorer({ navigate }) {
               className="coastal-telemetry-banner panel"
               style={{
                 marginBottom: '16px',
-                background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-                color: '#f8fafc',
+                background: '#ffffff',
+                color: '#0f172a',
                 borderRadius: '12px',
                 padding: '16px 20px',
-                boxShadow: '0 4px 16px rgba(15, 23, 42, 0.25)',
-                border: '1px solid rgba(56, 189, 248, 0.2)',
+                boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)',
+                border: '1px solid #e2e8f0',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '12px', marginBottom: '14px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ fontSize: '22px' }}>🌊</span>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <strong style={{ fontSize: '15px', color: '#38bdf8' }}>Coastal Intelligence & Hydrodynamics</strong>
-                      <span style={{ fontSize: '11px', background: 'rgba(56, 189, 248, 0.15)', color: '#7dd3fc', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '2px 8px', borderRadius: '12px', fontWeight: 700 }}>
-                        SPRINT 1 LIVE TELEMETRY
-                      </span>
-                    </div>
-                    <small style={{ color: '#94a3b8', fontSize: '12px' }}>
-                      Active Sector: <strong>{selectedLocation.name || selectedLocation.label || 'Offshore Sector'}</strong> ({Number(selectedLocation.latitude || 0).toFixed(3)}°N, {Number(selectedLocation.longitude || 0).toFixed(3)}°E)
-                      {(liveVesselLocation || selectedCoordinate) && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedCoordinate(null)
-                            setLiveVesselLocation(null)
-                            if (watchIdRef.current !== null) {
-                              navigator.geolocation?.clearWatch(watchIdRef.current)
-                              watchIdRef.current = null
-                            }
-                            setIsGpsTracking(false)
-                            setLiveNavigation((prev) => ({ ...prev, data: null }))
-                            setDetailedRoute((prev) => ({ ...prev, data: null }))
-                            setRoute((prev) => ({ ...prev, data: null }))
-                            if (isRouteVisible) {
-                              startLivePFZNavigation(curatedLocation)
-                            }
-                          }}
-                          title="Clear GPS/custom coordinate and return to default harbor"
-                          style={{
-                            marginLeft: '8px',
-                            background: 'rgba(239, 68, 68, 0.2)',
-                            color: '#fca5a5',
-                            border: '1px solid rgba(239, 68, 68, 0.4)',
-                            borderRadius: '4px',
-                            fontSize: '11px',
-                            padding: '1px 6px',
-                            cursor: 'pointer',
-                            fontWeight: 700,
-                            verticalAlign: 'middle',
-                          }}
-                        >
-                          ✕ Reset to Harbor
-                        </button>
-                      )}
-                    </small>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px', marginBottom: '14px' }}>
+                <div>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: '#0284c7', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '2px' }}>
+                    COASTAL CONDITIONS
+                  </div>
+                  <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a', margin: 0, padding: 0, lineHeight: 1.2 }}>
+                    Coastal Intelligence & Hydrodynamics
+                  </h2>
+                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                    <span>
+                      Active sector: <strong style={{ color: '#0f172a', fontWeight: 600 }}>{selectedLocation.name || selectedLocation.label || 'Visakhapatnam'}</strong> · {Number(selectedLocation.latitude || 0).toFixed(2)}°N, {Number(selectedLocation.longitude || 0).toFixed(2)}°E
+                    </span>
+                    {(liveVesselLocation || selectedCoordinate) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedCoordinate(null)
+                          setLiveVesselLocation(null)
+                          if (watchIdRef.current !== null) {
+                            navigator.geolocation?.clearWatch(watchIdRef.current)
+                            watchIdRef.current = null
+                          }
+                          setIsGpsTracking(false)
+                          setLiveNavigation((prev) => ({ ...prev, data: null }))
+                          setDetailedRoute((prev) => ({ ...prev, data: null }))
+                          setRoute((prev) => ({ ...prev, data: null }))
+                          if (isRouteVisible) {
+                            startLivePFZNavigation(curatedLocation)
+                          }
+                        }}
+                        title="Clear GPS/custom coordinate and return to default harbor"
+                        style={{
+                          marginLeft: '4px',
+                          background: '#fef2f2',
+                          color: '#dc2626',
+                          border: '1px solid #fecaca',
+                          borderRadius: '4px',
+                          fontSize: '11px',
+                          padding: '1px 6px',
+                          cursor: 'pointer',
+                          fontWeight: 600,
+                        }}
+                      >
+                        ✕ Reset to Harbor
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -1003,18 +1069,19 @@ export default function MapExplorer({ navigate }) {
                     }}
                     disabled={ecosystemState.loading}
                     style={{
-                      display: 'flex',
+                      display: 'inline-flex',
                       alignItems: 'center',
                       gap: '6px',
                       padding: '8px 14px',
-                      background: ecosystemState.isOpen ? 'linear-gradient(135deg, #059669 0%, #047857 100%)' : 'rgba(16, 185, 129, 0.2)',
-                      color: '#34d399',
-                      border: '1px solid rgba(16, 185, 129, 0.4)',
-                      borderRadius: '8px',
+                      background: ecosystemState.isOpen ? '#0284c7' : '#ffffff',
+                      color: ecosystemState.isOpen ? '#ffffff' : '#0284c7',
+                      border: '1px solid #0284c7',
+                      borderRadius: '6px',
                       fontSize: '12px',
-                      fontWeight: 700,
+                      fontWeight: 600,
                       cursor: 'pointer',
-                      transition: 'all 0.2s ease',
+                      transition: 'all 0.15s ease',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
                     }}
                   >
                     <span>🔬</span>
@@ -1026,17 +1093,19 @@ export default function MapExplorer({ navigate }) {
                     onClick={refreshPFZ}
                     disabled={pfzSync.loading}
                     style={{
-                      display: 'flex',
+                      display: 'inline-flex',
                       alignItems: 'center',
                       gap: '6px',
                       padding: '8px 14px',
-                      background: 'rgba(56, 189, 248, 0.15)',
-                      color: '#38bdf8',
-                      border: '1px solid rgba(56, 189, 248, 0.3)',
-                      borderRadius: '8px',
+                      background: '#ffffff',
+                      color: '#334155',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '6px',
                       fontSize: '12px',
                       fontWeight: 600,
                       cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
                     }}
                   >
                     <span>🔄</span>
@@ -1047,19 +1116,19 @@ export default function MapExplorer({ navigate }) {
                     type="button"
                     onClick={() => setIsSimulatorOpen(true)}
                     style={{
-                      display: 'flex',
+                      display: 'inline-flex',
                       alignItems: 'center',
                       gap: '6px',
                       padding: '8px 14px',
-                      background: 'linear-gradient(135deg, rgba(2, 132, 199, 0.3) 0%, rgba(14, 165, 233, 0.2) 100%)',
-                      color: '#38bdf8',
-                      border: '1px solid rgba(56, 189, 248, 0.4)',
-                      borderRadius: '8px',
+                      background: '#ffffff',
+                      color: '#0284c7',
+                      border: '1px solid #bfdbfe',
+                      borderRadius: '6px',
                       fontSize: '12px',
-                      fontWeight: 700,
+                      fontWeight: 600,
                       cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                      boxShadow: '0 2px 8px rgba(2, 132, 199, 0.2)',
+                      transition: 'all 0.15s ease',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
                     }}
                   >
                     <span>🧪</span>
@@ -1068,81 +1137,123 @@ export default function MapExplorer({ navigate }) {
                 </div>
               </div>
 
-              {/* 4 LIVE TELEMETRY CHIPS */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
-                {/* 1. TIDE LEVEL & PHASE */}
-                <div style={{ background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px', padding: '10px 14px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Tidal Hydrodynamics</span>
-                    <span style={{ fontSize: '10px', color: '#38bdf8', fontWeight: 700 }}>
-                      {tideState.data?.station_name ? tideState.data.station_name.split(' ')[0] : 'Harmonic'}
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                    <strong style={{ fontSize: '20px', color: '#ffffff' }}>
-                      {tideState.data?.current_height_m != null ? `+${tideState.data.current_height_m.toFixed(2)} m` : '+1.42 m'}
-                    </strong>
-                    <span style={{ fontSize: '12px', fontWeight: 700, color: tideState.data?.tide_state?.includes('Flood') ? '#34d399' : '#f59e0b' }}>
-                      {tideState.data?.tide_state ? (tideState.data.tide_state.includes('Flood') ? '🌊 Flood (Rising)' : '🔻 Ebb (Falling)') : '🌊 Flood (Rising)'}
-                    </span>
-                  </div>
-                  <small style={{ color: '#94a3b8', fontSize: '11px', display: 'block', marginTop: '2px' }}>
-                    {tideState.data?.spring_neap_phase || 'Spring Tide (Stronger Currents)'} • Range: {tideState.data?.tidal_range_m ? `${tideState.data.tidal_range_m}m` : '1.4m'}
-                  </small>
-                </div>
-
-                {/* 2. NEXT TIDE EXTREMUM */}
-                <div style={{ background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px', padding: '10px 14px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                  <span style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Next High / Low Tides</span>
-                  <div style={{ fontSize: '12px', lineHeight: 1.4 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#cbd5e1' }}>
-                      <span>🔺 High:</span>
-                      <strong style={{ color: '#67e8f9' }}>{tideState.data?.next_high_tide?.time_display || '06:15 PM'} ({tideState.data?.next_high_tide?.height_m ? `+${tideState.data.next_high_tide.height_m}m` : '+1.75m'})</strong>
+              {/* 4 INFORMATION CARDS (RESPONSIVE GRID WITH STANDARDIZED TYPOGRAPHY) */}
+              <div className="coastal-conditions-grid">
+                {/* CARD 1: Tidal Hydrodynamics */}
+                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '135px' }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>Tidal Hydrodynamics</span>
+                      <span style={{ fontSize: '13px', fontWeight: 500, color: '#64748b' }}>
+                        {tideState.data?.station_name ? tideState.data.station_name.split(' ')[0] : (selectedLocation.name || 'Visakhapatnam')}
+                      </span>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#cbd5e1' }}>
-                      <span>🔻 Low:</span>
-                      <strong style={{ color: '#fca5a5' }}>{tideState.data?.next_low_tide?.time_display || '12:30 AM'} ({tideState.data?.next_low_tide?.height_m ? `+${tideState.data.next_low_tide.height_m}m` : '+0.35m'})</strong>
+                    <div>
+                      <div style={{ fontSize: '28px', fontWeight: 700, color: '#0f172a', lineHeight: 1.1 }}>
+                        {tideState.data?.current_height_m != null ? `+${tideState.data.current_height_m.toFixed(2)} m` : '+1.30 m'}
+                      </div>
+                      <div style={{ marginTop: '4px' }}>
+                        <span style={{
+                          display: 'inline-block',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          color: tideState.data?.tide_state?.includes('Flood') ? '#15803d' : '#b45309',
+                          background: tideState.data?.tide_state?.includes('Flood') ? '#dcfce7' : '#fef3c7',
+                          padding: '2px 8px',
+                          borderRadius: '4px'
+                        }}>
+                          {tideState.data?.tide_state ? (tideState.data.tide_state.includes('Flood') ? 'Flood · Rising' : 'Ebb · Falling') : 'Flood · Rising'}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                  <small style={{ color: '#94a3b8', fontSize: '11px', display: 'block', marginTop: '2px' }}>
-                    Current Drift: <strong style={{ color: '#f1f5f9' }}>{tideState.data?.current_velocity_knots ?? 0.8} kn {tideState.data?.current_direction_cardinal || 'NNE'}</strong>
-                  </small>
+                  <div style={{ fontSize: '12px', fontWeight: 400, color: '#64748b', marginTop: '10px', borderTop: '1px solid #f1f5f9', paddingTop: '8px' }}>
+                    {tideState.data?.spring_neap_phase || 'Spring tide'} · Range {tideState.data?.tidal_range_m ? `${tideState.data.tidal_range_m} m` : '1.75 m'}
+                  </div>
                 </div>
 
-                {/* 3. MARINE SAFETY INDEX (MSI) GAUGE */}
-                <div style={{ background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px', padding: '10px 14px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Marine Safety Index</span>
-                    <span style={{ fontSize: '11px', padding: '1px 6px', borderRadius: '4px', background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', fontWeight: 700 }}>
-                      OPTIMAL
-                    </span>
+                {/* CARD 2: Next High / Low Tide */}
+                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '135px' }}>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#64748b', marginBottom: '10px' }}>
+                      Next High / Low Tide
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <div>
+                        <div style={{ fontSize: '12px', fontWeight: 500, color: '#64748b' }}>High</div>
+                        <div style={{ fontSize: '12px', color: '#0f172a' }}>
+                          {tideState.data?.next_high_tide?.time_display || '11:47 AM UTC'}
+                        </div>
+                        <div style={{ fontSize: '14px', fontWeight: 600, color: '#0284c7', marginTop: '1px' }}>
+                          {tideState.data?.next_high_tide?.height_m ? `+${tideState.data.next_high_tide.height_m} m` : '+1.92 m'}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '12px', fontWeight: 500, color: '#64748b' }}>Low</div>
+                        <div style={{ fontSize: '12px', color: '#0f172a' }}>
+                          {tideState.data?.next_low_tide?.time_display || '05:57 PM UTC'}
+                        </div>
+                        <div style={{ fontSize: '14px', fontWeight: 600, color: '#64748b', marginTop: '1px' }}>
+                          {tideState.data?.next_low_tide?.height_m ? `+${tideState.data.next_low_tide.height_m} m` : '+0.18 m'}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-                    <strong style={{ fontSize: '20px', color: '#34d399' }}>92</strong>
-                    <span style={{ fontSize: '12px', color: '#94a3b8' }}>/ 100</span>
-                    <span style={{ fontSize: '11px', color: '#cbd5e1', marginLeft: 'auto' }}>Safe Navigation</span>
+                  <div style={{ fontSize: '12px', fontWeight: 400, color: '#64748b', marginTop: '10px', borderTop: '1px solid #f1f5f9', paddingTop: '8px' }}>
+                    Current drift · {tideState.data?.current_velocity_knots ?? 1.3} kn {tideState.data?.current_direction_cardinal || 'NNE'}
                   </div>
-                  <small style={{ color: '#94a3b8', fontSize: '11px', display: 'block', marginTop: '2px' }}>
-                    Wave: 0.12 • Wind: 0.08 • Swell: 0.05
-                  </small>
                 </div>
 
-                {/* 4. ACTIVE INCOIS PFZ STATUS */}
-                <div style={{ background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px', padding: '10px 14px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>INCOIS PFZ Overlay</span>
-                    <span style={{ fontSize: '10px', color: '#4ade80', fontWeight: 700 }}>● Active</span>
+                {/* CARD 3: Marine Safety */}
+                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '135px' }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>Marine Safety</span>
+                      <span style={{
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        color: '#15803d',
+                        background: '#dcfce7',
+                        padding: '2px 8px',
+                        borderRadius: '4px'
+                      }}>
+                        Favorable
+                      </span>
+                    </div>
+                    <div style={{ margin: '4px 0 0 0' }}>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                        <span style={{ fontSize: '28px', fontWeight: 700, color: '#0f172a', lineHeight: 1.1 }}>92</span>
+                        <span style={{ fontSize: '14px', fontWeight: 500, color: '#64748b' }}>/ 100</span>
+                      </div>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-                    <strong style={{ fontSize: '20px', color: '#22c55e' }}>
-                      {layers.find((l) => String(l.id).toLowerCase() === 'pfz')?.features?.length || 37}
-                    </strong>
-                    <span style={{ fontSize: '12px', color: '#cbd5e1' }}>Zones Configured</span>
+                  <div style={{ fontSize: '12px', fontWeight: 400, color: '#64748b', marginTop: '10px', borderTop: '1px solid #f1f5f9', paddingTop: '8px' }}>
+                    Wave 0.12 m · Wind 0.08 · Swell 0.05
                   </div>
-                  <small style={{ color: '#94a3b8', fontSize: '11px', display: 'block', marginTop: '2px' }}>
-                    {pfzSync.message || 'Multi-coastal PFZ tracks & points active on map.'}
-                  </small>
                 </div>
+
+                {/* CARD 4: INCOIS PFZ */}
+                {(() => {
+                  const pfzCount = layers.find((l) => String(l.id).toLowerCase() === 'pfz')?.features?.length || 38
+                  return (
+                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '135px' }}>
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                          <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>INCOIS PFZ</span>
+                        </div>
+                        <div style={{ margin: '4px 0 0 0' }}>
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                            <span style={{ fontSize: '28px', fontWeight: 700, color: '#0f172a', lineHeight: 1.1 }}>{pfzCount}</span>
+                            <span style={{ fontSize: '14px', fontWeight: 500, color: '#0f172a' }}>zones available</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ fontSize: '12px', fontWeight: 400, color: '#64748b', marginTop: '10px', borderTop: '1px solid #f1f5f9', paddingTop: '8px' }}>
+                        {pfzSync.message || `${pfzCount} PFZ features loaded`}
+                      </div>
+                    </div>
+                  )
+                })()}
               </div>
 
               {/* EXPANDABLE ECOSYSTEM & FISH PRODUCTIVITY DIAGNOSTICS DRAWER */}
@@ -1151,15 +1262,15 @@ export default function MapExplorer({ navigate }) {
                   style={{
                     marginTop: '16px',
                     paddingTop: '16px',
-                    borderTop: '1px solid rgba(255, 255, 255, 0.15)',
+                    borderTop: '1px solid #e2e8f0',
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                     <div>
-                      <h3 style={{ margin: 0, fontSize: '16px', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span>🔬</span> ISRO Marine Earth Observation Diagnostic: Fish Productivity Analysis
+                      <h3 style={{ margin: 0, fontSize: '15px', color: '#0f172a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>🔬</span> Oceanographic Diagnostic: Fish Productivity Analysis
                       </h3>
-                      <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#94a3b8' }}>
+                      <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#64748b' }}>
                         Multi-parameter root-cause synthesis for {ecosystemState.data?.sector_name || selectedLocation.name}
                       </p>
                     </div>
@@ -1167,12 +1278,13 @@ export default function MapExplorer({ navigate }) {
                       type="button"
                       onClick={() => setEcosystemState((prev) => ({ ...prev, isOpen: false }))}
                       style={{
-                        background: 'transparent',
-                        border: '1px solid rgba(255, 255, 255, 0.2)',
-                        color: '#94a3b8',
+                        background: '#ffffff',
+                        border: '1px solid #cbd5e1',
+                        color: '#64748b',
                         borderRadius: '6px',
                         padding: '4px 10px',
                         fontSize: '12px',
+                        fontWeight: 600,
                         cursor: 'pointer',
                       }}
                     >
@@ -1181,82 +1293,82 @@ export default function MapExplorer({ navigate }) {
                   </div>
 
                   {ecosystemState.loading ? (
-                    <div style={{ padding: '24px', textAlign: 'center', color: '#94a3b8' }}>
-                      ⚡ Querying Ocean Thermal Anomaly, Chlorophyll-a Satellite Fields & Upwelling Indices…
+                    <div style={{ padding: '24px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>
+                      Querying Ocean Thermal Anomaly, Chlorophyll-a Satellite Fields & Upwelling Indices…
                     </div>
                   ) : ecosystemState.error ? (
-                    <div style={{ padding: '12px', background: 'rgba(239, 68, 68, 0.2)', color: '#fca5a5', borderRadius: '6px' }}>
+                    <div style={{ padding: '12px', background: '#fef2f2', color: '#dc2626', borderRadius: '6px', border: '1px solid #fecaca', fontSize: '13px' }}>
                       ⚠️ {ecosystemState.error}
                     </div>
                   ) : ecosystemState.data ? (
                     <div>
                       {/* SUMMARY BANNER */}
-                      <div style={{ background: 'rgba(14, 165, 233, 0.15)', border: '1px solid rgba(14, 165, 233, 0.3)', padding: '12px 16px', borderRadius: '8px', marginBottom: '14px' }}>
-                        <strong style={{ fontSize: '12px', color: '#7dd3fc', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>
+                      <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', padding: '12px 16px', borderRadius: '8px', marginBottom: '14px' }}>
+                        <strong style={{ fontSize: '11px', color: '#0369a1', display: 'block', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                           Diagnostic Synthesis & Root Causes
                         </strong>
-                        <p style={{ margin: 0, fontSize: '13px', color: '#f8fafc', lineHeight: 1.5 }}>
+                        <p style={{ margin: 0, fontSize: '13px', color: '#0f172a', lineHeight: 1.5 }}>
                           {ecosystemState.data.diagnosis_summary || ecosystemState.data.summary || 'Oceanographic anomaly diagnostic completed.'}
                         </p>
                       </div>
 
                       {/* 4 METRIC CARDS */}
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginBottom: '14px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '14px' }}>
                         {/* SST CARD */}
-                        <div style={{ background: 'rgba(255, 255, 255, 0.04)', borderRadius: '8px', padding: '12px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                          <span style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600 }}>🌡️ SST & Marine Heatwave</span>
+                        <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '12px', border: '1px solid #e2e8f0' }}>
+                          <span style={{ fontSize: '11px', color: '#64748b', textTransform: 'uppercase', fontWeight: 600 }}>🌡️ SST & Heatwave</span>
                           <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', margin: '4px 0' }}>
-                            <strong style={{ fontSize: '18px', color: '#fca5a5' }}>
+                            <strong style={{ fontSize: '18px', color: '#dc2626' }}>
                               {ecosystemState.data.telemetry_comparison?.observed_sst_c ?? ecosystemState.data.environmental_metrics?.observed_sst_c ?? 29.8}°C
                             </strong>
-                            <small style={{ color: '#f87171', fontWeight: 700 }}>
+                            <small style={{ color: '#b91c1c', fontWeight: 700 }}>
                               {(ecosystemState.data.telemetry_comparison?.sst_anomaly_c ?? 0) > 0
                                 ? `+${ecosystemState.data.telemetry_comparison?.sst_anomaly_c}°C`
                                 : `${ecosystemState.data.telemetry_comparison?.sst_anomaly_c ?? '+1.6'}°C`} Anomaly
                             </small>
                           </div>
-                          <small style={{ color: '#cbd5e1', fontSize: '11px', display: 'block' }}>
+                          <small style={{ color: '#64748b', fontSize: '11px', display: 'block' }}>
                             Baseline: {ecosystemState.data.telemetry_comparison?.baseline_sst_c ?? 28.2}°C • Status: {ecosystemState.data.ecosystem_health || 'Active MHW'}
                           </small>
                         </div>
 
                         {/* CHLOROPHYLL CARD */}
-                        <div style={{ background: 'rgba(255, 255, 255, 0.04)', borderRadius: '8px', padding: '12px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                          <span style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600 }}>🌿 Chlorophyll-a Biomass</span>
+                        <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '12px', border: '1px solid #e2e8f0' }}>
+                          <span style={{ fontSize: '11px', color: '#64748b', textTransform: 'uppercase', fontWeight: 600 }}>🌿 Chlorophyll-a Biomass</span>
                           <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', margin: '4px 0' }}>
-                            <strong style={{ fontSize: '18px', color: '#38bdf8' }}>
+                            <strong style={{ fontSize: '18px', color: '#0284c7' }}>
                               {ecosystemState.data.telemetry_comparison?.observed_chlorophyll_mg_m3 ?? 0.38} mg/m³
                             </strong>
-                            <small style={{ color: '#fb923c', fontWeight: 700 }}>
+                            <small style={{ color: '#d97706', fontWeight: 700 }}>
                               {ecosystemState.data.telemetry_comparison?.chlorophyll_anomaly_pct ?? -45}% deficit
                             </small>
                           </div>
-                          <small style={{ color: '#cbd5e1', fontSize: '11px', display: 'block' }}>
-                            Baseline: {ecosystemState.data.telemetry_comparison?.baseline_chlorophyll_mg_m3 ?? 0.85} mg/m³ • Phytoplankton Forage Depleted
+                          <small style={{ color: '#64748b', fontSize: '11px', display: 'block' }}>
+                            Baseline: {ecosystemState.data.telemetry_comparison?.baseline_chlorophyll_mg_m3 ?? 0.85} mg/m³ • Phytoplankton Depleted
                           </small>
                         </div>
 
-                        {/* UPWELLING & DISSOLVED OXYGEN */}
-                        <div style={{ background: 'rgba(255, 255, 255, 0.04)', borderRadius: '8px', padding: '12px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                          <span style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600 }}>💨 Upwelling & Hypoxia Risk</span>
+                        {/* UPWELLING CARD */}
+                        <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '12px', border: '1px solid #e2e8f0' }}>
+                          <span style={{ fontSize: '11px', color: '#64748b', textTransform: 'uppercase', fontWeight: 600 }}>💨 Upwelling & Hypoxia</span>
                           <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', margin: '4px 0' }}>
-                            <strong style={{ fontSize: '18px', color: '#a78bfa' }}>
+                            <strong style={{ fontSize: '18px', color: '#7c3aed' }}>
                               {ecosystemState.data.stress_factors?.find(f => f.factor?.includes('Upwelling'))?.metric?.split(':')[1] || '8.5 m³/s/100m'}
                             </strong>
-                            <small style={{ color: '#34d399', fontWeight: 700 }}>Moderate Hypoxia</small>
+                            <small style={{ color: '#15803d', fontWeight: 700 }}>Moderate Hypoxia</small>
                           </div>
-                          <small style={{ color: '#cbd5e1', fontSize: '11px', display: 'block' }}>
+                          <small style={{ color: '#64748b', fontSize: '11px', display: 'block' }}>
                             Season: {ecosystemState.data.telemetry_comparison?.upwelling_season || 'Monsoon Upwelling Cycle'}
                           </small>
                         </div>
 
-                        {/* REGIONAL HARVEST PRESSURE */}
-                        <div style={{ background: 'rgba(255, 255, 255, 0.04)', borderRadius: '8px', padding: '12px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                          <span style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600 }}>⚓ Impacted Species</span>
+                        {/* SPECIES CARD */}
+                        <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '12px', border: '1px solid #e2e8f0' }}>
+                          <span style={{ fontSize: '11px', color: '#64748b', textTransform: 'uppercase', fontWeight: 600 }}>⚓ Impacted Species</span>
                           <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', margin: '4px 0' }}>
-                            <strong style={{ fontSize: '14px', color: '#facc15' }}>High Vulnerability</strong>
+                            <strong style={{ fontSize: '14px', color: '#b45309' }}>High Vulnerability</strong>
                           </div>
-                          <small style={{ color: '#cbd5e1', fontSize: '11px', display: 'block' }}>
+                          <small style={{ color: '#64748b', fontSize: '11px', display: 'block' }}>
                             {Array.isArray(ecosystemState.data.target_species_impacted)
                               ? ecosystemState.data.target_species_impacted.slice(0, 2).join(', ')
                               : 'Indian Oil Sardine, Indian Mackerel'}
@@ -1264,26 +1376,26 @@ export default function MapExplorer({ navigate }) {
                         </div>
                       </div>
 
-                      {/* EVIDENCE-BASED RECOMMENDATIONS */}
+                      {/* RECOMMENDATIONS */}
                       {Array.isArray(ecosystemState.data.recommendations) && ecosystemState.data.recommendations.length > 0 && (
-                        <div style={{ background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px', padding: '12px 14px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                          <strong style={{ fontSize: '12px', color: '#34d399', display: 'block', marginBottom: '8px', textTransform: 'uppercase' }}>
+                        <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '12px 14px', border: '1px solid #e2e8f0' }}>
+                          <strong style={{ fontSize: '11px', color: '#15803d', display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                             📋 Actionable Evidence-Based Recommendations
                           </strong>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             {ecosystemState.data.recommendations.map((rec, idx) => {
                               if (typeof rec === 'string') {
                                 return (
-                                  <div key={idx} style={{ fontSize: '12px', color: '#e2e8f0', lineHeight: 1.5, padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: '6px', borderLeft: '3px solid #34d399' }}>
+                                  <div key={idx} style={{ fontSize: '12px', color: '#334155', lineHeight: 1.5, padding: '8px 12px', background: '#ffffff', borderRadius: '6px', borderLeft: '3px solid #16a34a', border: '1px solid #e2e8f0' }}>
                                     {rec}
                                   </div>
                                 )
                               }
                               return (
-                                <div key={idx} style={{ fontSize: '12px', color: '#e2e8f0', lineHeight: 1.5, padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: '6px', borderLeft: '3px solid #34d399' }}>
-                                  {rec.target && <strong style={{ color: '#38bdf8', marginRight: '6px' }}>[{rec.target}]</strong>}
+                                <div key={idx} style={{ fontSize: '12px', color: '#334155', lineHeight: 1.5, padding: '8px 12px', background: '#ffffff', borderRadius: '6px', borderLeft: '3px solid #16a34a', border: '1px solid #e2e8f0' }}>
+                                  {rec.target && <strong style={{ color: '#0284c7', marginRight: '6px' }}>[{rec.target}]</strong>}
                                   <span>{rec.action}</span>
-                                  {rec.rationale && <small style={{ display: 'block', color: '#94a3b8', marginTop: '2px' }}>💡 {rec.rationale}</small>}
+                                  {rec.rationale && <small style={{ display: 'block', color: '#64748b', marginTop: '2px' }}>💡 {rec.rationale}</small>}
                                 </div>
                               )
                             })}

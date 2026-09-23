@@ -35,3 +35,6 @@ Thumbs.db
 *.db-shm
 *.db-wal
 *.db-journal
+
+backend/orca-session-backend*.log
+backend/orca-session-backend*.log
