@@ -53,19 +53,36 @@ class AnnouncementCreate(BaseModel):
 # --- Helper functions ---
 
 def _format_hazard_row(row: Any) -> dict[str, Any]:
+    if isinstance(row, (tuple, list)):
+        return {
+            "id": row[0],
+            "region": row[1] if len(row) > 1 else "",
+            "hazardType": row[2] if len(row) > 2 else "",
+            "location": row[3] if len(row) > 3 else "",
+            "description": row[4] if len(row) > 4 else "",
+            "photoPreview": row[5] if len(row) > 5 else None,
+            "photoName": row[6] if len(row) > 6 else None,
+            "timestamp": row[7] if len(row) > 7 else "",
+            "status": row[8] if len(row) > 8 else "Pending Review",
+            "acknowledgedAt": row[9] if len(row) > 9 else None,
+            "source": row[10] if len(row) > 10 else "Marine & Disaster Operations",
+            "opRole": row[11] if len(row) > 11 else "Disaster Response",
+            "createdAt": str(row[12]) if len(row) > 12 and row[12] is not None else "",
+        }
+    keys = row.keys() if hasattr(row, "keys") else []
     return {
         "id": row["id"],
         "region": row["region"],
         "hazardType": row["hazard_type"],
         "location": row["location"],
         "description": row["description"],
-        "photoPreview": row["photo_url"],
-        "photoName": row["photo_name"],
+        "photoPreview": row["photo_url"] if "photo_url" in keys else None,
+        "photoName": row["photo_name"] if "photo_name" in keys else None,
         "timestamp": row["timestamp"],
         "status": row["status"],
-        "acknowledgedAt": row["acknowledged_at"],
+        "acknowledgedAt": row["acknowledged_at"] if "acknowledged_at" in keys else None,
         "source": row["source"],
-        "opRole": row["op_role"],
+        "opRole": row["op_role"] if "op_role" in keys else None,
         "createdAt": str(row["created_at"]),
     }
 
@@ -88,8 +105,28 @@ def _get_authenticated_user_from_header(authorization: str | None) -> Any | None
 
 
 def _format_complaint_row(row: Any) -> dict[str, Any]:
+    if isinstance(row, (tuple, list)):
+        return {
+            "id": row[0],
+            "senderUserId": row[1] if len(row) > 1 else None,
+            "senderName": row[2] if len(row) > 2 else "",
+            "senderRole": row[3] if len(row) > 3 else "",
+            "senderEmail": row[4] if len(row) > 4 else None,
+            "recipientRole": row[5] if len(row) > 5 else "coastal_authority",
+            "message": row[6] if len(row) > 6 else "",
+            "region": row[7] if len(row) > 7 else "",
+            "location": row[8] if len(row) > 8 and row[8] else (row[7] if len(row) > 7 else ""),
+            "photoUrl": row[9] if len(row) > 9 else None,
+            "photoName": row[10] if len(row) > 10 else None,
+            "timestamp": row[11] if len(row) > 11 else "",
+            "status": row[12] if len(row) > 12 else "Pending Response",
+            "response": row[13] if len(row) > 13 else None,
+            "respondedAt": row[14] if len(row) > 14 else None,
+            "responderUserId": row[15] if len(row) > 15 else None,
+            "createdAt": str(row[16]) if len(row) > 16 and row[16] is not None else "",
+        }
     keys = row.keys() if hasattr(row, "keys") else []
-    loc_val = row["location"] if "location" in keys and row["location"] else row["region"]
+    loc_val = row["location"] if "location" in keys and row["location"] else (row["region"] if "region" in keys else "")
     return {
         "id": row["id"],
         "senderUserId": row["sender_user_id"] if "sender_user_id" in keys else None,
@@ -104,19 +141,34 @@ def _format_complaint_row(row: Any) -> dict[str, Any]:
         "photoName": row["photo_name"] if "photo_name" in keys else None,
         "timestamp": row["timestamp"],
         "status": row["status"],
-        "response": row["response"],
-        "respondedAt": row["responded_at"],
+        "response": row["response"] if "response" in keys else None,
+        "respondedAt": row["responded_at"] if "responded_at" in keys else None,
         "responderUserId": row["responder_user_id"] if "responder_user_id" in keys else None,
         "createdAt": str(row["created_at"]),
     }
 
 
 def _format_announcement_row(row: Any) -> dict[str, Any]:
+    if isinstance(row, (tuple, list)):
+        details_val = row[2] if len(row) > 2 else ""
+        short_val = row[3] if len(row) > 3 and row[3] else (details_val[:120] + "..." if len(details_val) > 120 else details_val)
+        return {
+            "id": row[0],
+            "title": row[1] if len(row) > 1 else "",
+            "details": details_val,
+            "shortDesc": short_val,
+            "source": row[4] if len(row) > 4 else "Coastal Authority",
+            "region": row[5] if len(row) > 5 else "",
+            "targetAudience": row[6] if len(row) > 6 else "",
+            "datetime": row[7] if len(row) > 7 else "",
+            "createdAt": str(row[8]) if len(row) > 8 and row[8] is not None else "",
+        }
+    keys = row.keys() if hasattr(row, "keys") else []
     return {
         "id": row["id"],
         "title": row["title"],
         "details": row["details"],
-        "shortDesc": row["short_desc"] or (row["details"][:120] + "..." if len(row["details"]) > 120 else row["details"]),
+        "shortDesc": (row["short_desc"] if "short_desc" in keys and row["short_desc"] else None) or (row["details"][:120] + "..." if len(row["details"]) > 120 else row["details"]),
         "source": row["source"],
         "region": row["region"],
         "targetAudience": row["target_audience"],

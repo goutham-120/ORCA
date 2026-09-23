@@ -9,13 +9,13 @@ import jwt
 from app.config import get_settings
 from app.models.user import User, users
 
-JWT_SECRET = get_settings().jwt_secret or "orca-secret-key-change-in-production-32chars"
+JWT_SECRET = get_settings().jwt_secret or "orca-secret-key-change-in-production-32chars-min-jwt-secret"
 JWT_ALGORITHM = "HS256"
 
 
 def get_current_user(authorization: str | None = Header(default=None)) -> User:
     """Validate Bearer JWT token and return current authenticated user."""
-    if not authorization or not authorization.startswith("Bearer "):
+    if not authorization or not isinstance(authorization, str):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authentication token is required.",
@@ -63,4 +63,3 @@ def require_admin_user(current_user: Annotated[User, Depends(get_current_user)])
             detail="Administrator authorization is required to perform this action.",
         )
     return current_user
-

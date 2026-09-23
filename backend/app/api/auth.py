@@ -6,9 +6,16 @@ from datetime import datetime, timedelta, timezone
 import base64
 import hashlib
 import hmac
+import secrets
 from typing import Annotated, Any
 
-import bcrypt
+try:
+    import bcrypt
+    HAS_BCRYPT = True
+except ImportError:
+    bcrypt = None  # type: ignore
+    HAS_BCRYPT = False
+
 import jwt
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 
@@ -42,20 +49,30 @@ USER_CATEGORIES = {
 
 
 def _hash_password(password: str) -> str:
-    salt = bcrypt.gensalt()
-    return bcrypt.hashpw(password.encode("utf-8"), salt).decode("utf-8")
+    if HAS_BCRYPT and bcrypt is not None:
+        salt = bcrypt.gensalt()
+        return bcrypt.hashpw(password.encode("utf-8"), salt).decode("utf-8")
+    # Fallback to standard library PBKDF2
+    salt = secrets.token_bytes(16)
+    iterations = 100_000
+    derived = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, iterations)
+    salt_b64 = base64.urlsafe_b64encode(salt).decode("ascii").rstrip("=")
+    derived_b64 = base64.urlsafe_b64encode(derived).decode("ascii").rstrip("=")
+    return f"pbkdf2_sha256${iterations}${salt_b64}${derived_b64}"
 
 
 def _password_matches(password: str, stored_hash: str) -> bool:
     if not stored_hash:
         return False
     # Check bcrypt hash first
-    if stored_hash.startswith("$2b$") or stored_hash.startswith("$2a$") or stored_hash.startswith("$2y$"):
-        try:
-            return bcrypt.checkpw(password.encode("utf-8"), stored_hash.encode("utf-8"))
-        except Exception:
-            return False
-    # Fallback to PBKDF2 for legacy database records
+    if stored_hash.startswith(("$2b$", "$2a$", "$2y$")):
+        if HAS_BCRYPT and bcrypt is not None:
+            try:
+                return bcrypt.checkpw(password.encode("utf-8"), stored_hash.encode("utf-8"))
+            except Exception:
+                return False
+        return False
+    # Fallback to PBKDF2
     if stored_hash.startswith("pbkdf2_sha256$"):
         try:
             algorithm, iterations, salt, expected = stored_hash.split("$", 3)
@@ -275,14 +292,23 @@ def login(request: LoginRequest) -> AuthResponse:
     return AuthResponse(user=_response_user(user), access_token=token)
 
 
+def _resolve_user(current_user: Any = None, authorization: Any = None) -> User:
+    if isinstance(current_user, User):
+        fresh = users.by_id(current_user.id)
+        return fresh if fresh is not None else current_user
+    if isinstance(current_user, str):
+        return get_current_user(current_user)
+    if isinstance(authorization, str) and authorization:
+        return get_current_user(authorization)
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+
+
 @router.get("/me", response_model=UserResponse)
 def me(
-    current_user: Annotated[User | None, Depends(get_current_user)] = None,
+    current_user: Annotated[User | str | None, Depends(get_current_user)] = None,
     authorization: str | None = Header(default=None),
 ) -> UserResponse:
-    user = current_user or get_current_user(authorization)
-    if user is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+    user = _resolve_user(current_user, authorization)
     record_login_activity(
         email=user.email,
         status_val="success",
@@ -426,13 +452,11 @@ def reject_user(user_id: int, admin: Annotated[User, Depends(require_admin_user)
 @router.put("/profile", response_model=UserResponse)
 def update_profile(
     request: ProfileUpdateRequest,
-    current_user: Annotated[User | None, Depends(get_current_user)] = None,
+    current_user: Annotated[User | str | None, Depends(get_current_user)] = None,
     authorization: str | None = Header(default=None),
 ) -> UserResponse:
     """Update profile user_category or preferences."""
-    user = current_user or get_current_user(authorization)
-    if user is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+    user = _resolve_user(current_user, authorization)
     
     updated = user
     if request.user_category is not None:
