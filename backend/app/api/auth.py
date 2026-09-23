@@ -77,7 +77,13 @@ def _authenticated_user(authorization: str | None) -> User:
 
 
 def _response_user(user: User) -> UserResponse:
-    return UserResponse(id=str(user.id), email=user.email, display_name=user.display_name, user_category=user.user_category)
+    return UserResponse(
+        id=str(user.id),
+        email=user.email,
+        display_name=user.display_name,
+        user_category=user.user_category,
+        preferences=user.preferences or {},
+    )
 
 
 @router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
@@ -86,7 +92,13 @@ def register(request: RegisterRequest) -> AuthResponse:
     if users.by_email(email):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="An account already exists for this email address.")
     try:
-        user = users.create(email, request.display_name.strip(), _hash_password(request.password))
+        user = users.create(
+            email=email,
+            display_name=request.display_name.strip(),
+            password_hash=_hash_password(request.password),
+            user_category=request.user_category,
+            preferences=request.preferences,
+        )
     except Exception as exc:
         if users.by_email(email):
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="An account already exists for this email address.") from exc
@@ -109,10 +121,20 @@ def me(authorization: str | None = Header(default=None)) -> UserResponse:
 
 @router.put("/profile", response_model=UserResponse)
 def update_profile(request: ProfileUpdateRequest, authorization: str | None = Header(default=None)) -> UserResponse:
-    if request.user_category not in USER_CATEGORIES:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Invalid user category.")
     user = _authenticated_user(authorization)
-    updated = users.update_category(user.id, request.user_category)
+    updated = user
+
+    if request.user_category is not None:
+        if request.user_category not in USER_CATEGORIES:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Invalid user category.")
+        updated = users.update_category(user.id, request.user_category)
+
+    if request.preferences is not None:
+        current_prefs = dict(updated.preferences or {}) if updated else {}
+        current_prefs.update(request.preferences)
+        updated = users.update_preferences(user.id, current_prefs)
+
     if updated is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
     return _response_user(updated)
+
