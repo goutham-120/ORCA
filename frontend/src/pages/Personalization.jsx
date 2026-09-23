@@ -1,10 +1,17 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
+import FishermanPersonalization from '../components/personalization/FishermanPersonalization'
+import ResearcherPersonalization from '../components/personalization/ResearcherPersonalization'
+import MarineDisasterPersonalization from '../components/personalization/MarineDisasterPersonalization'
+import CoastalAuthorityPersonalization from '../components/personalization/CoastalAuthorityPersonalization'
+import { coastalService } from '../services/coastalService'
+
 
 const ROLE_CATEGORIES = [
   { value: 'fisher_marine_operator', name: 'Fisher / Marine Operator', label: 'Marine Operator', icon: '⚓', sub: 'Safer fishing, PFZs, route guidance' },
   { value: 'researcher_scientist', name: 'Researcher / Scientist', label: 'Researcher', icon: '🔬', sub: 'Marine observation, data study, trends' },
   { value: 'coastal_authority', name: 'Coastal Authority', label: 'Coastal Authority', icon: '🚨', sub: 'Monitoring, risk assessment, incident reports' },
+  { value: 'marine_disaster_ops', name: 'Marine & Disaster Operations', label: 'Marine & Disaster Ops', icon: '⚡', sub: 'Rapid hazard communication & emergency alerts' },
   { value: 'general_user', name: 'General User', label: 'General User', icon: '📍', sub: 'Explore coastal conditions & saved spots' },
 ]
 
@@ -65,7 +72,12 @@ export default function Personalization({ navigate }) {
   const { user, updateProfile } = useAuth()
   const userKey = user?.email || user?.id || 'default'
 
-  const [selectedRole, setSelectedRole] = useState(() => user?.user_category || 'fisher_marine_operator')
+  const [selectedRole, setSelectedRole] = useState(() => {
+    if (user?.role === 'coastal_authority' || user?.user_category === 'coastal_authority') return 'coastal_authority'
+    if (user?.role === 'marine_disaster_ops' || user?.user_category === 'marine_disaster_ops') return 'marine_disaster_ops'
+    if (user?.role === 'researcher' || user?.user_category === 'researcher_scientist') return 'researcher_scientist'
+    return user?.user_category || 'fisher_marine_operator'
+  })
   const [savingRole, setSavingRole] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
 
@@ -126,7 +138,18 @@ export default function Personalization({ navigate }) {
     return localStorage.getItem(`orca_preferred_spot_${userKey}`) || localStorage.getItem('orca_preferred_spot') || 'Chennai, Tamil Nadu'
   })
   const [spotInput, setSpotInput] = useState(preferredSpot)
-  const [savedSpots, setSavedSpots] = useState(() => loadUserData('orca_saved_spots', ['Chennai, Tamil Nadu', 'Visakhapatnam, AP']))
+  // 5. FISHERMAN / MARINERS ANNOUNCEMENTS STATE (LIVE FROM BACKEND)
+  const [fishermanAnnouncements, setFishermanAnnouncements] = useState([])
+
+  useEffect(() => {
+    let isMounted = true
+    coastalService.fetchAnnouncements(preferredSpot, 'Fishermen / Mariners').then((res) => {
+      if (isMounted) {
+        setFishermanAnnouncements(res || [])
+      }
+    })
+    return () => { isMounted = false }
+  }, [preferredSpot])
 
   const currentTimeStr = new Date().toLocaleString(undefined, {
     weekday: 'short',
@@ -141,7 +164,15 @@ export default function Personalization({ navigate }) {
   useEffect(() => {
     if (user) {
       queueMicrotask(() => {
-        if (user.user_category && user.user_category !== selectedRole) {
+        if (user.role === 'coastal_authority' || user.user_category === 'coastal_authority') {
+          setSelectedRole('coastal_authority')
+        } else if (user.role === 'marine_disaster_ops' || user.user_category === 'marine_disaster_ops') {
+          setSelectedRole('marine_disaster_ops')
+        } else if (user.role === 'researcher' || user.user_category === 'researcher_scientist') {
+          setSelectedRole('researcher_scientist')
+        } else if (user.role === 'fisherman' || user.user_category === 'fisher_marine_operator') {
+          setSelectedRole('fisher_marine_operator')
+        } else if (user.user_category && user.user_category !== selectedRole) {
           setSelectedRole(user.user_category)
         }
         setSavedFieldReports(loadUserData('orca_field_reports', []))
@@ -157,7 +188,8 @@ export default function Personalization({ navigate }) {
       })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userKey, user?.user_category])
+  }, [userKey, user?.user_category, user?.role])
+
 
   const changeRoleCategory = async (newRole) => {
     setSelectedRole(newRole)
@@ -308,82 +340,65 @@ export default function Personalization({ navigate }) {
     setTimeout(() => setToastMessage(''), 4500)
   }
 
-  const name = user?.display_name || user?.email?.split('@')[0] || 'Explorer'
-  const activeRoleObj = ROLE_CATEGORIES.find((r) => r.value === selectedRole) || ROLE_CATEGORIES[0]
-  const suitabilityInfo = ACTIVITY_SUITABILITY_MAP[selectedActivity] || ACTIVITY_SUITABILITY_MAP.beach
+  const getRoleIdentity = (role, category) => {
+    const r = (role || category || '').toLowerCase()
+    if (r.includes('fisherman') || r.includes('fisher')) {
+      return { label: 'Fisherman', icon: '🎣' }
+    }
+    if (r.includes('researcher')) {
+      return { label: 'Researcher', icon: '🔬' }
+    }
+    if (r.includes('coastal_authority') || r.includes('coastal')) {
+      return { label: 'Coastal Authority', icon: '🏛️' }
+    }
+    if (r.includes('marine_disaster_ops') || r.includes('disaster')) {
+      return { label: 'Marine & Disaster Operations', icon: '⚓' }
+    }
+    return { label: 'General User', icon: '📍' }
+  }
+
+  const roleIdentity = getRoleIdentity(user?.role, user?.user_category)
 
   return (
     <div className="font-sans" style={{ maxWidth: 920, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
       
-      {/* PAGE HEADER PANEL */}
-      <div className="panel font-sans" style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
-        <div>
-          <span className="eyebrow font-mono" style={{ fontSize: 11, letterSpacing: 1 }}>WORKSPACE PERSONALIZATION</span>
-          <h1 style={{ margin: '4px 0 0', fontSize: 22, fontWeight: 700, color: 'var(--ink)', fontFamily: 'Sora, sans-serif' }}>
-            Welcome, {name}
-          </h1>
-          <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--muted)' }}>
-            Configured for <strong>{activeRoleObj.name}</strong> • {activeRoleObj.sub}
-          </p>
-        </div>
+      {/* PAGE HEADER PANEL WITH DYNAMIC ROLE IDENTITY */}
+      <div className="panel font-sans" style={{ padding: '20px 24px', background: '#ffffff', border: '1px solid #dce7f0', borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+          <div>
+            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: 'var(--ink)', fontFamily: 'Sora, sans-serif', letterSpacing: 0.5 }}>
+              PERSONALIZATION
+            </h1>
+            <div style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 8, background: '#f0f9ff', border: '1px solid #bae6fd', padding: '6px 14px', borderRadius: 8 }}>
+              <span style={{ fontSize: 13, color: '#0369a1', fontWeight: 700 }}>👤 Role:</span>
+              <span style={{ fontSize: 13, fontWeight: 800, color: '#0284c7' }}>
+                {roleIdentity.icon} {roleIdentity.label}
+              </span>
+            </div>
+          </div>
 
-        <button
-          type="button"
-          className="primary-button font-inter"
-          style={{
-            width: 'auto',
-            padding: '10px 20px',
-            fontSize: 14,
-            fontWeight: 700,
-            background: 'linear-gradient(135deg, #1077ca 0%, #0d4163 100%)',
-            color: '#ffffff',
-            border: 'none',
-            borderRadius: 8,
-            boxShadow: '0 2px 10px rgba(16, 119, 202, 0.3)',
-            cursor: 'pointer',
-          }}
-          onClick={() => navigate('/dashboard')}
-        >
-          Proceed to Dashboard →
-        </button>
-      </div>
-
-      {/* ROLE CATEGORY SWITCHER BAR */}
-      <div className="panel font-sans" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, background: '#ffffff', borderRadius: 10, border: '1px solid #dce7f0' }}>
-        <span style={{ fontSize: 11, fontWeight: 700, color: '#0f172a', letterSpacing: 0.8, textTransform: 'uppercase' }}>
-          ROLE PROFILE WORKSPACE:
-        </span>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          {ROLE_CATEGORIES.map((cat) => {
-            const isActive = selectedRole === cat.value
-            return (
-              <button
-                key={cat.value}
-                type="button"
-                onClick={() => changeRoleCategory(cat.value)}
-                disabled={savingRole}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: 8,
-                  fontSize: 13,
-                  fontWeight: 600,
-                  border: isActive ? '1px solid #0284c7' : '1px solid #cbd5e1',
-                  background: isActive ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : '#f8fafc',
-                  color: isActive ? '#ffffff' : '#334155',
-                  boxShadow: isActive ? '0 3px 10px rgba(2, 132, 199, 0.3)' : 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                }}
-              >
-                <span>{cat.icon}</span> {cat.label}
-              </button>
-            )
-          })}
+          <button
+            type="button"
+            className="primary-button font-inter"
+            style={{
+              padding: '10px 20px',
+              fontSize: 13,
+              fontWeight: 700,
+              background: 'linear-gradient(135deg, #1077ca 0%, #0d4163 100%)',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: 8,
+              boxShadow: '0 2px 10px rgba(16, 119, 202, 0.25)',
+              cursor: 'pointer',
+            }}
+            onClick={() => navigate('/dashboard')}
+          >
+            Proceed to Dashboard →
+          </button>
         </div>
       </div>
+
+
 
       {/* TOAST SUCCESS BANNER */}
       {toastMessage && (
@@ -397,563 +412,29 @@ export default function Personalization({ navigate }) {
           1. FISHER / MARINE OPERATOR WORKSPACE
          ====================================================================== */}
       {selectedRole === 'fisher_marine_operator' && (
-        <div className="panel font-sans" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <div>
-            <span className="eyebrow font-mono" style={{ color: '#0284c7', fontWeight: 700 }}>MARINE & FISHING OPERATIONS</span>
-            <h2 style={{ margin: '4px 0 0', fontSize: 20, color: 'var(--ink)', fontFamily: 'Sora, sans-serif' }}>
-              Marine Operator Dashboard Workspace
-            </h2>
-            <p style={{ margin: '4px 0 0', color: 'var(--muted)', fontSize: 13 }}>
-              Log ocean field conditions and access specialized marine operations tools.
-            </p>
-          </div>
-
-          {/* FORM */}
-          <div style={{ background: '#f8fcff', border: '1px solid #d8e9f5', borderRadius: 12, padding: 22 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-              <span style={{ fontSize: 22 }}>📷</span>
-              <h3 style={{ margin: 0, fontSize: 16, color: 'var(--ink)', fontFamily: 'Sora, sans-serif' }}>
-                Submit Ocean Field Report
-              </h3>
-            </div>
-
-            <form onSubmit={handleSaveFieldReport} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--ink)', marginBottom: 8 }}>
-                  Report Category
-                </label>
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                  {['Sea Condition', 'Fishing Activity', 'Pollution', 'Other'].map((cat) => {
-                    const isChecked = fieldReport.category === cat
-                    return (
-                      <label
-                        key={cat}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 8,
-                          fontSize: 13,
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          padding: '8px 14px',
-                          background: isChecked ? '#e0f2fe' : '#ffffff',
-                          color: isChecked ? '#0369a1' : '#334155',
-                          border: isChecked ? '1px solid #0284c7' : '1px solid #cbd5e1',
-                          borderRadius: 8,
-                          transition: 'all 0.2s ease',
-                        }}
-                      >
-                        <input
-                          type="radio"
-                          name="field-cat"
-                          value={cat}
-                          checked={isChecked}
-                          onChange={(e) => setFieldReport({ ...fieldReport, category: e.target.value })}
-                          style={{ accentColor: '#0284c7' }}
-                        />
-                        {cat}
-                      </label>
-                    )
-                  })}
-                </div>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--ink)', marginBottom: 6 }}>
-                  Upload / Take Photo Evidence
-                </label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                  <label
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      padding: '9px 16px',
-                      background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-                      color: '#ffffff',
-                      fontSize: 13,
-                      fontWeight: 600,
-                      borderRadius: 8,
-                      cursor: 'pointer',
-                      boxShadow: '0 2px 6px rgba(2, 132, 199, 0.25)',
-                    }}
-                  >
-                    <span>📷 Upload Photo Evidence</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handlePhotoSelect(e, setFieldReport, setFieldPhotoPreview)}
-                      style={{ display: 'none' }}
-                    />
-                  </label>
-                  {fieldReport.photoName && (
-                    <span style={{ fontSize: 12, color: '#0369a1', fontWeight: 600 }}>
-                      ✓ {fieldReport.photoName}
-                    </span>
-                  )}
-                </div>
-                {fieldPhotoPreview && (
-                  <div style={{ marginTop: 12, width: 140, height: 100, borderRadius: 8, overflow: 'hidden', border: '2px solid #0284c7', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-                    <img src={fieldPhotoPreview} alt="Field preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--ink)', marginBottom: 6 }}>
-                  Short Description
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="Describe sea conditions, wave activity, or vessel observations..."
-                  value={fieldReport.description}
-                  onChange={(e) => setFieldReport({ ...fieldReport, description: e.target.value })}
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 13, fontFamily: 'Inter, sans-serif' }}
-                />
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, background: '#fff', padding: '12px 16px', borderRadius: 8, border: '1px solid #dce7f0' }}>
-                <div>
-                  <span style={{ display: 'block', fontSize: 11, color: 'var(--muted)', fontWeight: 600 }}>TIMESTAMP & LOCATION</span>
-                  <span style={{ fontSize: 12, color: 'var(--ink)', fontWeight: 600 }}>{currentTimeStr}</span>
-                  {fieldReport.location && <span style={{ display: 'block', fontSize: 11, color: '#0284c7', fontWeight: 700 }}>📍 {fieldReport.location}</span>}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => acquireLocation(setFieldReport)}
-                  style={{
-                    padding: '8px 14px',
-                    fontSize: 12,
-                    background: '#e0f2fe',
-                    border: '1px solid #7dd3fc',
-                    color: '#0369a1',
-                    borderRadius: 8,
-                    cursor: 'pointer',
-                    fontWeight: 700,
-                    transition: 'all 0.2s ease',
-                  }}
-                >
-                  📍 Use Current GPS Location
-                </button>
-              </div>
-
-              <button
-                type="submit"
-                className="primary-button font-inter"
-                style={{
-                  width: '100%',
-                  marginTop: 4,
-                  padding: '12px',
-                  fontSize: 14,
-                  fontWeight: 700,
-                  background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-                  color: '#ffffff',
-                  border: 'none',
-                  borderRadius: 8,
-                  boxShadow: '0 3px 10px rgba(2, 132, 199, 0.3)',
-                  cursor: 'pointer',
-                }}
-              >
-                Submit & Save Field Report
-              </button>
-            </form>
-          </div>
-
-          {/* SUBMITTED REPORTS LIST */}
-          <div style={{ background: '#fff', border: '1px solid #dce7f0', borderRadius: 12, padding: 20 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-              <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--ink)', fontFamily: 'Sora, sans-serif' }}>
-                📋 Submitted Ocean Field Reports ({savedFieldReports.length})
-              </h3>
-              <span style={{ fontSize: 11, color: '#0284c7', fontWeight: 700, background: '#e0f2fe', padding: '3px 8px', borderRadius: 4 }}>STORAGE: local workspace log ({userKey})</span>
-            </div>
-
-            {savedFieldReports.length === 0 ? (
-              <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)', fontStyle: 'italic' }}>
-                No submitted field reports yet. Fill out the form above to submit your first report.
-              </p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {savedFieldReports.map((item) => (
-                  <div key={item.id} style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: 14, background: '#f8fafc', display: 'flex', gap: 14, alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', gap: 12, flex: 1 }}>
-                      {item.photoPreview && (
-                        <img src={item.photoPreview} alt="Report proof" style={{ width: 70, height: 70, borderRadius: 6, objectFit: 'cover', border: '1px solid #cbd5e1' }} />
-                      )}
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 6, background: '#e0f2fe', color: '#0369a1' }}>
-                            {item.category}
-                          </span>
-                          <span style={{ fontSize: 11, color: 'var(--muted)' }}>{item.timestamp}</span>
-                        </div>
-                        {item.description && <p style={{ margin: '6px 0 0', fontSize: 13, color: 'var(--ink)' }}>{item.description}</p>}
-                        {item.location && <small style={{ display: 'block', margin: '4px 0 0', fontSize: 11, color: '#0284c7', fontWeight: 600 }}>📍 {item.location}</small>}
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteFieldReport(item.id)}
-                      style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', padding: '4px 10px', borderRadius: 6, fontSize: 12, cursor: 'pointer', fontWeight: 600 }}
-                      title="Delete report entry"
-                    >
-                      ✕ Remove
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+        <FishermanPersonalization user={user} userKey={userKey} />
       )}
 
       {/* ======================================================================
           2. RESEARCHER / SCIENTIST WORKSPACE
          ====================================================================== */}
       {selectedRole === 'researcher_scientist' && (
-        <div className="panel font-sans" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <div>
-            <span className="eyebrow font-mono" style={{ color: '#0284c7', fontWeight: 700 }}>OBSERVATION & RESEARCH</span>
-            <h2 style={{ margin: '4px 0 0', fontSize: 20, color: 'var(--ink)', fontFamily: 'Sora, sans-serif' }}>
-              Researcher Observation Workspace
-            </h2>
-            <p style={{ margin: '4px 0 0', color: 'var(--muted)', fontSize: 13 }}>
-              Record oceanographic observations, telemetric context, and parameters.
-            </p>
-          </div>
-
-          {/* FORM */}
-          <div style={{ background: '#f9fcfe', border: '1px solid #d5e7f2', borderRadius: 12, padding: 22 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-              <span style={{ fontSize: 22 }}>🔬</span>
-              <h3 style={{ margin: 0, fontSize: 16, color: 'var(--ink)', fontFamily: 'Sora, sans-serif' }}>
-                Log Research Observation
-              </h3>
-            </div>
-
-            <form onSubmit={handleSaveObservation} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--ink)', marginBottom: 6 }}>
-                  Observation Title
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g., Sea surface temperature anomaly off coastal shelf"
-                  value={observation.title}
-                  onChange={(e) => setObservation({ ...observation, title: e.target.value })}
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 13, fontFamily: 'Inter, sans-serif' }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--ink)', marginBottom: 6 }}>
-                  Target Parameter
-                </label>
-                <select
-                  value={observation.parameter}
-                  onChange={(e) => setObservation({ ...observation, parameter: e.target.value })}
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 13, fontWeight: 600, color: 'var(--ink)', background: '#fff' }}
-                >
-                  <option value="SST">Sea Surface Temperature (SST)</option>
-                  <option value="Waves">Wave Height & Swell Period</option>
-                  <option value="Currents">Coastal Drift & Currents</option>
-                  <option value="Other">Other Oceanographic Parameter</option>
-                </select>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--ink)', marginBottom: 6 }}>
-                  Observation Notes & Context
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="Record notes, sensors used, or physical observations..."
-                  value={observation.note}
-                  onChange={(e) => setObservation({ ...observation, note: e.target.value })}
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 13, fontFamily: 'Inter, sans-serif' }}
-                />
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, background: '#fff', padding: '12px 16px', borderRadius: 8, border: '1px solid #dce7f0' }}>
-                <div>
-                  <span style={{ display: 'block', fontSize: 11, color: 'var(--muted)', fontWeight: 600 }}>RECORD TIMESTAMP</span>
-                  <span style={{ fontSize: 12, color: 'var(--ink)', fontWeight: 600 }}>{currentTimeStr}</span>
-                  {observation.location && <span style={{ display: 'block', fontSize: 11, color: '#0284c7', fontWeight: 700 }}>📍 {observation.location}</span>}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => acquireLocation(setObservation)}
-                  style={{
-                    padding: '8px 14px',
-                    fontSize: 12,
-                    background: '#e0f2fe',
-                    border: '1px solid #7dd3fc',
-                    color: '#0369a1',
-                    borderRadius: 8,
-                    cursor: 'pointer',
-                    fontWeight: 700,
-                  }}
-                >
-                  📍 Tag GPS Location
-                </button>
-              </div>
-
-              <button
-                type="submit"
-                className="primary-button font-inter"
-                style={{
-                  width: '100%',
-                  marginTop: 4,
-                  padding: '12px',
-                  fontSize: 14,
-                  fontWeight: 700,
-                  background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-                  color: '#ffffff',
-                  border: 'none',
-                  borderRadius: 8,
-                  boxShadow: '0 3px 10px rgba(2, 132, 199, 0.3)',
-                  cursor: 'pointer',
-                }}
-              >
-                Submit & Log Observation
-              </button>
-            </form>
-          </div>
-
-          {/* SUBMITTED OBSERVATIONS LIST */}
-          <div style={{ background: '#fff', border: '1px solid #dce7f0', borderRadius: 12, padding: 20 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-              <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--ink)', fontFamily: 'Sora, sans-serif' }}>
-                🔬 Saved Research Observations ({savedObservations.length})
-              </h3>
-              <span style={{ fontSize: 11, color: '#0284c7', fontWeight: 700, background: '#e0f2fe', padding: '3px 8px', borderRadius: 4 }}>STORAGE: local observation log ({userKey})</span>
-            </div>
-
-            {savedObservations.length === 0 ? (
-              <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)', fontStyle: 'italic' }}>
-                No research observations logged yet. Fill out the form above to submit your first entry.
-              </p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {savedObservations.map((item) => (
-                  <div key={item.id} style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: 14, background: '#f8fafc', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 6, background: '#e0f2fe', color: '#0369a1' }}>
-                          PARAMETER: {item.parameter}
-                        </span>
-                        <span style={{ fontSize: 11, color: 'var(--muted)' }}>{item.timestamp}</span>
-                      </div>
-                      <h4 style={{ margin: '6px 0 2px', fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>{item.title}</h4>
-                      {item.note && <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--muted)' }}>{item.note}</p>}
-                      {item.location && <small style={{ display: 'block', margin: '4px 0 0', fontSize: 11, color: '#0284c7', fontWeight: 600 }}>📍 {item.location}</small>}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteObservation(item.id)}
-                      style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', padding: '4px 10px', borderRadius: 6, fontSize: 12, cursor: 'pointer', fontWeight: 600 }}
-                      title="Delete observation entry"
-                    >
-                      ✕ Remove
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+        <ResearcherPersonalization user={user} userKey={userKey} />
       )}
+
+      {/* ======================================================================
+          2B. MARINE & DISASTER OPERATIONS WORKSPACE
+         ====================================================================== */}
+      {selectedRole === 'marine_disaster_ops' && (
+        <MarineDisasterPersonalization user={user} userKey={userKey} />
+      )}
+
 
       {/* ======================================================================
           3. COASTAL AUTHORITY WORKSPACE
          ====================================================================== */}
       {selectedRole === 'coastal_authority' && (
-        <div className="panel font-sans" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <div>
-            <span className="eyebrow font-mono" style={{ color: '#dc2626', fontWeight: 700 }}>MONITORING & INCIDENT RESPONSE</span>
-            <h2 style={{ margin: '4px 0 0', fontSize: 20, color: 'var(--ink)', fontFamily: 'Sora, sans-serif' }}>
-              Coastal Authority Monitoring Workspace
-            </h2>
-            <p style={{ margin: '4px 0 0', color: 'var(--muted)', fontSize: 13 }}>
-              File coastal incident reports, hazard logs, and emergency notices.
-            </p>
-          </div>
-
-          {/* FORM */}
-          <div style={{ background: '#fffcfb', border: '1px solid #f2dfde', borderRadius: 12, padding: 22 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-              <span style={{ fontSize: 22 }}>🚨</span>
-              <h3 style={{ margin: 0, fontSize: 16, color: 'var(--ink)', fontFamily: 'Sora, sans-serif' }}>
-                Submit Coastal Incident Report
-              </h3>
-            </div>
-
-            <form onSubmit={handleSubmitIncident} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--ink)', marginBottom: 6 }}>
-                  Incident Type
-                </label>
-                <select
-                  value={incident.type}
-                  onChange={(e) => setIncident({ ...incident, type: e.target.value })}
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 13, fontWeight: 600, color: 'var(--ink)', background: '#fff' }}
-                >
-                  <option value="Coastal Flooding">Coastal Flooding / Storm Surge</option>
-                  <option value="Pollution / Oil Spill">Pollution / Marine Oil Spill</option>
-                  <option value="Vessel Incident">Vessel Distress / Collision Risk</option>
-                  <option value="Infrastructure Damage">Port / Harbor Infrastructure Damage</option>
-                  <option value="Dangerous Sea Conditions">Dangerous Rough Sea Conditions</option>
-                  <option value="Other">Other Coastal Hazard</option>
-                </select>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--ink)', marginBottom: 6 }}>
-                  Upload Photo Evidence
-                </label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                  <label
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      padding: '9px 16px',
-                      background: 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)',
-                      color: '#ffffff',
-                      fontSize: 13,
-                      fontWeight: 600,
-                      borderRadius: 8,
-                      cursor: 'pointer',
-                      boxShadow: '0 2px 6px rgba(220, 38, 38, 0.25)',
-                    }}
-                  >
-                    <span>🚨 Select Incident Photo Proof</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handlePhotoSelect(e, setIncident, setIncidentPhotoPreview)}
-                      style={{ display: 'none' }}
-                    />
-                  </label>
-                  {incident.photoName && (
-                    <span style={{ fontSize: 12, color: '#dc2626', fontWeight: 600 }}>
-                      ✓ {incident.photoName}
-                    </span>
-                  )}
-                </div>
-                {incidentPhotoPreview && (
-                  <div style={{ marginTop: 12, width: 140, height: 100, borderRadius: 8, overflow: 'hidden', border: '2px solid #dc2626', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-                    <img src={incidentPhotoPreview} alt="Incident evidence preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--ink)', marginBottom: 6 }}>
-                  Incident Summary & Action Requirements
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="Provide details on location severity, vessel involvement, or coastal impact..."
-                  value={incident.description}
-                  onChange={(e) => setIncident({ ...incident, description: e.target.value })}
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 13, fontFamily: 'Inter, sans-serif' }}
-                />
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, background: '#fff', padding: '12px 16px', borderRadius: 8, border: '1px solid #dce7f0' }}>
-                <div>
-                  <span style={{ display: 'block', fontSize: 11, color: 'var(--muted)', fontWeight: 600 }}>TIME & LOCATION STAMP</span>
-                  <span style={{ fontSize: 12, color: 'var(--ink)', fontWeight: 600 }}>{currentTimeStr}</span>
-                  {incident.location && <span style={{ display: 'block', fontSize: 11, color: '#dc2626', fontWeight: 700 }}>📍 {incident.location}</span>}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => acquireLocation(setIncident)}
-                  style={{
-                    padding: '8px 14px',
-                    fontSize: 12,
-                    background: '#fef2f2',
-                    border: '1px solid #fecaca',
-                    color: '#dc2626',
-                    borderRadius: 8,
-                    cursor: 'pointer',
-                    fontWeight: 700,
-                  }}
-                >
-                  📍 Attach Incident Coordinates
-                </button>
-              </div>
-
-              <button
-                type="submit"
-                className="primary-button font-inter"
-                style={{
-                  width: '100%',
-                  marginTop: 4,
-                  padding: '12px',
-                  fontSize: 14,
-                  fontWeight: 700,
-                  background: 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)',
-                  color: '#ffffff',
-                  border: 'none',
-                  borderRadius: 8,
-                  boxShadow: '0 3px 10px rgba(220, 38, 38, 0.3)',
-                  cursor: 'pointer',
-                }}
-              >
-                Submit & File Incident Report
-              </button>
-            </form>
-          </div>
-
-          {/* SUBMITTED INCIDENTS LIST */}
-          <div style={{ background: '#fff', border: '1px solid #dce7f0', borderRadius: 12, padding: 20 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-              <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--ink)', fontFamily: 'Sora, sans-serif' }}>
-                🚨 Logged Coastal Incident Reports ({savedIncidents.length})
-              </h3>
-              <span style={{ fontSize: 11, color: '#dc2626', fontWeight: 700, background: '#fef2f2', padding: '3px 8px', borderRadius: 4 }}>STORAGE: local incident log ({userKey})</span>
-            </div>
-
-            {savedIncidents.length === 0 ? (
-              <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)', fontStyle: 'italic' }}>
-                No coastal incident reports filed yet. Use the form above to log an incident.
-              </p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {savedIncidents.map((item) => (
-                  <div key={item.id} style={{ border: '1px solid #fee2e2', borderRadius: 8, padding: 14, background: '#fffcfc', display: 'flex', gap: 14, alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', gap: 12, flex: 1 }}>
-                      {item.photoPreview && (
-                        <img src={item.photoPreview} alt="Incident proof" style={{ width: 70, height: 70, borderRadius: 6, objectFit: 'cover', border: '1px solid #fecaca' }} />
-                      )}
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 6, background: '#fef2f2', color: '#dc2626' }}>
-                            {item.type}
-                          </span>
-                          <span style={{ fontSize: 11, color: 'var(--muted)' }}>{item.timestamp}</span>
-                        </div>
-                        {item.description && <p style={{ margin: '6px 0 0', fontSize: 13, color: 'var(--ink)' }}>{item.description}</p>}
-                        {item.location && <small style={{ display: 'block', margin: '4px 0 0', fontSize: 11, color: '#dc2626', fontWeight: 600 }}>📍 {item.location}</small>}
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteIncident(item.id)}
-                      style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', padding: '4px 10px', borderRadius: 6, fontSize: 12, cursor: 'pointer', fontWeight: 600 }}
-                      title="Delete incident report"
-                    >
-                      ✕ Remove
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+        <CoastalAuthorityPersonalization user={user} userKey={userKey} />
       )}
 
       {/* ======================================================================
@@ -1156,29 +637,31 @@ export default function Personalization({ navigate }) {
         </div>
       )}
 
-      {/* BOTTOM ENTRY TO DASHBOARD */}
-      <div style={{ display: 'flex', justifyContent: 'center', margin: '8px 0 16px' }}>
-        <button
-          type="button"
-          className="primary-button font-inter"
-          style={{
-            width: '100%',
-            maxWidth: 380,
-            padding: '14px 24px',
-            fontSize: 15,
-            fontWeight: 700,
-            borderRadius: 10,
-            background: 'linear-gradient(135deg, #1077ca 0%, #0d4163 100%)',
-            color: '#ffffff',
-            border: 'none',
-            boxShadow: '0 4px 14px rgba(16, 119, 202, 0.3)',
-            cursor: 'pointer',
-          }}
-          onClick={() => navigate('/dashboard')}
-        >
-          Proceed to Dashboard →
-        </button>
-      </div>
+      {/* BOTTOM ENTRY TO DASHBOARD (Omitted for Coastal Authority to ensure single top button) */}
+      {selectedRole !== 'coastal_authority' && (
+        <div style={{ display: 'flex', justifyContent: 'center', margin: '8px 0 16px' }}>
+          <button
+            type="button"
+            className="primary-button font-inter"
+            style={{
+              width: '100%',
+              maxWidth: 380,
+              padding: '14px 24px',
+              fontSize: 15,
+              fontWeight: 700,
+              borderRadius: 10,
+              background: 'linear-gradient(135deg, #1077ca 0%, #0d4163 100%)',
+              color: '#ffffff',
+              border: 'none',
+              boxShadow: '0 4px 14px rgba(16, 119, 202, 0.3)',
+              cursor: 'pointer',
+            }}
+            onClick={() => navigate('/dashboard')}
+          >
+            Proceed to Dashboard →
+          </button>
+        </div>
+      )}
 
     </div>
   )
