@@ -1,0 +1,562 @@
+.live-nav-hud {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 92%;
+  max-width: 860px;
+  background: rgba(15, 23, 42, 0.94);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 14px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45), 0 0 20px rgba(14, 165, 233, 0.2);
+  color: #f8fafc;
+  z-index: 1000;
+  padding: 14px 18px;
+  font-family: inherit;
+  animation: slideDownNav 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideDownNav {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.live-nav-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+}
+
+.live-nav-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.live-nav-radar-dot {
+  width: 12px;
+  height: 12px;
+  background: #10b981;
+  border-radius: 50%;
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  animation: radarPulse 1.8s infinite;
+}
+
+@keyframes radarPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+.live-nav-title {
+  display: flex;
+  flex-direction: column;
+}
+
+.live-nav-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #38bdf8;
+  text-transform: uppercase;
+}
+
+.live-nav-target-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.live-nav-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.live-nav-status-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+}
+
+.live-nav-status-badge.status-safe {
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid #10b981;
+  color: #34d399;
+}
+
+.live-nav-status-badge.status-caution {
+  background: rgba(245, 158, 11, 0.2);
+  border: 1px solid #f59e0b;
+  color: #fbbf24;
+}
+
+.live-nav-status-badge.status-unsafe {
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid #ef4444;
+  color: #f87171;
+}
+
+.live-nav-btn-close {
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.live-nav-btn-close:hover {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+/* METRICS GRID */
+.live-nav-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.live-nav-metric-card {
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+.live-nav-metric-card.primary {
+  border-color: rgba(56, 189, 248, 0.4);
+  background: rgba(14, 116, 144, 0.25);
+}
+
+.live-nav-metric-card.msi {
+  border-color: rgba(16, 185, 129, 0.35);
+  background: rgba(6, 78, 59, 0.25);
+}
+
+.metric-label {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+  margin-bottom: 3px;
+}
+
+.metric-value-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.metric-icon {
+  font-size: 14px;
+}
+
+.metric-val {
+  font-size: 16px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.metric-val.highlight {
+  color: #38bdf8;
+}
+
+.metric-val small {
+  font-size: 10px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.metric-sub {
+  font-size: 10px;
+  color: #cbd5e1;
+  margin-top: 2px;
+}
+
+/* ALERT BANNER */
+.live-nav-alert-banner {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  border-radius: 6px;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 11px;
+  color: #fde68a;
+}
+
+/* TELEMETRY BAR */
+.live-nav-telemetry-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.vessel-gps-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.gps-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #64748b;
+}
+
+.gps-indicator.active {
+  background: #38bdf8;
+  box-shadow: 0 0 6px #38bdf8;
+}
+
+.live-nav-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.live-nav-ctrl-btn {
+  background: rgba(51, 65, 85, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #f1f5f9;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.live-nav-ctrl-btn:hover {
+  background: #475569;
+  border-color: #94a3b8;
+}
+
+.live-nav-ctrl-btn.active {
+  background: #0284c7;
+  border-color: #38bdf8;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+}
+
+.live-nav-ctrl-btn.highlight-gold {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  border-color: #f59e0b;
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35);
+}
+
+.live-nav-ctrl-btn.highlight-gold:hover:not(:disabled) {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.6);
+}
+
+.live-nav-ctrl-btn.recalc {
+  background: #047857;
+  border-color: #10b981;
+  color: #ffffff;
+}
+
+.live-nav-ctrl-btn.recalc:hover:not(:disabled) {
+  background: #059669;
+}
+
+.live-nav-ctrl-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* WAYPOINTS DRAWER */
+.live-nav-waypoints-drawer {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.waypoints-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 700;
+  color: #38bdf8;
+  margin-bottom: 8px;
+}
+
+.waypoints-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.waypoint-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(30, 41, 59, 0.6);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+}
+
+.wp-number-badge {
+  background: #0369a1;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.wp-details {
+  flex: 1;
+}
+
+.wp-coords {
+  font-weight: 600;
+  color: #f8fafc;
+}
+
+.wp-meta {
+  display: flex;
+  gap: 10px;
+  font-size: 10px;
+  color: #94a3b8;
+}
+
+.wp-status-pill {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.wp-status-pill.safe {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+}
+
+.wp-status-pill.caution {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+}
+
+.wp-status-pill.unsafe {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+/* Multi-Modal Journey Overview Banner */
+.live-nav-multimodal-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.15) 0%, rgba(2, 132, 199, 0.15) 50%, rgba(16, 185, 129, 0.15) 100%);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.multimodal-leg {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.multimodal-leg .leg-badge {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.multimodal-leg.road .leg-badge {
+  background: #f59e0b;
+  color: #0f172a;
+}
+
+.multimodal-leg.harbor .leg-badge {
+  background: #0284c7;
+  color: #ffffff;
+}
+
+.multimodal-leg.sea .leg-badge {
+  background: #10b981;
+  color: #0f172a;
+}
+
+.multimodal-leg .leg-info {
+  font-size: 11px;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+
+.multimodal-arrow {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+/* Multi-Modal Turn-by-Turn Sections */
+.drawer-nav-section {
+  margin-bottom: 12px;
+}
+
+.drawer-nav-section:last-child {
+  margin-bottom: 0;
+}
+
+.nav-section-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.road-section .nav-section-title {
+  color: #fbbf24;
+}
+
+.sea-section .nav-section-title {
+  color: #34d399;
+}
+
+.section-pill {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.section-pill.road {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.section-pill.sea {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.road-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.road-step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: rgba(30, 41, 59, 0.65);
+  border-left: 3px solid #f59e0b;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+}
+
+.road-step-badge {
+  background: #d97706;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  min-width: 22px;
+  text-align: center;
+}
+
+.road-step-content {
+  flex: 1;
+}
+
+.road-step-inst {
+  font-weight: 600;
+  color: #f8fafc;
+  line-height: 1.35;
+}
+
+.road-step-meta {
+  display: flex;
+  gap: 10px;
+  font-size: 10px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.harbor-transition-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(2, 132, 199, 0.2);
+  border: 1px solid rgba(2, 132, 199, 0.5);
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+
+.harbor-trans-icon {
+  font-size: 20px;
+}
+
+.harbor-trans-info {
+  display: flex;
+  flex-direction: column;
+  font-size: 11px;
+}
+
+.harbor-trans-info strong {
+  color: #38bdf8;
+  font-size: 12px;
+}
+
+.harbor-trans-info span {
+  color: #94a3b8;
+}

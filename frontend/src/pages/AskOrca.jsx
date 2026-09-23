@@ -6,7 +6,14 @@ import QueryInput from '../components/chat/QueryInput'
 import { askOrca } from '../services/orcaService'
 import { LOCATION_COORDINATES } from '../services/openMeteoService'
 import { useAuth } from '../hooks/useAuth'
+import { speakResponse, stopSpeech } from '../utils/speech'
+import { buildSpokenSummary } from '../utils/speechSummary'
+import ScenarioSimulatorModal from '../components/chat/ScenarioSimulatorModal'
+import EmergencySOSModal from '../components/common/EmergencySOSModal'
+import ProactiveAlertBanner from '../components/chat/ProactiveAlertBanner'
+import { cacheOffshoreBundle } from '../services/offlineSync'
 import './AskOrca.css'
+
 
 const PREFERENCES_KEY = 'orca-dashboard-preferences'
 const CHAT_STORAGE_KEY = 'orca-chat-messages'
@@ -85,6 +92,7 @@ export default function AskOrca({ navigate }) {
   const [error, setError] = useState('')
   const [failedQuery, setFailedQuery] = useState('')
   const [language, setLanguage] = useState('en')
+  const [persona, setPersona] = useState('fisherman')
 
   // Initialize conversationId from localStorage or generate a fresh one
   const [conversationId, setConversationId] = useState(() => {
@@ -108,7 +116,25 @@ export default function AskOrca({ navigate }) {
 
   const [isLocationOpen, setIsLocationOpen] = useState(false)
   const [browserLocation, setBrowserLocation] = useState(null)
+  const [isSimulatorOpen, setIsSimulatorOpen] = useState(false)
+  const [isSOSOpen, setIsSOSOpen] = useState(false)
+  const [activeSpeech, setActiveSpeech] = useState(null)
   const autoSentRef = useRef(false)
+
+  useEffect(() => {
+    const handleSpeechStart = (e) => {
+      setActiveSpeech(e.detail || { active: true })
+    }
+    const handleSpeechEnd = () => {
+      setActiveSpeech(null)
+    }
+    window.addEventListener('orca-speech-start', handleSpeechStart)
+    window.addEventListener('orca-speech-end', handleSpeechEnd)
+    return () => {
+      window.removeEventListener('orca-speech-start', handleSpeechStart)
+      window.removeEventListener('orca-speech-end', handleSpeechEnd)
+    }
+  }, [])
 
   // Active Location state synced with Dashboard preference
   const [location, setLocation] = useState(() => {
@@ -143,6 +169,17 @@ export default function AskOrca({ navigate }) {
     }
   }, [location])
 
+  useEffect(() => {
+    const handleOpenSimulator = (e) => {
+      if (e?.detail?.location) {
+        setLocation(e.detail.location)
+      }
+      setIsSimulatorOpen(true)
+    }
+    window.addEventListener('orca-open-simulator', handleOpenSimulator)
+    return () => window.removeEventListener('orca-open-simulator', handleOpenSimulator)
+  }, [])
+
   const requestBrowserLocation = () => {
     if (!navigator.geolocation) { setError('Browser location is not supported on this device.'); return }
     navigator.geolocation.getCurrentPosition(
@@ -157,7 +194,7 @@ export default function AskOrca({ navigate }) {
     .reverse()
     .find((m) => m.response?.context)?.response?.context
 
-  const send = async (overrideText = '', isRetry = false) => {
+  const send = async (overrideText = '', isRetry = false, isVoiceInput = false) => {
     const text = (overrideText || query).trim()
 
     if (!text || loading) return
@@ -184,6 +221,11 @@ export default function AskOrca({ navigate }) {
     setError('')
     setFailedQuery('')
     setLoading(true)
+    stopSpeech()
+
+    const historyPayload = messages
+      .slice(-8)
+      .map((m) => ({ role: m.role, content: m.text }))
 
     try {
       const response = await askOrca({
@@ -197,8 +239,10 @@ export default function AskOrca({ navigate }) {
           : undefined,
         context: { ...(lastContext ? { conversation_context: lastContext } : {}), ...(browserLocation ? { browser_location: browserLocation } : {}) },
         conversation_id: conversationId,
-        language
+        language,
+        history: historyPayload,
       })
+
 
       const assistantMessage = {
         id: response.query_id || newId(),
@@ -209,6 +253,25 @@ export default function AskOrca({ navigate }) {
       }
 
       setMessages((prev) => [...prev, assistantMessage])
+
+      // Only auto-play voice output if the user queried via Voice Input (Mic)
+      if (isVoiceInput) {
+        const spokenBriefing = buildSpokenSummary(response, response.answer, response.language || language)
+        speakResponse(spokenBriefing, response.language || language, null, null, assistantMessage.id)
+      }
+
+      // Auto-cache offshore bundle for low-bandwidth / disconnected field use (5.4)
+      try {
+        cacheOffshoreBundle(location?.label || 'Current Offshore Zone', {
+          evidence: response.evidence,
+          waypoints: response.waypoints || [],
+          marine_safety_index: response.marine_safety_index,
+          tide: response.evidence?.hydrodynamics?.tide_phase || 'Active',
+          advisory: response.answer
+        })
+      } catch (cacheErr) {
+        console.warn('Offline cache failed:', cacheErr)
+      }
     } catch (err) {
       setError(err.message || 'ORCA could not complete this analysis request.')
       setFailedQuery(text)
@@ -263,6 +326,7 @@ export default function AskOrca({ navigate }) {
     if (messages.length > 0 && !window.confirm('Start a new session? Conversation history will be cleared.')) {
       return
     }
+    stopSpeech()
     const freshConvId = newId()
     setMessages([])
     setError('')
@@ -275,10 +339,19 @@ export default function AskOrca({ navigate }) {
       // Ignore storage error
     }
   }
+    
 
   const handleSelectPrompt = (promptQuery) => {
     setQuery(promptQuery)
     send(promptQuery)
+  }
+
+  const handleApplyScenarioToChat = (promptText, newLoc) => {
+    if (newLoc) {
+      setLocation(newLoc)
+    }
+    setQuery(promptText)
+    send(promptText)
   }
 
   return (
@@ -287,10 +360,14 @@ export default function AskOrca({ navigate }) {
       <ChatHeader
         language={language}
         onLanguageChange={setLanguage}
+        persona={persona}
+        onPersonaChange={setPersona}
         onClearSession={handleClearSession}
         locationLabel={location?.label}
         onToggleLocation={() => setIsLocationOpen((prev) => !prev)}
         isLocationOpen={isLocationOpen}
+        onOpenSimulator={() => setIsSimulatorOpen(true)}
+        onOpenSOS={() => setIsSOSOpen(true)}
       />
 
       {/* 2. LOCATION CONTEXT PANEL */}
@@ -303,12 +380,17 @@ export default function AskOrca({ navigate }) {
         onRequestBrowserLocation={requestBrowserLocation}
       />
 
+      {/* 2.5 PROACTIVE HAZARD & GEOFENCE MONITORING BANNER */}
+      <ProactiveAlertBanner location={location} />
+
       {/* 3. CHAT VIEWPORT & WELCOME SCREEN */}
       <ChatWindow
         messages={messages}
         loading={loading}
         onSelectPrompt={handleSelectPrompt}
+        language={language}
       />
+
 
       {/* ERROR / RETRY BANNER */}
       {error && (
@@ -329,13 +411,49 @@ export default function AskOrca({ navigate }) {
         </div>
       )}
 
+      {/* ACTIVE SPEECH PLAYBACK BAR WITH 1-CLICK MID-SPEECH STOP */}
+      {activeSpeech && (
+        <div className="active-speech-banner font-inter" role="status">
+          <div className="speech-pulse-indicator">
+            <span className="speech-wave-icon">🔊</span>
+            <span className="speech-live-text">
+              ORCA Spoken Advisory Playing…
+            </span>
+          </div>
+          <button
+            type="button"
+            className="stop-speech-pill-btn font-inter"
+            onClick={() => stopSpeech()}
+            title="Stop voice audio immediately"
+          >
+            ⏹️ Stop Voice
+          </button>
+        </div>
+      )}
+
       {/* 4. BOTTOM COMPOSER */}
       <QueryInput
         value={query}
         onChange={setQuery}
-        onSend={() => send()}
+        onSend={(txt, isVoice) => send(txt, false, isVoice)}
         loading={loading}
         language={language}
+      />
+
+      {/* 5. WHAT-IF SCENARIO SIMULATOR MODAL */}
+      <ScenarioSimulatorModal
+        isOpen={isSimulatorOpen}
+        onClose={() => setIsSimulatorOpen(false)}
+        initialLocation={location}
+        onApplyScenarioToChat={handleApplyScenarioToChat}
+        onNavigateMap={(path) => navigate && navigate(path)}
+      />
+
+      {/* 6. EMERGENCY SOS / VHF DISTRESS BROADCAST MODAL */}
+      <EmergencySOSModal
+        isOpen={isSOSOpen}
+        onClose={() => setIsSOSOpen(false)}
+        location={location}
       />
     </section>
   )

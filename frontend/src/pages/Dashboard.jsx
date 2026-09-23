@@ -8,9 +8,11 @@ import IntelligenceBrief from '../components/dashboard/IntelligenceBrief'
 import ConditionsChart from '../components/dashboard/ConditionsChart'
 import AlertSummary from '../components/dashboard/AlertSummary'
 import { dashboardLocations } from '../data/dashboardData'
+import { COASTAL_STATES, COASTAL_LOCATIONS } from '../data/coastalLocations'
+import CoastalLocationPicker from '../components/common/CoastalLocationPicker'
+import '../components/dashboard/LocationSelector.css'
 import { fetchLiveLocationData } from '../services/openMeteoService'
 import { useAuth } from '../hooks/useAuth'
-import LocationSelector from '../components/dashboard/LocationSelector'
 import { cacheActiveAlerts, markAlertAsRead } from '../services/alertService'
 import orcaLogo from '../assets/orcalogo.png'
 
@@ -18,7 +20,7 @@ const PREFERENCES_KEY = 'orca-dashboard-preferences'
 const defaults = {
   locationId: 'visakhapatnam',
   trend: 'waves',
-  layers: { waves: true, wind: true, temperature: false, currents: false },
+  layers: { temperature: true, sst: false, waves: false, pfz: false, currents: false },
   alertFilter: 'all',
 }
 
@@ -104,6 +106,8 @@ export default function Dashboard({ navigate }) {
     localStorage.setItem(PREFERENCES_KEY, JSON.stringify({ locationId, layers, trend, alertFilter }))
   }, [locationId, layers, trend, alertFilter])
 
+  const [isPickerOpen, setIsPickerOpen] = useState(false)
+
   const selectLocation = (id) => {
     setLocationId(id)
     setExpandedAlert(null)
@@ -126,15 +130,57 @@ export default function Dashboard({ navigate }) {
           <h1 className="font-sans">
             {greeting}, {name}
           </h1>
-          <p className="font-sans">Integrated marine telemetry & spatial decision support overview.</p>
+          <p className="font-sans">Integrated marine telemetry & spatial decision support across 84 coastal landing centers.</p>
         </div>
-        <LocationSelector
-          locations={dashboardLocations}
-          selectedId={locationId}
-          onSelect={selectLocation}
-          coordinates={activeLocation.coordinates}
-        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button
+            type="button"
+            className="dashboard-location-trigger-card font-sans"
+            onClick={() => setIsPickerOpen(true)}
+            title="Click to change monitoring location or enter custom GPS coordinates"
+            aria-label="Change monitoring location"
+          >
+            <div className="location-trigger-content">
+              <div className="location-trigger-header">
+                <span className="location-label font-mono">MONITORING LOCATION</span>
+                <span className="change-location-badge">Change Location 📍</span>
+              </div>
+              <div className="location-selected-value">
+                <span className="location-name">{activeLocation.name || 'Visakhapatnam'}</span>
+              </div>
+              <small className="location-coords font-mono">
+                {activeLocation.coordinates || activeLocation.coordinatesStr || '17.6868° N · 83.2185° E'}
+              </small>
+            </div>
+            <div className="location-chevron-wrap" aria-hidden="true">
+              <svg
+                className="location-chevron-svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </div>
+          </button>
+        </div>
       </section>
+
+      {/* Coastal Location Modal Picker */}
+      <CoastalLocationPicker
+        isOpen={isPickerOpen}
+        onClose={() => setIsPickerOpen(false)}
+        selectedId={locationId}
+        title="Change Monitoring Location"
+        onSelectLocation={(newId) => {
+          selectLocation(newId)
+        }}
+      />
 
       {/* Loading Indicator */}
       {isLoading && (

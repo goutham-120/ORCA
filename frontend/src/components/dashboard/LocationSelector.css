@@ -5,6 +5,59 @@
   user-select: none;
 }
 
+/* Dashboard Unified Location Trigger Card */
+.dashboard-location-trigger-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 14px;
+  min-width: 260px;
+  background: #ffffff;
+  border: 1px solid #d5e4ef;
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(13, 65, 99, 0.05);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dashboard-location-trigger-card:hover {
+  border-color: #0284c7;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.16);
+  transform: translateY(-1px);
+  background: #fbfdff;
+}
+
+.dashboard-location-trigger-card:hover .change-location-badge {
+  background: #0284c7;
+  color: #ffffff;
+}
+
+.dashboard-location-trigger-card:hover .location-chevron-wrap {
+  color: #0284c7;
+  transform: translateX(2px);
+}
+
+.location-trigger-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.change-location-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: #0284c7;
+  background: rgba(2, 132, 199, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.02em;
+  transition: all 0.18s ease;
+}
+
 .location-dropdown-trigger {
   width: 100%;
   display: flex;

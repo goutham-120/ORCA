@@ -77,16 +77,46 @@ class OpenAICompatibleLLM:
         except Exception as exc:
             self.last_error = str(exc)
             return None
+    @staticmethod
+    def _full_language_name(code: str) -> str:
+        c = (code or "").lower()
+        if c in {"ml", "ml-in", "malayalam"}:
+            return "Malayalam (മലയാളം)"
+        if c in {"kn", "kn-in", "kannada"}:
+            return "Kannada (ಕನ್ನಡ)"
+        if c in {"mr", "mr-in", "marathi"}:
+            return "Marathi (मराठी)"
+        if c in {"gu", "gu-in", "gujarati"}:
+            return "Gujarati (ગુજરાતી)"
+        if c in {"tcy", "tcy-in", "tulu"}:
+            return "Tulu (ತುಳು)"
+        if c in {"kok", "kok-in", "konkani", "kokani"}:
+            return "Konkani (कोंकणी)"
+        if c in {"bn", "bn-in", "bengali", "bangla"}:
+            return "Bengali (বাংলা)"
+        if c in {"or", "or-in", "odia", "oriya"}:
+            return "Odia (ଓଡ଼ିଆ)"
+        if c in {"te", "te-in", "telugu"}:
+            return "Telugu (తెలుగు)"
+        if c in {"hi", "hi-in", "hindi"}:
+            return "Hindi (हिन्दी)"
+        if c in {"ta", "ta-in", "tamil"}:
+            return "Tamil (தமிழ்)"
+        return "English"
+
     async def chat(self, query: str, language: str) -> str | None:
         if not self.api_key: return None
-        return self._response_text(query, f"You are ORCA, a helpful general conversational assistant. Respond in {language}. Do not claim to have live marine data.")
+        lang_name = self._full_language_name(language)
+        instructions = f"You are ORCA, a helpful conversational assistant. You MUST respond in {lang_name} language. Do not respond in English if the requested language is Marathi, Gujarati, Tulu, Konkani, Bengali, Odia, Telugu, Tamil, or Hindi."
+        return self._response_text(query, instructions)
 
     async def synthesize(self, payload: dict[str, Any], language: str) -> str | None:
         if not self.api_key:
             return None
+        lang_name = self._full_language_name(language)
         prompt = json.dumps(payload, ensure_ascii=False, default=str)
         instructions = (
-            f"You are ORCA, an evidence-grounded marine assistant. Respond naturally in {language}. "
+            f"You are ORCA, an evidence-grounded marine assistant. You MUST respond in {lang_name} language. "
             "Use only the supplied evidence and deterministic decision. Never invent measurements, locations, forecasts, risks, sources, or PFZ data. "
             "If evidence is missing or partial, explain that plainly and do not give a safety clearance. "
             "Do not mention internal agents, nodes, pending capabilities, APIs, or implementation details. "

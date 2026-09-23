@@ -166,11 +166,197 @@ weather_provider = OpenMeteoProvider(WEATHER_URL, WEATHER_FIELDS, normalize_weat
 marine_provider = OpenMeteoProvider(MARINE_URL, MARINE_FIELDS, normalize_marine)
 
 
+INDIAN_COASTAL_REGISTRY = {
+    # Tamil Nadu & Puducherry
+    "chennai": (13.0827, 80.2707, "Chennai, Tamil Nadu"),
+    "kasimedu": (13.1256, 80.2989, "Kasimedu, Chennai, Tamil Nadu"),
+    "ennore": (13.2167, 80.3167, "Ennore, Tamil Nadu"),
+    "cuddalore": (11.7480, 79.7714, "Cuddalore, Tamil Nadu"),
+    "nagapattinam": (10.7656, 79.8424, "Nagapattinam, Tamil Nadu"),
+    "rameswaram": (9.2876, 79.3129, "Rameswaram, Tamil Nadu"),
+    "thoothukudi": (8.7642, 78.1348, "Thoothukudi, Tamil Nadu"),
+    "tuticorin": (8.7642, 78.1348, "Thoothukudi, Tamil Nadu"),
+    "kanyakumari": (8.0883, 77.5385, "Kanyakumari, Tamil Nadu"),
+    "puducherry": (11.9416, 79.8083, "Puducherry"),
+    "pondicherry": (11.9416, 79.8083, "Puducherry"),
+    "karaikal": (10.9254, 79.8380, "Karaikal, Puducherry"),
+
+    # Andhra Pradesh
+    "visakhapatnam": (17.6868, 83.2185, "Visakhapatnam, Andhra Pradesh"),
+    "vizag": (17.6868, 83.2185, "Visakhapatnam, Andhra Pradesh"),
+    "bheemunipatnam": (17.8914, 83.4475, "Bheemunipatnam, Andhra Pradesh"),
+    "kalingapatnam": (18.3370, 84.1260, "Kalingapatnam, Andhra Pradesh"),
+    "kakinada": (16.9891, 82.2475, "Kakinada, Andhra Pradesh"),
+    "machilipatnam": (16.1875, 81.1389, "Machilipatnam, Andhra Pradesh"),
+    "nizampatnam": (15.9083, 80.6722, "Nizampatnam, Andhra Pradesh"),
+    "vadarevu": (15.7833, 80.3500, "Vadarevu, Andhra Pradesh"),
+    "krishnapatnam": (14.2500, 80.1167, "Krishnapatnam, Andhra Pradesh"),
+
+    # Odisha & West Bengal
+    "paradip": (20.3160, 86.6110, "Paradip, Odisha"),
+    "puri": (19.8135, 85.8312, "Puri, Odisha"),
+    "gopalpur": (19.2616, 84.9080, "Gopalpur, Odisha"),
+    "dhamra": (20.8033, 86.9603, "Dhamra, Odisha"),
+    "chandipur": (21.4697, 87.0210, "Chandipur, Odisha"),
+    "digha": (21.6266, 87.5074, "Digha, West Bengal"),
+    "shankarpur": (21.6366, 87.5683, "Shankarpur, West Bengal"),
+    "kakdwip": (21.8767, 88.1856, "Kakdwip, West Bengal"),
+    "kolkata": (22.5726, 88.3639, "Kolkata, West Bengal"),
+    "haldia": (22.0667, 88.0698, "Haldia, West Bengal"),
+
+    # Kerala
+    "kochi": (9.9312, 76.2673, "Kochi, Kerala"),
+    "cochin": (9.9312, 76.2673, "Kochi, Kerala"),
+    "munambam": (10.1833, 76.1667, "Munambam, Kerala"),
+    "thiruvananthapuram": (8.5241, 76.9366, "Thiruvananthapuram, Kerala"),
+    "trivandrum": (8.5241, 76.9366, "Thiruvananthapuram, Kerala"),
+    "vizhinjam": (8.3813, 76.9934, "Vizhinjam, Kerala"),
+    "kollam": (8.8932, 76.6141, "Kollam, Kerala"),
+    "alappuzha": (9.4981, 76.3388, "Alappuzha, Kerala"),
+    "alleppey": (9.4981, 76.3388, "Alappuzha, Kerala"),
+    "kozhikode": (11.2588, 75.7804, "Kozhikode, Kerala"),
+    "calicut": (11.2588, 75.7804, "Kozhikode, Kerala"),
+    "beypore": (11.1611, 75.8083, "Beypore, Kerala"),
+    "kannur": (11.8745, 75.3704, "Kannur, Kerala"),
+    "thalassery": (11.7491, 75.4890, "Thalassery, Kerala"),
+
+    # Karnataka & Goa
+    "mangalore": (12.8698, 74.8430, "Mangalore, Karnataka"),
+    "mangaluru": (12.8698, 74.8430, "Mangalore, Karnataka"),
+    "malpe": (13.3500, 74.7000, "Malpe, Karnataka"),
+    "udupi": (13.3409, 74.7421, "Udupi, Karnataka"),
+    "bhatkal": (13.9744, 74.5519, "Bhatkal, Karnataka"),
+    "honnavar": (14.2797, 74.4439, "Honnavar, Karnataka"),
+    "tadadi": (14.5264, 74.3644, "Tadadi, Karnataka"),
+    "karwar": (14.8136, 74.1298, "Karwar, Karnataka"),
+    "goa": (15.4909, 73.8278, "Goa, India"),
+    "panaji": (15.4909, 73.8278, "Panaji, Goa"),
+    "vasco": (15.3982, 73.8113, "Vasco da Gama, Goa"),
+    "mormugao": (15.4125, 73.8015, "Mormugao, Goa"),
+
+    # Maharashtra & Gujarat
+    "mumbai": (18.9220, 72.8347, "Mumbai, Maharashtra"),
+    "bombay": (18.9220, 72.8347, "Mumbai, Maharashtra"),
+    "sassoon": (18.9133, 72.8258, "Sassoon Dock, Mumbai, Maharashtra"),
+    "alibag": (18.6414, 72.8722, "Alibag, Maharashtra"),
+    "ratnagiri": (16.9902, 73.3120, "Ratnagiri, Maharashtra"),
+    "malvan": (16.0594, 73.4686, "Malvan, Maharashtra"),
+    "veraval": (20.9077, 70.3679, "Veraval, Gujarat"),
+    "porbandar": (21.6417, 69.6293, "Porbandar, Gujarat"),
+    "okha": (22.4644, 69.0722, "Okha, Gujarat"),
+    "kandla": (23.0033, 70.2189, "Kandla, Gujarat"),
+    "mundra": (22.8394, 69.7258, "Mundra, Gujarat"),
+    "surat": (21.1702, 72.8311, "Surat, Gujarat"),
+    "diu": (20.7144, 70.9874, "Diu, Daman & Diu"),
+    "daman": (20.3974, 72.8328, "Daman, Daman & Diu"),
+
+    # Islands
+    "port blair": (11.6234, 92.7265, "Port Blair, Andaman & Nicobar"),
+    "kavaratti": (10.5667, 72.6417, "Kavaratti, Lakshadweep"),
+    "agatti": (10.8533, 72.1931, "Agatti, Lakshadweep"),
+}
+
+INDIC_COASTAL_ALIASES = {
+    # Hindi
+    "विशाखापत्तनम": "visakhapatnam",
+    "वाइजाग": "visakhapatnam",
+    "चेन्नई": "chennai",
+    "मद्रास": "chennai",
+    "मुंबई": "mumbai",
+    "बंबई": "mumbai",
+    "कोलकाता": "kolkata",
+    "कोच्चि": "kochi",
+    "कोचीन": "kochi",
+    "गोवा": "goa",
+    "काकीनाड़ा": "kakinada",
+    "काकीनाडा": "kakinada",
+    "मछलीपट्टनम": "machilipatnam",
+    "मंगलोर": "mangalore",
+    "मंगलुरु": "mangalore",
+    "पारादीप": "paradip",
+    "पुरी": "puri",
+    "तूतीकोरिन": "thoothukudi",
+    "थूथुकुडी": "thoothukudi",
+    "कन्याकुमारी": "kanyakumari",
+    "रामेश्वरम": "rameswaram",
+    "कांडला": "kandla",
+    "पोरबंदर": "porbandar",
+    "दीव": "diu",
+    "वेरावल": "veraval",
+    "सूरत": "surat",
+
+    # Telugu
+    "విశాఖపట్నం": "visakhapatnam",
+    "వైజాగ్": "visakhapatnam",
+    "చెన్నై": "chennai",
+    "ముంబై": "mumbai",
+    "కోల్‌కతా": "kolkata",
+    "కోల్కతా": "kolkata",
+    "కొచ్చి": "kochi",
+    "గోవా": "goa",
+    "కాకినాడ": "kakinada",
+    "మచిలీపట్నం": "machilipatnam",
+    "కృష్ణా": "machilipatnam",
+    "మంగళూరు": "mangalore",
+    "పారదీప్": "paradip",
+    "పూరి": "puri",
+    "తూత్తుకుడి": "thoothukudi",
+    "కన్యాకుమారి": "kanyakumari",
+    "రామేశ్వరం": "rameswaram",
+    "భీమునిపట్నం": "bheemunipatnam",
+    "కళింగపట్నం": "kalingapatnam",
+    "వాడరేవు": "vadarevu",
+    "నిజాంపట్నం": "nizampatnam",
+    "కృష్ణపట్నం": "krishnapatnam",
+
+    # Tamil
+    "சென்னை": "chennai",
+    "மதராஸ்": "chennai",
+    "தூத்துக்குடி": "thoothukudi",
+    "கன்னியாகுமரி": "kanyakumari",
+    "ராமேஸ்வரம்": "rameswaram",
+    "நாகப்பட்டினம்": "nagapattinam",
+    "கடலூர்": "cuddalore",
+    "பாண்டிச்சேரி": "puducherry",
+    "புதுச்சேரி": "puducherry",
+    "எண்ணூர்": "ennore",
+    "விசாகப்பட்டினம்": "visakhapatnam",
+    "விசாகப்பட்டணம்": "visakhapatnam",
+    "மும்பை": "mumbai",
+    "கொச்சி": "kochi",
+    "கோவா": "goa",
+}
+
+
 class OpenMeteoGeocoder:
     endpoint = "https://geocoding-api.open-meteo.com/v1/search"
 
     async def resolve(self, place: str) -> dict[str, Any] | None:
-        parameters = urlencode({"name": place, "count": 1, "language": "en", "format": "json"})
+        if not place:
+            return None
+        clean_place = place.strip().lower()
+        
+        # 1. Check direct match in Indian coastal registry
+        if clean_place in INDIAN_COASTAL_REGISTRY:
+            lat, lon, label = INDIAN_COASTAL_REGISTRY[clean_place]
+            return {"latitude": lat, "longitude": lon, "label": label}
+
+        # 2. Check Indic alias translation
+        if clean_place in INDIC_COASTAL_ALIASES:
+            alias_target = INDIC_COASTAL_ALIASES[clean_place]
+            if alias_target in INDIAN_COASTAL_REGISTRY:
+                lat, lon, label = INDIAN_COASTAL_REGISTRY[alias_target]
+                return {"latitude": lat, "longitude": lon, "label": label}
+            clean_place = alias_target
+
+        # 3. Check partial/substring matches against registry keys
+        for key, (lat, lon, label) in INDIAN_COASTAL_REGISTRY.items():
+            if key == clean_place or key in clean_place or clean_place in key:
+                return {"latitude": lat, "longitude": lon, "label": label}
+
+        # 4. Fallback to OpenMeteo Geocoding API
+        search_query = clean_place
+        parameters = urlencode({"name": search_query, "count": 1, "language": "en", "format": "json"})
         try:
             payload = await asyncio.to_thread(self._read_json, f"{self.endpoint}?{parameters}")
         except (URLError, TimeoutError, json.JSONDecodeError):
@@ -180,7 +366,7 @@ class OpenMeteoGeocoder:
         if not isinstance(item, dict) or not isinstance(item.get("latitude"), (int, float)) or not isinstance(item.get("longitude"), (int, float)):
             return None
         label = ", ".join(str(value) for value in (item.get("name"), item.get("admin1"), item.get("country")) if value)
-        return {"latitude": item["latitude"], "longitude": item["longitude"], "label": label or place}
+        return {"latitude": item["latitude"], "longitude": item["longitude"], "label": label or clean_place}
 
     @staticmethod
     def _read_json(url: str) -> dict[str, Any]:

@@ -61,6 +61,46 @@ Activate `.venv`, then:
 Each Codex instance must update only its assigned section after completing
 its task. Keep entries brief.
 
+### Telugu & Tamil Chatbot Support
+
+Status: Completed
+
+Owner: Ayesha
+
+Task:
+Add Telugu and Tamil language support to the existing Ask ORCA conversational chatbot while preserving existing English and Hindi functionality.
+
+Requirements:
+- Detect Telugu and Tamil user input.
+- Understand Telugu and Tamil queries.
+- Generate responses in the same language as the user's input.
+- Preserve existing English and Hindi functionality.
+- Handle Telugu and Tamil Unicode correctly in frontend and backend.
+- Reuse the existing chatbot, query parser, orchestration, and response-generation architecture.
+- Do not restructure the project.
+- Do not modify unrelated ORCA modules.
+- Follow docs/api_contracts.md for existing API request/response formats.
+- Add focused tests for Telugu and Tamil.
+- Use the existing translation/LLM infrastructure if available; do not introduce unnecessary dependencies.
+
+Example inputs:
+- Telugu: "ఈ రోజు సముద్ర వాతావరణం ఎలా ఉంది?"
+- Tamil: "இன்று கடல் வானிலை எப்படி உள்ளது?"
+- English: "How is the sea weather today?"
+
+Implementation:
+1. Inspect the existing Ask ORCA language-detection and response-generation flow.
+2. Identify the smallest set of files that need modification.
+3. Implement Telugu and Tamil support.
+4. Test Telugu, Tamil, English, and existing Hindi behavior.
+5. Run the relevant backend/frontend tests.
+6. Update only this Task Progress section when the task is completed.
+
+Files Changed: backend/app/core/query_parser.py, backend/app/core/conversation.py, backend/app/core/orchestrator.py, backend/tests/test_conversation.py, frontend/src/utils/speech.js, frontend/src/utils/speechSummary.js, frontend/src/pages/AskOrca.jsx, frontend/src/components/chat/ChatHeader.jsx, frontend/src/components/chat/Message.jsx, frontend/src/components/chat/QueryInput.jsx
+
+Integration Notes: Added deterministic spoken briefing summary generator (`speechSummary.js`) tailored for fishermen and coastal operators (concise briefing with risk level, score, suitability, key wind/wave conditions, action recommendations, and safety limitations; excluding raw API names, timestamps, links, and UI labels). Full technical assessment remains visible in UI. Updated Listen button to display language dynamically (`🔊 Listen (EN)`, `🔊 Listen (HI)`, `🔊 Listen (TE)`, `🔊 Listen (TA)`). Preserved UI language selection authority across English, Hindi, Telugu, and Tamil. Added unit tests in `test_conversation.py`.
+
+
 ### instances: 
 ### Frontend Platform & UX Foundation
 Status: Completed
@@ -98,3 +138,16 @@ Status: Completed
 Completed: Runnable FastAPI foundation, schemas, routers, services, workflow interfaces, and DB configuration.
 Files Changed: backend/app/{main,config,api,core,workflows,services,models,schemas,database,utils,analysis}; docs/api_contracts.md
 Integration Notes: Agents register through workflow/data-coordination interfaces; database remains optional until ORCA_DATABASE_URL is supplied.
+
+### Sprint 2 — Conversational Intelligence, Dynamic Agentic Execution & Proactive Safety
+Status: Completed
+Completed: Added complete end-to-end conversational intelligence compliance fulfilling all 16 Problem Statement requirements:
+1. Dynamic Step-by-Step Agentic Execution Tracking (`execution_steps`, tool call inputs/outputs, dynamic status) in `orca_graph.py` and `ReasoningTrace.jsx`.
+2. Proactive Hazard & Geofencing Intelligence (`/alerts/check` endpoint in `alerts.py` & `alert_service.py`, proactive safety toast banner in `ProactiveAlertBanner.jsx` with action directives).
+3. Stateful Rolling Multi-turn Conversation Memory (`history` payload, `ConversationStore` session history).
+4. Inline Geospatial Situational Mini-Maps (`ChatMiniMap.jsx` MapLibre integration in chat message cards with route lines, waypoints, PFZ coordinates, hazards, and full-map deep-link navigation).
+5. Persona-adapted multi-lingual spoken summaries & safety reasoning for Fishermen, Navigators, Port Authorities, and Scientists.
+Files Changed: backend/app/{schemas/{ai.py,orca.py},core/{conversation_store.py,orchestrator.py},services/alert_service.py,api/alerts.py,workflows/orca_graph.py}, frontend/src/{services/orcaService.js,components/chat/{ChatMiniMap.jsx,ChatMiniMap.css,ProactiveAlertBanner.jsx,ProactiveAlertBanner.css,ReasoningTrace.jsx,Message.jsx},pages/AskOrca.jsx}
+Integration Notes: Clean frontend build (`npm run build`) and zero python compilation errors. Seamlessly backwards-compatible with existing API contracts.
+
+

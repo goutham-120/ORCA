@@ -1,17 +1,23 @@
 import { useState } from 'react'
 
-export default function MapSearch({ locations, onSelectLocation }) {
+export default function MapSearch({ locations = [], onSelectLocation }) {
   const [query, setQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
 
-  const matches = locations.filter(
+  const safeLocations = Array.isArray(locations) ? locations : []
+
+  const matches = safeLocations.filter(
     (loc) =>
-      loc.name.toLowerCase().includes(query.toLowerCase()) ||
-      loc.region.toLowerCase().includes(query.toLowerCase())
+      (loc?.name || '').toLowerCase().includes(query.toLowerCase()) ||
+      (loc?.region || '').toLowerCase().includes(query.toLowerCase()) ||
+      (loc?.state || '').toLowerCase().includes(query.toLowerCase()) ||
+      (loc?.type || '').toLowerCase().includes(query.toLowerCase())
   )
 
   const handleSelect = (id) => {
-    onSelectLocation(id)
+    if (typeof onSelectLocation === 'function') {
+      onSelectLocation(id)
+    }
     setQuery('')
     setIsOpen(false)
   }
@@ -48,13 +54,13 @@ export default function MapSearch({ locations, onSelectLocation }) {
           {matches.length > 0 ? (
             matches.map((item) => (
               <button
-                key={item.id}
+                key={item?.id || Math.random()}
                 type="button"
                 className="search-item"
-                onClick={() => handleSelect(item.id)}
+                onClick={() => handleSelect(item?.id)}
               >
-                📍 <strong>{item.name}</strong>
-                <small>{item.region}</small>
+                📍 <strong>{item?.name}</strong>
+                <small>{item?.region || item?.state || ''}</small>
               </button>
             ))
           ) : (

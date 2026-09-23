@@ -4,7 +4,13 @@ import { defineConfig } from 'vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  assetsInclude: ['**/*.wasm'],
   optimizeDeps: {
-    exclude: ['maplibre-gl'],
+    exclude: ['@openmeteo/file-format-wasm', '@openmeteo/file-reader', '@openmeteo/weather-map-layer'],
+  },
+  server: {
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+    },
   },
 })

@@ -36,6 +36,17 @@ class SpatialFeatureRepository:
     def initialize(self) -> bool:
         return self.db.initialize()
 
+    def delete_dataset(self, dataset: str) -> None:
+        try:
+            if not self.initialize():
+                return
+            self.db.execute(
+                "DELETE FROM spatial_features WHERE dataset = ?",
+                (dataset,),
+            )
+        except Exception as exc:
+            self.db.last_error = exc
+
     def delete_source_dataset(self, dataset: str, source: str) -> None:
         try:
             if not self.initialize():
