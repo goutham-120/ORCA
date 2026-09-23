@@ -122,7 +122,7 @@ export default function Dashboard({ navigate }) {
     <div className="orca-dashboard-page font-sans">
       {/* 1. HEADER / LOCATION SELECTOR */}
       <section className="dashboard-intro">
-        <div>
+        <div className="intro-title-wrap">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
             <img src={orcaLogo} alt="ORCA Logo" style={{ width: '22px', height: '22px', objectFit: 'contain' }} />
             <p className="eyebrow font-mono" style={{ margin: 0 }}>ORCA COMMAND CENTER</p>
@@ -132,7 +132,7 @@ export default function Dashboard({ navigate }) {
           </h1>
           <p className="font-sans">Integrated marine telemetry & spatial decision support across 84 coastal landing centers.</p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div className="location-trigger-wrap" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <button
             type="button"
             className="dashboard-location-trigger-card font-sans"

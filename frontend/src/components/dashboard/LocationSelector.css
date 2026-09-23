@@ -286,7 +286,25 @@
   padding-right: 2px;
 }
 
-@media (max-width: 650px) {
+@media (max-width: 768px) {
+  .location-trigger-wrap {
+    width: 100% !important;
+  }
+  .dashboard-location-trigger-card {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+  .location-trigger-content {
+    min-width: 0;
+    flex: 1;
+  }
+  .location-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 220px;
+  }
   .orca-location-dropdown-wrapper {
     width: 100%;
   }

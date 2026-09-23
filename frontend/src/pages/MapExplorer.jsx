@@ -948,7 +948,7 @@ export default function MapExplorer({ navigate }) {
               }}
             >
               {/* Header Top Row: Title + Sector on left, Reset to Harbor in upper right */}
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', marginBottom: '12px' }}>
+              <div className="telemetry-banner-header" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', marginBottom: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <span style={{ fontSize: '22px' }}>🌊</span>
                   <div>
@@ -1005,7 +1005,7 @@ export default function MapExplorer({ navigate }) {
               </div>
 
               {/* Action Buttons Row */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '12px', marginBottom: '14px' }}>
+              <div className="telemetry-actions-row" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '12px', marginBottom: '14px' }}>
                 <button
                   type="button"
                   onClick={() => {
@@ -1082,7 +1082,7 @@ export default function MapExplorer({ navigate }) {
               </div>
 
               {/* 4 LIVE TELEMETRY CHIPS */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+              <div className="telemetry-chips-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                 {/* 1. TIDE LEVEL & PHASE */}
                 <div style={{ background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px', padding: '10px 14px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
@@ -1329,7 +1329,7 @@ export default function MapExplorer({ navigate }) {
           </ComponentErrorBoundary>
 
           <ComponentErrorBoundary name="Map Canvas">
-            <div style={{ position: 'relative' }}>
+            <div className="map-canvas-wrapper" style={{ position: 'relative' }}>
               {isSimulatedCycloneActive && (
                 <div
                   className="simulated-cyclone-banner"
@@ -1579,7 +1579,7 @@ export default function MapExplorer({ navigate }) {
                 {/* 3 EVIDENCE SOURCES STATUS BAR */}
                 <div style={{ background: '#ffffff', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '14px' }}>
                   <h4 style={{ margin: '0 0 10px 0', fontSize: '13px', color: '#475569' }}>Multi-Source Evidence Breakdown</h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
+                  <div className="pfz-evidence-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
                     <div style={{ padding: '8px', borderRadius: '6px', background: '#f8fafc', borderLeft: '3px solid #0ea5e9' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                         <span style={{ fontSize: '12px', fontWeight: 600 }}>🌤️ Weather</span>
@@ -1929,7 +1929,7 @@ export default function MapExplorer({ navigate }) {
                 </div>
 
                 {/* ROUTE METRICS GRID */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px', marginBottom: '16px' }}>
+                <div className="route-metrics-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px', marginBottom: '16px' }}>
                   <div style={{ background: '#f8fafc', padding: '10px 14px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
                     <small style={{ color: '#64748b', fontSize: '11px', display: 'block', fontWeight: 600 }}>ROUTE DISTANCE</small>
                     <strong style={{ fontSize: '14px', color: '#0f172a' }}>
@@ -1988,7 +1988,7 @@ export default function MapExplorer({ navigate }) {
 
                 {/* 4 CORE CHECKS BREAKDOWN */}
                 <h4 style={{ margin: '0 0 10px 0', fontSize: '13px', color: '#334155' }}>Detailed Environmental & GIS Checks</h4>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '12px' }}>
+                <div className="route-checks-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '12px' }}>
                   {/* GIS CHECK */}
                   <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', borderLeft: `4px solid ${detailedRoute.data.gis_analysis.status === 'suitable' ? '#10b981' : detailedRoute.data.gis_analysis.status === 'caution' ? '#f59e0b' : detailedRoute.data.gis_analysis.status === 'unsuitable' ? '#ef4444' : '#64748b'}` }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>

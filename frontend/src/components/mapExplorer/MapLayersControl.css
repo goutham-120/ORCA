@@ -347,3 +347,52 @@
   font-weight: 700;
   color: #64748b;
 }
+
+@media (max-width: 768px) {
+  .map-layers-panel {
+    padding: 12px 10px;
+    box-sizing: border-box;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .map-layers-header {
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+  }
+
+  .layer-card-chip {
+    padding: 8px 10px;
+  }
+
+  .layer-left-info {
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .layer-title-text {
+    max-width: 130px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+  }
+
+  .layer-badge {
+    font-size: 10px;
+    padding: 1px 6px;
+  }
+
+  .radius-slider-row {
+    gap: 6px;
+  }
+
+  .marine-number-input {
+    width: 48px;
+    padding: 4px;
+    font-size: 11px;
+  }
+}
+

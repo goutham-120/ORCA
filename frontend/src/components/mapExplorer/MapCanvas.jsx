@@ -1271,7 +1271,7 @@ export default function MapCanvas({
         const topLat = latitude + radiusKm / kmPerLat
         const badgeEl = document.createElement('div')
         badgeEl.className = 'orca-radius-badge'
-        badgeEl.innerHTML = `⭕ ${radiusKm} km Search Radius`
+        badgeEl.innerHTML = `<span class="radius-full-text">⭕ ${radiusKm} km Search Radius</span><span class="radius-short-text">⭕ ${radiusKm} km</span>`
 
         radiusMarkerRef.current = new Marker({
           element: badgeEl,
@@ -1496,10 +1496,13 @@ export default function MapCanvas({
 
           <button
             type="button"
-            className="canvas-btn"
+            className="canvas-btn canvas-btn-expand"
             onClick={onToggleExpanded}
+            title={isExpanded ? 'Restore map' : 'Fullscreen map'}
+            aria-label={isExpanded ? 'Restore map' : 'Fullscreen map'}
           >
-            {isExpanded ? 'Exit' : 'Fullscreen'}
+            <span className="expand-btn-text">{isExpanded ? 'Exit' : 'Fullscreen'}</span>
+            <span className="expand-btn-icon" aria-hidden="true">{isExpanded ? '✕' : '⛶'}</span>
           </button>
         </div>
       </div>

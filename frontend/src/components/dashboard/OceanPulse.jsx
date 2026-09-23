@@ -33,7 +33,7 @@ export function OceanPulse({ location }) {
       </div>
 
       {/* Metrics Grid (6 Live Environmental Metrics) */}
-      <div className="ocean-metrics-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
+      <div className="ocean-metrics-grid">
         {/* Wave Height */}
         <div className="pulse-metric-tile wave-tile">
           <div className="tile-header">
