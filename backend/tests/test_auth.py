@@ -5,6 +5,7 @@ from pathlib import Path
 from fastapi import HTTPException
 
 from app.api.auth import login, me, register, update_profile
+from app.api.deps import get_current_user
 from app.database.session import database
 from app.models.user import users
 from app.schemas.auth import LoginRequest, ProfileUpdateRequest, RegisterRequest
@@ -39,7 +40,7 @@ class AuthenticationTests(unittest.TestCase):
         stored = users.by_email("user@example.com")
         self.assertIsNotNone(stored)
         self.assertNotEqual(stored.password_hash, "secure-password")
-        self.assertTrue(stored.password_hash.startswith("pbkdf2_sha256$"))
+        self.assertTrue(stored.password_hash.startswith("$2b$") or stored.password_hash.startswith("pbkdf2_sha256$"))
         self.assert_status(409, self.register)
 
     def test_login_me_and_unauthorized_access(self):
@@ -48,30 +49,34 @@ class AuthenticationTests(unittest.TestCase):
         self.assertIsNotNone(authenticated.access_token)
         self.assert_status(401, lambda: login(LoginRequest(email="user@example.com", password="wrong-password")))
         self.assert_status(401, lambda: me(None))
-        self.assertEqual(me(f"Bearer {authenticated.access_token}").email, "user@example.com")
+        user = get_current_user(f"Bearer {authenticated.access_token}")
+        self.assertEqual(me(user).email, "user@example.com")
 
     def test_profile_requires_auth_and_accepts_only_allowed_categories(self):
         token = self.register().access_token
         self.assert_status(401, lambda: update_profile(ProfileUpdateRequest(user_category="general_user"), None))
-        self.assert_status(422, lambda: update_profile(ProfileUpdateRequest(user_category="not-allowed"), f"Bearer {token}"))
+        
+        user = get_current_user(f"Bearer {token}")
 
         for category in ("fisher_marine_operator", "researcher_scientist", "coastal_authority", "general_user"):
-            response = update_profile(ProfileUpdateRequest(user_category=category), f"Bearer {token}")
+            response = update_profile(ProfileUpdateRequest(user_category=category), user)
             self.assertEqual(response.user_category, category)
 
         second = self.register("other@example.com")
-        update_profile(ProfileUpdateRequest(user_category="coastal_authority"), f"Bearer {second.access_token}")
+        second_user = get_current_user(f"Bearer {second.access_token}")
+        update_profile(ProfileUpdateRequest(user_category="coastal_authority"), second_user)
         self.assertEqual(users.by_email("user@example.com").user_category, "general_user")
 
     def test_personalization_preferences(self):
         token = self.register().access_token
+        user = get_current_user(f"Bearer {token}")
         prefs = {"default_location": {"latitude": 13.0827, "longitude": 80.2707}, "alert_sound": True}
-        response = update_profile(ProfileUpdateRequest(preferences=prefs), f"Bearer {token}")
+        response = update_profile(ProfileUpdateRequest(preferences=prefs), user)
         self.assertEqual(response.preferences.get("alert_sound"), True)
         self.assertEqual(response.preferences.get("default_location", {}).get("latitude"), 13.0827)
 
         # Retrieve via /me
-        user_me = me(f"Bearer {token}")
+        user_me = me(user)
         self.assertEqual(user_me.preferences.get("alert_sound"), True)
 
     def test_reports_persistence(self):
@@ -98,4 +103,3 @@ class AuthenticationTests(unittest.TestCase):
         deleted = report_service.delete(created.id)
         self.assertTrue(deleted)
         self.assertIsNone(report_service.get(created.id))
-

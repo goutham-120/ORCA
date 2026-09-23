@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { authService } from '../services/authService'
 import { AuthContext } from './authContext'
 
@@ -16,30 +16,106 @@ function storedSession() {
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(storedSession)
+  const [loading, setLoading] = useState(true)
+
   const saveSession = useCallback((nextSession) => {
-    setSession(nextSession)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(nextSession))
+    if (nextSession && nextSession.access_token && nextSession.user) {
+      setSession(nextSession)
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(nextSession))
+    } else {
+      setSession(null)
+      localStorage.removeItem(STORAGE_KEY)
+    }
   }, [])
 
-  const authenticate = useCallback(async (action, payload) => {
-    const result = await action(payload)
-    saveSession(result)
-    return result
+  // Verify token liveness on initial load
+  useEffect(() => {
+    let mounted = true
+    const verifyToken = async () => {
+      const initial = storedSession()
+      if (initial?.access_token) {
+        try {
+          const freshUser = await authService.me(initial.access_token)
+          if (mounted) {
+            saveSession({ ...initial, user: freshUser })
+          }
+        } catch {
+          if (mounted) {
+            saveSession(null)
+          }
+        }
+      } else {
+        if (mounted) {
+          saveSession(null)
+        }
+      }
+      if (mounted) {
+        setLoading(false)
+      }
+    }
+
+    verifyToken()
+    return () => {
+      mounted = false
+    }
   }, [saveSession])
 
-  const login = useCallback((credentials) => authenticate(authService.login, credentials), [authenticate])
-  const register = useCallback((details) => authenticate(authService.register, details), [authenticate])
-  const updateProfile = useCallback(async (details) => {
-    if (!session?.access_token) throw new Error('Authentication is required.')
-    const user = await authService.updateProfile(session.access_token, details)
-    saveSession({ ...session, user })
-    return user
-  }, [saveSession, session])
-  const logout = useCallback(() => {
-    setSession(null)
-    localStorage.removeItem(STORAGE_KEY)
-  }, [])
+  const login = useCallback(
+    async (credentials) => {
+      const result = await authService.login(credentials)
+      if (result.access_token && result.user) {
+        saveSession(result)
+      }
+      return result
+    },
+    [saveSession]
+  )
 
-  const value = useMemo(() => ({ user: session?.user ?? null, loading: false, login, register, updateProfile, logout }), [session, login, register, updateProfile, logout])
+  const adminLogin = useCallback(
+    async (credentials) => {
+      const result = await authService.adminLogin(credentials)
+      if (result.access_token && result.user) {
+        saveSession(result)
+      }
+      return result
+    },
+    [saveSession]
+  )
+
+  const register = useCallback(
+    async (details) => {
+      const result = await authService.register(details)
+      if (result.access_token && result.user) {
+        saveSession(result)
+      }
+      return result
+    },
+    [saveSession]
+  )
+
+  const logout = useCallback(async () => {
+    if (session?.access_token) {
+      try {
+        await authService.logout(session.access_token)
+      } catch {
+        // Ignore network errors on logout
+      }
+    }
+    saveSession(null)
+  }, [session, saveSession])
+
+  const value = useMemo(
+    () => ({
+      user: session?.user ?? null,
+      token: session?.access_token ?? null,
+      loading,
+      login,
+      adminLogin,
+      register,
+      logout,
+    }),
+    [session, loading, login, adminLogin, register, logout]
+  )
+
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

@@ -5,8 +5,13 @@ from pydantic import BaseModel, Field
 class RegisterRequest(BaseModel):
     email: str = Field(pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
     password: str = Field(min_length=8, max_length=128)
-    display_name: str = Field(min_length=1, max_length=100)
+    display_name: str | None = None
+    name: str | None = None
     user_category: str | None = None
+    role: str = Field(default="fisherman")
+    organization: str | None = None
+    institution: str | None = None
+    designation: str | None = None
     preferences: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -19,14 +24,21 @@ class UserResponse(BaseModel):
     id: str
     email: str
     display_name: str
+    name: str | None = None
     user_category: str | None = None
     preferences: dict[str, Any] = Field(default_factory=dict)
+    role: str = "fisherman"
+    approval_status: str = "approved"
+    organization: str | None = None
+    designation: str | None = None
+    created_at: str | None = None
 
 
 class AuthResponse(BaseModel):
     user: UserResponse
     access_token: str | None = None
     token_type: str = "bearer"
+    message: str | None = None
 
 
 class ProfileUpdateRequest(BaseModel):
@@ -37,4 +49,3 @@ class ProfileUpdateRequest(BaseModel):
 
 class PreferencesUpdateRequest(BaseModel):
     preferences: dict[str, Any] = Field(default_factory=dict)
-

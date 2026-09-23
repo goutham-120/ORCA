@@ -9,6 +9,10 @@ import Alerts from './pages/Alerts'
 import { Reports } from './pages/Reports'
 import Home from './pages/Home'
 import Personalization from './pages/Personalization'
+import AdminLogin from './pages/AdminLogin'
+import AdminDashboard from './pages/AdminDashboard'
+import ProtectedRoute from './components/auth/ProtectedRoute'
+import AdminProtectedRoute from './components/auth/AdminProtectedRoute'
 import { useAuth } from './hooks/useAuth'
 import './App.css'
 
@@ -23,7 +27,7 @@ function Placeholder({ title }) {
 }
 
 export default function App() {
-  const { user } = useAuth()
+  const { user, loading } = useAuth()
   const [currentPath, setCurrentPath] = useState(() => {
     return window.location.pathname
   })
@@ -45,6 +49,15 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  if (currentPath === '/admin/login') return <AdminLogin navigate={navigate} />
+  if (currentPath === '/admin' || currentPath === '/admin/dashboard') {
+    return (
+      <AdminProtectedRoute navigate={navigate}>
+        <AdminDashboard navigate={navigate} />
+      </AdminProtectedRoute>
+    )
+  }
+
   if (currentPath === '/login') return <Login navigate={navigate} />
   if (currentPath === '/register') return <Register navigate={navigate} />
   if (currentPath === '/') return <Home navigate={navigate} />
@@ -60,23 +73,25 @@ export default function App() {
     return <MapExplorer key={window.location.search} navigate={navigate} />
   }
 
-  if (!user) return <Login navigate={navigate} />
-
   return (
-    <MainLayout path={currentPath} navigate={navigate}>
-      {currentPath === '/dashboard' ? (
-        <Dashboard navigate={navigate} />
-      ) : currentPath === '/personalization' ? (
-        <Personalization navigate={navigate} />
-      ) : currentPath === '/ask-orca' ? (
-        <AskOrca key={window.location.search} navigate={navigate} />
-      ) : currentPath === '/alerts' ? (
-        <Alerts navigate={navigate} />
-      ) : currentPath === '/reports' ? (
-        <Reports onNavigate={navigate} />
-      ) : (
-        <Placeholder title="Page not found" />
-      )}
-    </MainLayout>
+    <ProtectedRoute navigate={navigate}>
+      <MainLayout path={currentPath} navigate={navigate}>
+        {currentPath === '/dashboard' ? (
+          <Dashboard navigate={navigate} />
+        ) : currentPath === '/personalization' ? (
+          <Personalization navigate={navigate} />
+        ) : currentPath === '/ask-orca' ? (
+          <AskOrca key={window.location.search} navigate={navigate} />
+        ) : currentPath === '/alerts' ? (
+          <Alerts navigate={navigate} />
+        ) : currentPath === '/reports' ? (
+          <Reports onNavigate={navigate} />
+        ) : (
+          <Placeholder title="Page not found" />
+        )}
+      </MainLayout>
+    </ProtectedRoute>
   )
 }
+
+
