@@ -82,7 +82,13 @@ export function getVoiceForLanguage(langCode) {
   return matched || null
 }
 
-export function speakResponse(text, language = 'en', onEnd = null, onError = null) {
+let currentSpeakingMessageId = null
+
+export function getCurrentSpeakingId() {
+  return currentSpeakingMessageId
+}
+
+export function speakResponse(text, language = 'en', onEnd = null, onError = null, messageId = null) {
   if (!speechSynth || !text) return false
 
   stopSpeech()
@@ -119,8 +125,26 @@ export function speakResponse(text, language = 'en', onEnd = null, onError = nul
     utterance.voice = voice
   }
 
-  if (onEnd) utterance.onend = onEnd
-  if (onError) utterance.onerror = onError
+  currentSpeakingMessageId = messageId || 'active'
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('orca-speech-start', { detail: { messageId: currentSpeakingMessageId, text: cleanText, language: targetLocale } }))
+  }
+
+  utterance.onend = (e) => {
+    currentSpeakingMessageId = null
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('orca-speech-end', { detail: { messageId } }))
+    }
+    if (onEnd) onEnd(e)
+  }
+
+  utterance.onerror = (e) => {
+    currentSpeakingMessageId = null
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('orca-speech-end', { detail: { messageId, error: e } }))
+    }
+    if (onError) onError(e)
+  }
 
   speechSynth.speak(utterance)
   return true
@@ -129,6 +153,10 @@ export function speakResponse(text, language = 'en', onEnd = null, onError = nul
 export function stopSpeech() {
   if (speechSynth) {
     speechSynth.cancel()
+    currentSpeakingMessageId = null
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('orca-speech-end', { detail: {} }))
+    }
   }
 }
 

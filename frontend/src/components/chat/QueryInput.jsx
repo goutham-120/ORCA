@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
+import { stopSpeech } from '../../utils/speech'
 
 const speechApi = () => window.SpeechRecognition || window.webkitSpeechRecognition
 
 export default function QueryInput({ value, onChange, onSend, loading, language }) {
   const [voiceState, setVoiceState] = useState('idle') // 'idle' | 'listening' | 'processing' | 'error'
   const [voiceError, setVoiceError] = useState('')
+  const [isVoiceInput, setIsVoiceInput] = useState(false)
   const recognitionRef = useRef(null)
   const textareaRef = useRef(null)
 
@@ -22,6 +24,7 @@ export default function QueryInput({ value, onChange, onSend, loading, language 
   }, [value])
 
   const listen = () => {
+    stopSpeech()
     const Recognition = speechApi()
     if (!Recognition) {
       setVoiceState('error')
@@ -39,6 +42,7 @@ export default function QueryInput({ value, onChange, onSend, loading, language 
       instance.onstart = () => {
         setVoiceError('')
         setVoiceState('listening')
+        setIsVoiceInput(true)
       }
 
       instance.onresult = (event) => {
@@ -47,6 +51,7 @@ export default function QueryInput({ value, onChange, onSend, loading, language 
           .join(' ')
           .trim()
         onChange(transcript)
+        setIsVoiceInput(true)
         setVoiceState('processing')
       }
 
@@ -79,6 +84,7 @@ export default function QueryInput({ value, onChange, onSend, loading, language 
   }
 
   const toggleVoice = () => {
+    stopSpeech()
     if (voiceState === 'listening') {
       recognitionRef.current?.stop()
     } else {
@@ -86,12 +92,24 @@ export default function QueryInput({ value, onChange, onSend, loading, language 
     }
   }
 
+  const handleTextChange = (newVal) => {
+    stopSpeech()
+    setIsVoiceInput(false)
+    onChange(newVal)
+  }
+
+  const handleSend = () => {
+    if (value.trim() && !loading) {
+      const voiceFlag = isVoiceInput
+      setIsVoiceInput(false)
+      onSend(value, voiceFlag)
+    }
+  }
+
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      if (value.trim() && !loading) {
-        onSend()
-      }
+      handleSend()
     }
   }
 
@@ -107,7 +125,7 @@ export default function QueryInput({ value, onChange, onSend, loading, language 
         <textarea
           ref={textareaRef}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => handleTextChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={
             language === 'hi'
@@ -157,7 +175,7 @@ export default function QueryInput({ value, onChange, onSend, loading, language 
           <button
             type="button"
             className="send-query-btn font-inter glow"
-            onClick={() => onSend()}
+            onClick={handleSend}
             disabled={loading || !value.trim()}
           >
             <span>{loading ? 'Analyzing…' : 'Send'}</span>

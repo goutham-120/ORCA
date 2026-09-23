@@ -36,10 +36,19 @@ INDIAN_COASTAL_HARBORS: list[dict[str, Any]] = [
     {"id": "vasai_killa", "name": "Vasai Killa Fish Landing Jetty", "state": "Maharashtra", "lat": 19.3305, "lon": 72.8105, "type": "Fish Landing Center"},
     {"id": "arnala", "name": "Arnala Fishing Harbor (Virar)", "state": "Maharashtra", "lat": 19.4502, "lon": 72.7485, "type": "Fishing Harbor"},
     {"id": "satpati", "name": "Satpati Fishery Harbor (Palghar)", "state": "Maharashtra", "lat": 19.7280, "lon": 72.7050, "type": "Major Fishing Harbor"},
-    {"id": "alibag", "name": "Alibag Coastal Landing", "state": "Maharashtra", "lat": 18.6414, "lon": 72.8722, "type": "Fish Landing Center"},
-    {"id": "ratnagiri_mirkarwada", "name": "Mirkarwada Fishing Harbor (Ratnagiri)", "state": "Maharashtra", "lat": 16.9833, "lon": 73.2833, "type": "Major Fishing Harbor"},
-    {"id": "malvan", "name": "Malvan Fishery Port", "state": "Maharashtra", "lat": 16.0594, "lon": 73.4686, "type": "Fish Landing Center"},
     {"id": "dahanu", "name": "Dahanu Fishery Wharf", "state": "Maharashtra", "lat": 19.9703, "lon": 72.7311, "type": "Fish Landing Center"},
+    {"id": "alibag", "name": "Alibag Coastal Landing", "state": "Maharashtra", "lat": 18.6414, "lon": 72.8722, "type": "Fish Landing Center"},
+    {"id": "murud_janjira", "name": "Murud Janjira Fishery Jetty", "state": "Maharashtra", "lat": 18.3000, "lon": 72.9600, "type": "Fish Landing Center"},
+    {"id": "shrivardhan", "name": "Shrivardhan Fishery Wharf", "state": "Maharashtra", "lat": 18.0333, "lon": 73.0167, "type": "Fish Landing Center"},
+    {"id": "harnai", "name": "Harnai Fishery Port (Suvarnadurg)", "state": "Maharashtra", "lat": 17.8167, "lon": 73.0833, "type": "Major Fishing Harbor"},
+    {"id": "dabhol_anjanwel", "name": "Dabhol / Anjanwel Fishery Jetty", "state": "Maharashtra", "lat": 17.5850, "lon": 73.1600, "type": "Fish Landing Center"},
+    {"id": "guhagar", "name": "Guhagar Fish Landing Center", "state": "Maharashtra", "lat": 17.4833, "lon": 73.1833, "type": "Fish Landing Center"},
+    {"id": "jaigad", "name": "Jaigad Port & Fishery Jetty", "state": "Maharashtra", "lat": 17.3000, "lon": 73.2167, "type": "Fish Landing Center"},
+    {"id": "ganpatipule", "name": "Ganpatipule Coastal Landing", "state": "Maharashtra", "lat": 17.1450, "lon": 73.2650, "type": "Fish Landing Center"},
+    {"id": "ratnagiri_mirkarwada", "name": "Mirkarwada Fishing Harbor (Ratnagiri)", "state": "Maharashtra", "lat": 16.9833, "lon": 73.2833, "type": "Major Fishing Harbor"},
+    {"id": "devgad", "name": "Devgad Fishery Harbor", "state": "Maharashtra", "lat": 16.3800, "lon": 73.3750, "type": "Fishing Harbor"},
+    {"id": "malvan", "name": "Malvan Fishery Port", "state": "Maharashtra", "lat": 16.0594, "lon": 73.4686, "type": "Fish Landing Center"},
+    {"id": "vengurla", "name": "Vengurla Port & Fishery Jetty", "state": "Maharashtra", "lat": 15.8600, "lon": 73.6300, "type": "Fish Landing Center"},
 
     # Goa
     {"id": "panaji_betim", "name": "Betim / Panaji Fishery Jetty", "state": "Goa", "lat": 15.5033, "lon": 73.8267, "type": "Fishing Harbor"},
@@ -166,8 +175,8 @@ class RoadRoutingService:
             h_type = "Fishing Harbor"
             dist_to_harbor_km = round(_haversine_km(origin_lat, origin_lon, h_lat, h_lon), 2)
 
-        # If user is within 300 meters of the harbor/water, treat as already at port
-        if dist_to_harbor_km <= 0.30:
+        # If user is within 50 meters of the harbor/water, treat as already at port
+        if dist_to_harbor_km <= 0.05:
             return {
                 "land_transit_needed": False,
                 "is_at_sea_or_harbor": True,

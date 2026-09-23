@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import EvidencePanel from './EvidencePanel'
 import ReasoningTrace from './ReasoningTrace'
 import ChatMiniMap from './ChatMiniMap'
@@ -270,6 +270,27 @@ export default function Message({ message }) {
   const response = message.response
   const isSpecialized = response?.response_kind === 'specialized'
 
+  useEffect(() => {
+    const handleStart = (e) => {
+      if (e?.detail?.messageId === message.id) {
+        setIsSpeakingThis(true)
+      } else {
+        setIsSpeakingThis(false)
+      }
+    }
+    const handleEnd = (e) => {
+      if (!e?.detail?.messageId || e.detail.messageId === message.id) {
+        setIsSpeakingThis(false)
+      }
+    }
+    window.addEventListener('orca-speech-start', handleStart)
+    window.addEventListener('orca-speech-end', handleEnd)
+    return () => {
+      window.removeEventListener('orca-speech-start', handleStart)
+      window.removeEventListener('orca-speech-end', handleEnd)
+    }
+  }, [message.id])
+
   const handleCopy = async () => {
     try {
       if (navigator.clipboard) {
@@ -302,7 +323,8 @@ export default function Message({ message }) {
         spokenBriefing,
         spokenLang,
         () => setIsSpeakingThis(false),
-        () => setIsSpeakingThis(false)
+        () => setIsSpeakingThis(false),
+        message.id
       )
     }
   }
