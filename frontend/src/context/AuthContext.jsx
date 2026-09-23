@@ -3,6 +3,9 @@ import { authService } from '../services/authService'
 import { AuthContext } from './authContext'
 
 const STORAGE_KEY = 'orca-auth-session'
+const CHAT_STORAGE_KEY = 'orca-chat-messages'
+const CHAT_CONV_KEY = 'orca-chat-conversation-id'
+const CHAT_USER_KEY = 'orca-chat-user-id'
 
 function storedSession() {
   try {
@@ -23,6 +26,19 @@ export function AuthProvider({ children }) {
 
   const authenticate = useCallback(async (action, payload) => {
     const result = await action(payload)
+    try {
+      const prevUserId = localStorage.getItem(CHAT_USER_KEY)
+      const nextUserId = result?.user?.id ? String(result.user.id) : (result?.user?.email || null)
+      if (prevUserId && nextUserId && prevUserId !== nextUserId) {
+        localStorage.removeItem(CHAT_STORAGE_KEY)
+        localStorage.removeItem(CHAT_CONV_KEY)
+      }
+      if (nextUserId) {
+        localStorage.setItem(CHAT_USER_KEY, nextUserId)
+      }
+    } catch {
+      // Ignore storage errors
+    }
     saveSession(result)
     return result
   }, [saveSession])

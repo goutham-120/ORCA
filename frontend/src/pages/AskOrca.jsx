@@ -1,13 +1,17 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import ChatHeader from '../components/chat/ChatHeader'
 import LocationContextPanel from '../components/chat/LocationContextPanel'
 import ChatWindow from '../components/chat/ChatWindow'
 import QueryInput from '../components/chat/QueryInput'
 import { askOrca } from '../services/orcaService'
 import { LOCATION_COORDINATES } from '../services/openMeteoService'
+import { useAuth } from '../hooks/useAuth'
 import './AskOrca.css'
 
 const PREFERENCES_KEY = 'orca-dashboard-preferences'
+const CHAT_STORAGE_KEY = 'orca-chat-messages'
+const CHAT_CONV_KEY = 'orca-chat-conversation-id'
+const CHAT_USER_KEY = 'orca-chat-user-id'
 const newId = () => globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`
 
 function loadSavedLocation() {
@@ -39,6 +43,9 @@ function loadSavedLocation() {
 }
 
 export default function AskOrca({ navigate }) {
+  const { user } = useAuth()
+  const currentUserId = user?.id ? String(user.id) : (user?.email || '')
+
   // Parse URL Parameters for query, latitude, longitude, and label
   const searchParams = useMemo(() => new URLSearchParams(window.location.search), [])
 
@@ -48,14 +55,60 @@ export default function AskOrca({ navigate }) {
   const initialLabel = searchParams.get('label') || ''
 
   const [query, setQuery] = useState(initialQuery)
-  const [messages, setMessages] = useState([])
+
+  // Initialize messages from localStorage, refreshing if a new user logged in
+  const [messages, setMessages] = useState(() => {
+    try {
+      const savedUserId = localStorage.getItem(CHAT_USER_KEY)
+      // Check if a new user logged in
+      if (savedUserId && currentUserId && savedUserId !== currentUserId) {
+        localStorage.removeItem(CHAT_STORAGE_KEY)
+        localStorage.removeItem(CHAT_CONV_KEY)
+        localStorage.setItem(CHAT_USER_KEY, currentUserId)
+        return []
+      }
+      if (currentUserId && !savedUserId) {
+        localStorage.setItem(CHAT_USER_KEY, currentUserId)
+      }
+      const raw = localStorage.getItem(CHAT_STORAGE_KEY)
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        if (Array.isArray(parsed)) return parsed
+      }
+    } catch {
+      // Ignore parse error
+    }
+    return []
+  })
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [failedQuery, setFailedQuery] = useState('')
   const [language, setLanguage] = useState('en')
-  const [conversationId, setConversationId] = useState(newId)
+
+  // Initialize conversationId from localStorage or generate a fresh one
+  const [conversationId, setConversationId] = useState(() => {
+    try {
+      const savedUserId = localStorage.getItem(CHAT_USER_KEY)
+      if (savedUserId && currentUserId && savedUserId === currentUserId) {
+        const rawConv = localStorage.getItem(CHAT_CONV_KEY)
+        if (rawConv) return rawConv
+      }
+    } catch {
+      // Ignore
+    }
+    const freshId = newId()
+    try {
+      localStorage.setItem(CHAT_CONV_KEY, freshId)
+    } catch {
+      // Ignore
+    }
+    return freshId
+  })
+
   const [isLocationOpen, setIsLocationOpen] = useState(false)
   const [browserLocation, setBrowserLocation] = useState(null)
+  const autoSentRef = useRef(false)
 
   // Active Location state synced with Dashboard preference
   const [location, setLocation] = useState(() => {
@@ -164,9 +217,40 @@ export default function AskOrca({ navigate }) {
     }
   }
 
+  // Persist conversation messages and conversationId for the current user
+  useEffect(() => {
+    try {
+      if (messages.length > 0) {
+        localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages))
+        localStorage.setItem(CHAT_CONV_KEY, conversationId)
+        if (currentUserId) {
+          localStorage.setItem(CHAT_USER_KEY, currentUserId)
+        }
+      } else {
+        localStorage.removeItem(CHAT_STORAGE_KEY)
+      }
+    } catch {
+      // Ignore storage errors
+    }
+  }, [messages, conversationId, currentUserId])
+
+  // Refresh chats if a different user logs in while component is mounted
+  useEffect(() => {
+    if (!currentUserId) return
+    const savedUserId = localStorage.getItem(CHAT_USER_KEY)
+    if (savedUserId && savedUserId !== currentUserId) {
+      localStorage.removeItem(CHAT_STORAGE_KEY)
+      localStorage.removeItem(CHAT_CONV_KEY)
+      localStorage.setItem(CHAT_USER_KEY, currentUserId)
+      setMessages([])
+      setConversationId(newId())
+    }
+  }, [currentUserId])
+
   // Auto-send query if passed in URL
   useEffect(() => {
-    if (initialQuery && messages.length === 0 && !loading) {
+    if (initialQuery && !autoSentRef.current && !loading) {
+      autoSentRef.current = true
       const timer = setTimeout(() => {
         send(initialQuery)
       }, 50)
@@ -179,10 +263,17 @@ export default function AskOrca({ navigate }) {
     if (messages.length > 0 && !window.confirm('Start a new session? Conversation history will be cleared.')) {
       return
     }
+    const freshConvId = newId()
     setMessages([])
     setError('')
     setFailedQuery('')
-    setConversationId(newId())
+    setConversationId(freshConvId)
+    try {
+      localStorage.removeItem(CHAT_STORAGE_KEY)
+      localStorage.setItem(CHAT_CONV_KEY, freshConvId)
+    } catch {
+      // Ignore storage error
+    }
   }
 
   const handleSelectPrompt = (promptQuery) => {
