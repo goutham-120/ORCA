@@ -1755,7 +1755,7 @@
   flex-shrink: 0;
 }
 
-.step-label {
+.analysis-indicator .step-label {
   color: inherit;
 }
 

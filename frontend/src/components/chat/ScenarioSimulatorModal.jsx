@@ -337,8 +337,13 @@ export default function ScenarioSimulatorModal({
                 {/* 1. MSI SHIFT COMPARISON CARD */}
                 <div className="msi-shift-card font-sans">
                   <div className="shift-header">
-                    <div>
-                      <span className="shift-sub font-mono">SAFETY INDEX SHIFT</span>
+                    <div style={{ width: '100%' }}>
+                      <div className="shift-sub-row">
+                        <span className="shift-sub font-mono">SAFETY INDEX SHIFT</span>
+                        <span className={`msi-delta-badge font-mono ${msiDelta < 0 ? 'negative' : 'positive'}`}>
+                          {msiDelta > 0 ? `+${msiDelta}` : msiDelta} pts
+                        </span>
+                      </div>
                       <h4 className="shift-title font-sora">
                         {baselineMsi?.score ?? 0} ({baselineMsi?.tier_label}) →{' '}
                         <span className={`sim-score ${simulatedMsi?.tier || ''}`}>
@@ -346,9 +351,6 @@ export default function ScenarioSimulatorModal({
                         </span>
                       </h4>
                     </div>
-                    <span className={`msi-delta-badge font-mono ${msiDelta < 0 ? 'negative' : 'positive'}`}>
-                      {msiDelta > 0 ? `+${msiDelta}` : msiDelta} pts
-                    </span>
                   </div>
 
                   <div className="msi-comparison-bars">
@@ -357,7 +359,7 @@ export default function ScenarioSimulatorModal({
                       <div className="bar-track">
                         <div
                           className="bar-fill baseline"
-                          style={{ width: `${baselineMsi?.score ?? 50}%` }}
+                          style={{ width: `${Math.max(0, Math.min(100, baselineMsi?.score ?? 50))}%` }}
                         />
                       </div>
                       <span className="bar-val font-mono">{baselineMsi?.score ?? 0}/100</span>
@@ -367,7 +369,7 @@ export default function ScenarioSimulatorModal({
                       <div className="bar-track">
                         <div
                           className={`bar-fill simulated ${simulatedMsi?.tier || ''}`}
-                          style={{ width: `${simulatedMsi?.score ?? 50}%` }}
+                          style={{ width: `${Math.max(0, Math.min(100, simulatedMsi?.score ?? 50))}%` }}
                         />
                       </div>
                       <span className="bar-val font-mono">{simulatedMsi?.score ?? 0}/100</span>

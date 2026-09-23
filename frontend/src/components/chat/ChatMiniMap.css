@@ -1,4 +1,5 @@
 .chat-mini-map-card {
+  position: relative;
   margin: 12px 0;
   border-radius: 12px;
   overflow: hidden;
@@ -23,6 +24,11 @@
   font-size: 11px;
   letter-spacing: 0.05em;
   color: #38bdf8;
+}
+
+.mini-map-title strong {
+  color: #38bdf8 !important;
+  font-size: 11px;
 }
 
 .mini-map-pulse-dot {
@@ -73,32 +79,46 @@
 }
 
 .mini-map-footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 12px;
-  background: rgba(15, 23, 42, 0.85);
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 8px 14px;
+  background: rgba(11, 21, 38, 0.65);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
   font-size: 11px;
+  pointer-events: none;
 }
 
 .mini-map-coord-chip {
-  color: #94a3b8;
-  font-size: 10px;
+  color: #f8fafc !important;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
 }
 
 .mini-map-legend {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 10px;
-  color: #cbd5e1;
+  gap: 12px;
+  font-size: 10.5px;
+  color: #f8fafc !important;
 }
 
 .legend-item {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
+  color: #f8fafc !important;
+  font-weight: 500;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
 }
 
 .legend-dot.user {
@@ -106,7 +126,8 @@
   height: 8px;
   border-radius: 50%;
   background: #38bdf8;
-  border: 1px solid #ffffff;
+  border: 1.5px solid #ffffff;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.8);
 }
 
 .legend-line.route {
@@ -157,4 +178,97 @@
   font-size: 16px;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
   cursor: pointer;
+}
+
+/* ==========================================================================
+   EXPANDED MAP VIEW MODAL
+   ========================================================================== */
+.expanded-map-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(15, 23, 42, 0.82);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+.expanded-map-modal {
+  width: 94vw;
+  max-width: 1160px;
+  height: 84vh;
+  max-height: 800px;
+  background: #0b1526;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(56, 189, 248, 0.2);
+  position: relative;
+  animation: modalSlideUp 0.25s ease-out;
+}
+
+.expanded-map-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  background: rgba(15, 23, 42, 0.95);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.expanded-map-header .mini-map-title {
+  font-size: 13px;
+}
+
+.expanded-map-header .mini-map-title strong {
+  color: #38bdf8 !important;
+  font-size: 13px;
+}
+
+.expanded-map-viewport {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  position: relative;
+  background: #020617;
+}
+
+.expanded-map-close-btn {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5 !important;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 6px;
+  padding: 5px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.expanded-map-close-btn:hover {
+  background: rgba(239, 68, 68, 0.3);
+  border-color: rgba(239, 68, 68, 0.6);
+  color: #ffffff !important;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalSlideUp {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }

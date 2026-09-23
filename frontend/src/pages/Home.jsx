@@ -12,6 +12,8 @@ export default function Home({ navigate }) {
     }
   }
 
+  const isRealUser = user && user.email !== 'operator@orca.marine'
+
   const signals = [
     {
       num: '01',
@@ -71,7 +73,7 @@ export default function Home({ navigate }) {
             >
               Ask ORCA
             </button>
-            {!user ? (
+            {!isRealUser ? (
               <>
                 <button
                   type="button"
@@ -113,7 +115,7 @@ export default function Home({ navigate }) {
 
       {/* MAIN CONTENT AREA */}
       <main className="home-main">
-        {/* 2. HERO SECTION WITH FLOWING WATER VIDEO (LOCKED & UNTOUCHED) */}
+        {/* 2. HERO SECTION WITH FLOWING WATER VIDEO */}
         <section className="hero-section">
           <div className="hero-video-wrapper">
             <video
@@ -136,46 +138,25 @@ export default function Home({ navigate }) {
             <cite className="quote-attribution">&mdash; Jacques-Yves Cousteau</cite>
 
             <div className="hero-actions">
-              {user ? (
-                <>
-                  <button
-                    type="button"
-                    className="btn-primary btn-large"
-                    onClick={() => handleNav('/dashboard')}
-                  >
-                    Open Dashboard
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-secondary btn-large"
-                    onClick={() => handleNav('/ask-orca')}
-                  >
-                    Ask ORCA
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    className="btn-primary btn-large"
-                    onClick={() => handleNav('/register')}
-                  >
-                    Sign Up (Free)
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-secondary btn-large"
-                    onClick={() => handleNav('/login')}
-                  >
-                    Sign In
-                  </button>
-                </>
-              )}
+              <button
+                type="button"
+                className="btn-primary btn-large"
+                onClick={() => handleNav('/dashboard')}
+              >
+                Open Dashboard
+              </button>
+              <button
+                type="button"
+                className="btn-secondary btn-large"
+                onClick={() => handleNav('/ask-orca')}
+              >
+                Ask ORCA
+              </button>
             </div>
           </div>
         </section>
 
-        {/* 3. CONTINUOUS MARINE INFORMATION SECTION (ENHANCED LOWER SECTION) */}
+        {/* 3. CONTINUOUS MARINE INFORMATION SECTION */}
         <section className="signals-section">
           <div className="signals-inner">
             <div className="signals-header">
@@ -199,7 +180,7 @@ export default function Home({ navigate }) {
         </section>
       </main>
 
-      {/* 4. MINIMAL FOOTER (LOCKED & UNTOUCHED) */}
+      {/* 4. MINIMAL FOOTER */}
       <footer className="home-footer">
         <div className="footer-inner">
           <div className="footer-brand">

@@ -22,6 +22,7 @@ import {
 } from '../services/mapService'
 import ScenarioSimulatorModal from '../components/chat/ScenarioSimulatorModal'
 import LiveNavigationHUD from '../components/mapExplorer/LiveNavigationHUD'
+import monitoringPinIcon from '../assets/monitoring-pin.png'
 
 class ComponentErrorBoundary extends Component {
   constructor(props) {
@@ -939,14 +940,16 @@ export default function MapExplorer({ navigate }) {
               alignItems: 'center',
               gap: '6px',
               padding: '8px 12px',
-              background: isGpsTracking ? 'rgba(2, 132, 199, 0.25)' : '#0f172a',
-              color: isGpsTracking ? '#38bdf8' : '#94a3b8',
-              border: `1px solid ${isGpsTracking ? '#0284c7' : 'rgba(255,255,255,0.15)'}`,
+              background: isGpsTracking ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : '#0f172a',
+              color: isGpsTracking ? '#ffffff' : '#38bdf8',
+              border: `1px solid ${isGpsTracking ? '#38bdf8' : 'rgba(56, 189, 248, 0.3)'}`,
               borderRadius: '6px',
               fontWeight: 700,
               fontSize: '12px',
               cursor: 'pointer',
-              whiteSpace: 'nowrap'
+              whiteSpace: 'nowrap',
+              boxShadow: isGpsTracking ? '0 0 10px rgba(56, 189, 248, 0.4)' : 'none',
+              transition: 'all 0.2s ease',
             }}
           >
             <span>📡</span> {isGpsTracking ? 'Tracking: ON' : 'Track Boat'}
@@ -972,15 +975,19 @@ export default function MapExplorer({ navigate }) {
               transition: 'all 0.2s ease',
             }}
           >
-            <span style={{ color: '#7890a6', fontSize: '8px', fontWeight: 800, letterSpacing: '0.8px', textTransform: 'uppercase' }}>
+            <span className="location-label-tag" style={{ color: '#7890a6', fontSize: '10px', fontWeight: 800, letterSpacing: '0.6px', textTransform: 'uppercase' }}>
               MONITORING AREA (84 PORTS)
             </span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#0f172a', fontWeight: 700, fontSize: '12px' }}>
-              <span>📍</span>
-              <span style={{ maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#0f172a', fontWeight: 700, fontSize: '13px' }}>
+              <img
+                src={monitoringPinIcon}
+                alt=""
+                style={{ width: '15px', height: '15px', objectFit: 'contain', flexShrink: 0 }}
+              />
+              <span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {curatedLocation?.name || 'Chennai / Kasimedu'}
               </span>
-              <span style={{ fontSize: '9px', color: '#64748b', marginLeft: '2px' }}>▼</span>
+              <span style={{ fontSize: '10px', color: '#64748b', marginLeft: '2px' }}>▼</span>
             </div>
           </button>
           <button
@@ -1060,13 +1067,7 @@ export default function MapExplorer({ navigate }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                   <button
                     type="button"
-                    onClick={() => {
-                      if (ecosystemState.isOpen) {
-                        setEcosystemState((prev) => ({ ...prev, isOpen: false }))
-                      } else {
-                        runEcosystemDiagnosis()
-                      }
-                    }}
+                    onClick={diagnoseCatchDecline}
                     disabled={ecosystemState.loading}
                     style={{
                       display: 'inline-flex',
@@ -1109,7 +1110,7 @@ export default function MapExplorer({ navigate }) {
                     }}
                   >
                     <span>🔄</span>
-                    {pfzSync.loading ? 'Syncing INCOIS…' : 'Sync INCOIS PFZ'}
+                    {pfzSync.loading ? 'Fetching INCOIS…' : 'Refresh PFZ'}
                   </button>
 
                   <button
@@ -1170,6 +1171,142 @@ export default function MapExplorer({ navigate }) {
                   <div style={{ fontSize: '12px', fontWeight: 400, color: '#64748b', marginTop: '10px', borderTop: '1px solid #f1f5f9', paddingTop: '8px' }}>
                     {tideState.data?.spring_neap_phase || 'Spring tide'} · Range {tideState.data?.tidal_range_m ? `${tideState.data.tidal_range_m} m` : '1.75 m'}
                   </div>
+=======
+              {/* Action Buttons Row */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '12px', marginBottom: '14px' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (ecosystemState.isOpen) {
+                      setEcosystemState((prev) => ({ ...prev, isOpen: false }))
+                    } else {
+                      runEcosystemDiagnosis()
+                    }
+                  }}
+                  disabled={ecosystemState.loading}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 14px',
+                    background: ecosystemState.isOpen ? 'linear-gradient(135deg, #059669 0%, #047857 100%)' : 'rgba(16, 185, 129, 0.2)',
+                    color: '#34d399',
+                    border: '1px solid rgba(16, 185, 129, 0.4)',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <span>🔬</span>
+                  {ecosystemState.loading ? 'Diagnosing Ecosystem…' : ecosystemState.isOpen ? 'Hide Ecosystem Diagnostics' : 'Diagnose Fish Catch Decline'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={refreshPFZ}
+                  disabled={pfzSync.loading}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 14px',
+                    background: 'rgba(56, 189, 248, 0.15)',
+                    color: '#38bdf8',
+                    border: '1px solid rgba(56, 189, 248, 0.3)',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <span>🔄</span>
+                  {pfzSync.loading ? 'Syncing INCOIS…' : 'Sync INCOIS PFZ'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsSimulatorOpen(true)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 14px',
+                    background: 'linear-gradient(135deg, rgba(2, 132, 199, 0.3) 0%, rgba(14, 165, 233, 0.2) 100%)',
+                    color: '#38bdf8',
+                    border: '1px solid rgba(56, 189, 248, 0.4)',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    boxShadow: '0 2px 8px rgba(2, 132, 199, 0.2)',
+                  }}
+                >
+                  <span>🧪</span>
+                  Simulate Scenario
+                </button>
+              </div>
+
+              {/* 4 LIVE TELEMETRY CHIPS */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                {/* 1. TIDE LEVEL & PHASE */}
+                <div style={{ background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px', padding: '10px 14px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Tidal Hydrodynamics</span>
+                    <span style={{ fontSize: '10px', color: '#38bdf8', fontWeight: 700 }}>
+                      {tideState.data?.station_name ? tideState.data.station_name.split(' ')[0] : 'Harmonic'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '8px', margin: '4px 0 2px' }}>
+                    <strong style={{ fontSize: '20px', color: '#ffffff', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                      {tideState.data?.current_height_m != null ? `+${tideState.data.current_height_m.toFixed(2)}m` : '+1.42m'}
+                    </strong>
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: tideState.data?.tide_state?.includes('Flood') ? '#34d399' : '#f59e0b', whiteSpace: 'nowrap' }}>
+                      {tideState.data?.tide_state ? (tideState.data.tide_state.includes('Flood') ? '🌊 Flood (Rising)' : '🔻 Ebb (Falling)') : '🌊 Flood (Rising)'}
+                    </span>
+                  </div>
+                  <small style={{ color: '#94a3b8', fontSize: '11px', display: 'block', marginTop: '4px' }}>
+                    {tideState.data?.spring_neap_phase || 'Spring Tide (Stronger Currents)'} • Range: {tideState.data?.tidal_range_m ? `${tideState.data.tidal_range_m}m` : '1.4m'}
+                  </small>
+                </div>
+
+                {/* 2. NEXT TIDE EXTREMUM */}
+                <div style={{ background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px', padding: '10px 10px', border: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box' }}>
+                  <span style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600, display: 'block', marginBottom: '6px', paddingLeft: '2px' }}>Next High / Low Tides</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', margin: '2px 0 6px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px', fontSize: '10.5px', background: 'rgba(255, 255, 255, 0.04)', padding: '5px 8px', borderRadius: '6px', boxSizing: 'border-box' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', color: '#94a3b8', fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                        <span style={{ color: '#38bdf8', fontSize: '9px' }}>▲</span> High:
+                      </span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', whiteSpace: 'nowrap', textAlign: 'right', flexShrink: 0 }}>
+                        <span style={{ color: '#e2e8f0' }}>
+                          {tideState.data?.next_high_tide?.time_display || '06:15 PM'}
+                        </span>
+                        <strong style={{ color: '#38bdf8', fontWeight: 700 }}>
+                          ({tideState.data?.next_high_tide?.height_m ? `+${tideState.data.next_high_tide.height_m}m` : '+1.75m'})
+                        </strong>
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px', fontSize: '10.5px', background: 'rgba(255, 255, 255, 0.04)', padding: '5px 8px', borderRadius: '6px', boxSizing: 'border-box' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', color: '#94a3b8', fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                        <span style={{ color: '#f87171', fontSize: '9px' }}>▼</span> Low:
+                      </span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', whiteSpace: 'nowrap', textAlign: 'right', flexShrink: 0 }}>
+                        <span style={{ color: '#e2e8f0' }}>
+                          {tideState.data?.next_low_tide?.time_display || '12:30 AM'}
+                        </span>
+                        <strong style={{ color: '#fca5a5', fontWeight: 700 }}>
+                          ({tideState.data?.next_low_tide?.height_m ? `+${tideState.data.next_low_tide.height_m}m` : '+0.35m'})
+                        </strong>
+                      </span>
+                    </div>
+                  </div>
+                  <small style={{ color: '#94a3b8', fontSize: '11px', display: 'block', marginTop: '2px', borderTop: '1px solid rgba(255, 255, 255, 0.06)', paddingTop: '4px', paddingLeft: '2px' }}>
+                    Current Drift: <strong style={{ color: '#f1f5f9' }}>{tideState.data?.current_velocity_knots ?? 0.8} kn {tideState.data?.current_direction_cardinal || 'NNE'}</strong>
+                  </small>
+>>>>>>> origin/frontend-enhance
                 </div>
 
                 {/* CARD 2: Next High / Low Tide */}
@@ -1764,8 +1901,30 @@ export default function MapExplorer({ navigate }) {
           </section>
 
           {/* ROUTE ANALYSIS ENGINE & INFORMATION PANEL */}
-          <section className="route-analysis-section panel" style={{ marginTop: '16px' }}>
-            <div className="route-analysis-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+          <section
+            className="route-analysis-section panel"
+            style={{
+              marginTop: '16px',
+              padding: '18px 20px',
+              background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+              border: '1px solid #cbd5e1',
+              borderRadius: '10px',
+              boxShadow: '0 4px 16px rgba(15, 23, 42, 0.05)',
+            }}
+          >
+            <div
+              className="route-analysis-header"
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '12px',
+                borderBottom: '1px solid #e2e8f0',
+                paddingBottom: '14px',
+                marginBottom: '16px',
+              }}
+            >
               <div>
                 <p className="eyebrow" style={{ color: '#0284c7', fontWeight: 700, fontSize: '11px', letterSpacing: '0.05em' }}>NAVIGATION INTELLIGENCE</p>
                 <h2 style={{ margin: '2px 0 0 0', fontSize: '18px', color: '#0f172a' }}>Analyse Route Before Travelling</h2>
@@ -1775,25 +1934,67 @@ export default function MapExplorer({ navigate }) {
               </div>
             </div>
 
-            <div className="route-controls-bar" style={{ marginTop: '14px', background: '#f8fafc', padding: '14px', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
-              <div style={{ flex: '1 1 200px' }}>
-                <label style={{ fontSize: '11px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>
+            <div
+              className="route-controls-bar"
+              style={{
+                background: '#f8fafc',
+                padding: '16px 18px',
+                borderRadius: '8px',
+                border: '1px solid #e2e8f0',
+                display: 'flex',
+                alignItems: 'flex-end',
+                gap: '14px',
+                flexWrap: 'wrap',
+              }}
+            >
+              <div style={{ flex: '1.2 1 240px', minWidth: '0' }}>
+                <label style={{ fontSize: '11px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '6px', letterSpacing: '0.03em' }}>
                   ORIGIN (CURRENT COORDINATE)
                 </label>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a', background: '#ffffff', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
+                <div
+                  title={`📍 ${Number.isFinite(activeLat) ? activeLat.toFixed(4) : '0.0000'}°N, ${Number.isFinite(activeLon) ? activeLon.toFixed(4) : '0.0000'}°E (${activeLocation.label || activeLocation.name || 'Selected point'})`}
+                  style={{
+                    height: '42px',
+                    boxSizing: 'border-box',
+                    display: 'flex',
+                    alignItems: 'center',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    color: '#0f172a',
+                    background: '#ffffff',
+                    padding: '0 12px',
+                    borderRadius: '6px',
+                    border: '1px solid #cbd5e1',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
                   📍 {Number.isFinite(activeLat) ? activeLat.toFixed(4) : '0.0000'}°N, {Number.isFinite(activeLon) ? activeLon.toFixed(4) : '0.0000'}°E ({activeLocation.label || activeLocation.name || 'Selected point'})
                 </div>
               </div>
 
-              <div style={{ flex: '1 1 240px' }}>
-                <label htmlFor="destination-pfz-select" style={{ fontSize: '11px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>
+              <div style={{ flex: '1.2 1 260px', minWidth: '0' }}>
+                <label htmlFor="destination-pfz-select" style={{ fontSize: '11px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '6px', letterSpacing: '0.03em' }}>
                   DESTINATION (TARGET PFZ)
                 </label>
                 <select
                   id="destination-pfz-select"
                   value={selectedDestinationPFZId}
                   onChange={(e) => setSelectedDestinationPFZId(e.target.value)}
-                  style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', background: '#ffffff', color: '#0f172a', fontWeight: 600 }}
+                  style={{
+                    height: '42px',
+                    boxSizing: 'border-box',
+                    width: '100%',
+                    padding: '0 12px',
+                    borderRadius: '6px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '13px',
+                    background: '#ffffff',
+                    color: '#0f172a',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
                 >
                   <option value="auto_nearest">
                     ⭐ Nearest Suitable PFZ ({nearestPFZ.data?.selected_pfz?.name || 'Auto-detect'})
@@ -1826,18 +2027,24 @@ export default function MapExplorer({ navigate }) {
                 disabled={detailedRoute.loading}
                 onClick={runDetailedRouteAnalysis}
                 style={{
+                  height: '42px',
+                  boxSizing: 'border-box',
                   background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
                   color: '#ffffff',
                   fontWeight: 700,
-                  fontSize: '14px',
-                  padding: '10px 22px',
-                  borderRadius: '8px',
+                  fontSize: '13px',
+                  padding: '0 22px',
+                  borderRadius: '6px',
                   border: 'none',
                   cursor: 'pointer',
-                  boxShadow: '0 2px 6px rgba(5, 150, 105, 0.3)',
+                  boxShadow: '0 2px 6px rgba(5, 150, 105, 0.25)',
                   transition: 'all 0.2s ease',
                   whiteSpace: 'nowrap',
-                  marginTop: '18px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  flexShrink: 0,
                 }}
               >
                 {detailedRoute.loading ? '⚡ Analysing Route, GIS & Marine Telemetry…' : '🧭 Analyse Route'}

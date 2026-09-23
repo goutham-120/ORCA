@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
 import MainLayout from './components/layout/MainLayout'
-import Login from './pages/Login'
-import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import AskOrca from './pages/AskOrca'
 import MapExplorer from './pages/MapExplorer'
 import Alerts from './pages/Alerts'
 import { Reports } from './pages/Reports'
 import Home from './pages/Home'
+import Login from './pages/Login'
+import Register from './pages/Register'
 import Personalization from './pages/Personalization'
 import AdminLogin from './pages/AdminLogin'
 import AdminDashboard from './pages/AdminDashboard'
@@ -93,5 +93,3 @@ export default function App() {
     </ProtectedRoute>
   )
 }
-
-
