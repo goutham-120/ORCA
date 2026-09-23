@@ -98,12 +98,12 @@ export function Reports({ onNavigate }) {
         </div>
         <div className="header-stats-row font-inter">
           <div className="header-stat-pill">
-            <span className="stat-num font-sora">6</span>
+            <span className="stat-num font-sora">6 </span>
             <span className="stat-lbl font-inter">Templates</span>
           </div>
           <div className="header-stat-pill">
             <span className="stat-num font-sora">{savedReports.length}</span>
-            <span className="stat-lbl font-inter">Saved</span>
+            <span className="stat-lbl font-inter"> Saved</span>
           </div>
           {activeReport && (
             <button

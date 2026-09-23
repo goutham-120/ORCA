@@ -702,13 +702,6 @@ export default function Message({ message }) {
                 </ul>
               </div>
             )}
-
-            {/* Remaining notes if any */}
-            {!isSimulation && parsed.remaining && (
-              <div className="reason-supplementary-note font-sans">
-                {parsed.remaining}
-              </div>
-            )}
           </div>
         )}
 

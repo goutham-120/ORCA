@@ -25,6 +25,13 @@ app.include_router(api_router, prefix=settings.api_prefix)
 def initialize_database() -> None:
     """Create the user table before handling authentication requests."""
     if database.initialize():
+        try:
+            from app.api.auth import _hash_password
+            from app.models.user import users
+            users.ensure_admin_user(settings.admin_email, _hash_password(settings.admin_password))
+        except Exception:
+            pass
+
         ensure_demo_gis()
         # A labelled PFZ fallback is available immediately. /map/layers and PFZ
         # chat queries still attempt the official INCOIS source before use.
@@ -33,6 +40,7 @@ def initialize_database() -> None:
                 replace_demo_pfz()
         except Exception:
             pass
+
 
 
 @app.get("/health", response_model=HealthResponse, tags=["system"])

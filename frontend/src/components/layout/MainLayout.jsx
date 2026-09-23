@@ -28,7 +28,7 @@ export default function MainLayout({ children, path, navigate }) {
 
   const leave = () => {
     logout()
-    navigate('/login')
+    navigate('/')
   }
 
   return (

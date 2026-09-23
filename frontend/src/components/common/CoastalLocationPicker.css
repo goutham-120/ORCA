@@ -58,8 +58,11 @@
 }
 
 .clp-wave-icon {
-  font-size: 1.6rem;
-  line-height: 1;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  flex-shrink: 0;
+  display: block;
 }
 
 .clp-header-title h3 {

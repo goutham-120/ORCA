@@ -14,9 +14,13 @@ export default function Login({ navigate }) {
     setError('')
     try {
       await login(form)
-      navigate('/personalization')
+      if (navigate) {
+        navigate('/dashboard')
+      } else {
+        window.location.href = '/dashboard'
+      }
     } catch (err) {
-      setError(err.message || 'Unable to sign in. Check that the API is available.')
+      setError(err.message || 'Unable to sign in. Please verify your credentials or network connection.')
     } finally {
       setBusy(false)
     }
@@ -28,11 +32,17 @@ export default function Login({ navigate }) {
         <div className="auth-brand font-sora">
           <img src={orcaLogo} alt="ORCA Logo" className="auth-brand-logo" />
           <span>ORCA</span>
-          <small className="font-inter">MARINE INTELLIGENCE</small>
+          <small className="font-inter">OCEAN RESOURCE & CONTEXTUAL ANALYSIS</small>
         </div>
-        <h1 className="font-sora">Welcome back</h1>
-        <p className="font-inter">Sign in to make better decisions at sea.</p>
-        {error && <div className="form-error font-inter">{error}</div>}
+        <h1 className="font-sora">Welcome Back</h1>
+        <p className="font-inter">Sign in to access marine intelligence.</p>
+        
+        {error && (
+          <div className="form-error font-inter" style={{ padding: '10px 14px', borderRadius: '6px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#fca5a5', fontSize: '0.875rem', marginBottom: '1rem' }}>
+            {error}
+          </div>
+        )}
+
         <label className="font-inter">
           Email
           <input
@@ -42,6 +52,7 @@ export default function Login({ navigate }) {
             onChange={(e) => setForm({ ...form, email: e.target.value })}
             placeholder="you@example.com"
             className="font-inter"
+            disabled={busy}
           />
         </label>
         <label className="font-inter">
@@ -53,14 +64,15 @@ export default function Login({ navigate }) {
             onChange={(e) => setForm({ ...form, password: e.target.value })}
             placeholder="••••••••"
             className="font-inter"
+            disabled={busy}
           />
         </label>
         <button className="primary-button font-inter" disabled={busy}>
-          {busy ? 'Signing in…' : 'Sign in'}
+          {busy ? 'Signing in…' : 'Sign In'}
         </button>
         <p className="auth-switch font-inter">
           New to ORCA?{' '}
-          <button type="button" onClick={() => navigate('/register')} className="font-inter">
+          <button type="button" onClick={() => navigate && navigate('/register')} className="font-inter">
             Create an account
           </button>
         </p>

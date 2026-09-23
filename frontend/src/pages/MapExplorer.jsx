@@ -22,6 +22,7 @@ import {
 } from '../services/mapService'
 import ScenarioSimulatorModal from '../components/chat/ScenarioSimulatorModal'
 import LiveNavigationHUD from '../components/mapExplorer/LiveNavigationHUD'
+import monitoringPinIcon from '../assets/monitoring-pin.png'
 
 class ComponentErrorBoundary extends Component {
   constructor(props) {
@@ -939,14 +940,16 @@ export default function MapExplorer({ navigate }) {
               alignItems: 'center',
               gap: '6px',
               padding: '8px 12px',
-              background: isGpsTracking ? 'rgba(2, 132, 199, 0.25)' : '#0f172a',
-              color: isGpsTracking ? '#38bdf8' : '#94a3b8',
-              border: `1px solid ${isGpsTracking ? '#0284c7' : 'rgba(255,255,255,0.15)'}`,
+              background: isGpsTracking ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : '#0f172a',
+              color: isGpsTracking ? '#ffffff' : '#38bdf8',
+              border: `1px solid ${isGpsTracking ? '#38bdf8' : 'rgba(56, 189, 248, 0.3)'}`,
               borderRadius: '6px',
               fontWeight: 700,
               fontSize: '12px',
               cursor: 'pointer',
-              whiteSpace: 'nowrap'
+              whiteSpace: 'nowrap',
+              boxShadow: isGpsTracking ? '0 0 10px rgba(56, 189, 248, 0.4)' : 'none',
+              transition: 'all 0.2s ease',
             }}
           >
             <span>📡</span> {isGpsTracking ? 'Tracking: ON' : 'Track Boat'}
@@ -972,15 +975,19 @@ export default function MapExplorer({ navigate }) {
               transition: 'all 0.2s ease',
             }}
           >
-            <span style={{ color: '#7890a6', fontSize: '8px', fontWeight: 800, letterSpacing: '0.8px', textTransform: 'uppercase' }}>
+            <span className="location-label-tag" style={{ color: '#7890a6', fontSize: '10px', fontWeight: 800, letterSpacing: '0.6px', textTransform: 'uppercase' }}>
               MONITORING AREA (84 PORTS)
             </span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#0f172a', fontWeight: 700, fontSize: '12px' }}>
-              <span>📍</span>
-              <span style={{ maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#0f172a', fontWeight: 700, fontSize: '13px' }}>
+              <img
+                src={monitoringPinIcon}
+                alt=""
+                style={{ width: '15px', height: '15px', objectFit: 'contain', flexShrink: 0 }}
+              />
+              <span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {curatedLocation?.name || 'Chennai / Kasimedu'}
               </span>
-              <span style={{ fontSize: '9px', color: '#64748b', marginLeft: '2px' }}>▼</span>
+              <span style={{ fontSize: '10px', color: '#64748b', marginLeft: '2px' }}>▼</span>
             </div>
           </button>
           <button
@@ -1060,13 +1067,7 @@ export default function MapExplorer({ navigate }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                   <button
                     type="button"
-                    onClick={() => {
-                      if (ecosystemState.isOpen) {
-                        setEcosystemState((prev) => ({ ...prev, isOpen: false }))
-                      } else {
-                        runEcosystemDiagnosis()
-                      }
-                    }}
+                    onClick={diagnoseCatchDecline}
                     disabled={ecosystemState.loading}
                     style={{
                       display: 'inline-flex',
@@ -1109,7 +1110,7 @@ export default function MapExplorer({ navigate }) {
                     }}
                   >
                     <span>🔄</span>
-                    {pfzSync.loading ? 'Syncing INCOIS…' : 'Sync INCOIS PFZ'}
+                    {pfzSync.loading ? 'Fetching INCOIS…' : 'Refresh PFZ'}
                   </button>
 
                   <button
@@ -1764,8 +1765,30 @@ export default function MapExplorer({ navigate }) {
           </section>
 
           {/* ROUTE ANALYSIS ENGINE & INFORMATION PANEL */}
-          <section className="route-analysis-section panel" style={{ marginTop: '16px' }}>
-            <div className="route-analysis-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+          <section
+            className="route-analysis-section panel"
+            style={{
+              marginTop: '16px',
+              padding: '18px 20px',
+              background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+              border: '1px solid #cbd5e1',
+              borderRadius: '10px',
+              boxShadow: '0 4px 16px rgba(15, 23, 42, 0.05)',
+            }}
+          >
+            <div
+              className="route-analysis-header"
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '12px',
+                borderBottom: '1px solid #e2e8f0',
+                paddingBottom: '14px',
+                marginBottom: '16px',
+              }}
+            >
               <div>
                 <p className="eyebrow" style={{ color: '#0284c7', fontWeight: 700, fontSize: '11px', letterSpacing: '0.05em' }}>NAVIGATION INTELLIGENCE</p>
                 <h2 style={{ margin: '2px 0 0 0', fontSize: '18px', color: '#0f172a' }}>Analyse Route Before Travelling</h2>
@@ -1775,25 +1798,67 @@ export default function MapExplorer({ navigate }) {
               </div>
             </div>
 
-            <div className="route-controls-bar" style={{ marginTop: '14px', background: '#f8fafc', padding: '14px', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
-              <div style={{ flex: '1 1 200px' }}>
-                <label style={{ fontSize: '11px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>
+            <div
+              className="route-controls-bar"
+              style={{
+                background: '#f8fafc',
+                padding: '16px 18px',
+                borderRadius: '8px',
+                border: '1px solid #e2e8f0',
+                display: 'flex',
+                alignItems: 'flex-end',
+                gap: '14px',
+                flexWrap: 'wrap',
+              }}
+            >
+              <div style={{ flex: '1.2 1 240px', minWidth: '0' }}>
+                <label style={{ fontSize: '11px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '6px', letterSpacing: '0.03em' }}>
                   ORIGIN (CURRENT COORDINATE)
                 </label>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a', background: '#ffffff', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
+                <div
+                  title={`📍 ${Number.isFinite(activeLat) ? activeLat.toFixed(4) : '0.0000'}°N, ${Number.isFinite(activeLon) ? activeLon.toFixed(4) : '0.0000'}°E (${activeLocation.label || activeLocation.name || 'Selected point'})`}
+                  style={{
+                    height: '42px',
+                    boxSizing: 'border-box',
+                    display: 'flex',
+                    alignItems: 'center',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    color: '#0f172a',
+                    background: '#ffffff',
+                    padding: '0 12px',
+                    borderRadius: '6px',
+                    border: '1px solid #cbd5e1',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
                   📍 {Number.isFinite(activeLat) ? activeLat.toFixed(4) : '0.0000'}°N, {Number.isFinite(activeLon) ? activeLon.toFixed(4) : '0.0000'}°E ({activeLocation.label || activeLocation.name || 'Selected point'})
                 </div>
               </div>
 
-              <div style={{ flex: '1 1 240px' }}>
-                <label htmlFor="destination-pfz-select" style={{ fontSize: '11px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>
+              <div style={{ flex: '1.2 1 260px', minWidth: '0' }}>
+                <label htmlFor="destination-pfz-select" style={{ fontSize: '11px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '6px', letterSpacing: '0.03em' }}>
                   DESTINATION (TARGET PFZ)
                 </label>
                 <select
                   id="destination-pfz-select"
                   value={selectedDestinationPFZId}
                   onChange={(e) => setSelectedDestinationPFZId(e.target.value)}
-                  style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', background: '#ffffff', color: '#0f172a', fontWeight: 600 }}
+                  style={{
+                    height: '42px',
+                    boxSizing: 'border-box',
+                    width: '100%',
+                    padding: '0 12px',
+                    borderRadius: '6px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '13px',
+                    background: '#ffffff',
+                    color: '#0f172a',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
                 >
                   <option value="auto_nearest">
                     ⭐ Nearest Suitable PFZ ({nearestPFZ.data?.selected_pfz?.name || 'Auto-detect'})
@@ -1826,18 +1891,24 @@ export default function MapExplorer({ navigate }) {
                 disabled={detailedRoute.loading}
                 onClick={runDetailedRouteAnalysis}
                 style={{
+                  height: '42px',
+                  boxSizing: 'border-box',
                   background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
                   color: '#ffffff',
                   fontWeight: 700,
-                  fontSize: '14px',
-                  padding: '10px 22px',
-                  borderRadius: '8px',
+                  fontSize: '13px',
+                  padding: '0 22px',
+                  borderRadius: '6px',
                   border: 'none',
                   cursor: 'pointer',
-                  boxShadow: '0 2px 6px rgba(5, 150, 105, 0.3)',
+                  boxShadow: '0 2px 6px rgba(5, 150, 105, 0.25)',
                   transition: 'all 0.2s ease',
                   whiteSpace: 'nowrap',
-                  marginTop: '18px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  flexShrink: 0,
                 }}
               >
                 {detailedRoute.loading ? '⚡ Analysing Route, GIS & Marine Telemetry…' : '🧭 Analyse Route'}
