@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
-import orcaLogo from '../assets/orcologo.jpeg'
+import orcaLogo from '../assets/orcalogo.png'
 
 export default function Register({ navigate }) {
   const { register } = useAuth()

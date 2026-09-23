@@ -455,3 +455,212 @@
   color: #64748b;
   letter-spacing: 0.02em;
 }
+
+/* Mode Selection Tabs */
+.clp-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 0.75rem 1.5rem 0.25rem 1.5rem;
+  background: rgba(10, 26, 44, 0.6);
+  border-bottom: 1px solid rgba(56, 189, 248, 0.12);
+}
+
+.clp-tab-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clp-tab-btn:hover {
+  background: rgba(56, 189, 248, 0.08);
+  color: #e2e8f0;
+  border-color: rgba(56, 189, 248, 0.2);
+}
+
+.clp-tab-btn.active {
+  background: linear-gradient(135deg, rgba(2, 132, 199, 0.35) 0%, rgba(3, 105, 161, 0.25) 100%);
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.5);
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.2);
+}
+
+/* Custom Coordinates Container & Form */
+.clp-custom-container {
+  padding: 1.5rem;
+  overflow-y: auto;
+  max-height: 520px;
+}
+
+.clp-custom-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.clp-custom-intro {
+  background: rgba(14, 116, 144, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+}
+
+.clp-custom-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #38bdf8;
+  letter-spacing: 0.08em;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.clp-custom-intro h4 {
+  margin: 0 0 0.35rem 0;
+  font-size: 1.05rem;
+  color: #f1f5f9;
+  font-weight: 700;
+}
+
+.clp-custom-intro p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #94a3b8;
+  line-height: 1.45;
+}
+
+.clp-custom-error-banner {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.clp-custom-inputs-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 500px) {
+  .clp-custom-inputs-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.clp-custom-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.clp-custom-input {
+  background: rgba(4, 18, 36, 0.7);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 8px;
+  padding: 0.65rem 0.9rem;
+  color: #f8fafc;
+  font-size: 0.9rem;
+  outline: none;
+  transition: all 0.18s ease;
+}
+
+.clp-custom-input:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+  background: rgba(4, 18, 36, 0.9);
+}
+
+.clp-custom-input::placeholder {
+  color: #475569;
+}
+
+.req {
+  color: #f87171;
+}
+
+.opt {
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+.clp-field-hint {
+  font-size: 0.7rem;
+  color: #64748b;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.clp-custom-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.clp-gps-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.65rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 8px;
+  color: #94a3b8;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.clp-gps-btn:hover {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.35);
+  color: #38bdf8;
+}
+
+.clp-submit-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.7rem 1.4rem;
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  border: 1px solid rgba(56, 189, 248, 0.5);
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(2, 132, 199, 0.35);
+  transition: all 0.18s ease;
+  margin-left: auto;
+}
+
+.clp-submit-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0369a1 0%, #0284c7 100%);
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.5);
+  transform: translateY(-1px);
+}
+
+.clp-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}

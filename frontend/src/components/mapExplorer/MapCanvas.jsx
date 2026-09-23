@@ -234,17 +234,27 @@ export default function MapCanvas({
   radiusKm = 50,
   pfzEvaluations = {},
   selectedPFZGeometry = null,
+  selectedPFZId = null,
   pfzRouteGeometry = null,
   onMapLocation,
   isExpanded,
   onToggleExpanded,
+  liveVesselLocation = null,
+  navigationWaypoints = [],
+  isTracking = false,
+  landTransit = null,
 }) {
   const containerRef = useRef(null)
   const mapRef = useRef(null)
   const markerRef = useRef(null)
+  const radiusMarkerRef = useRef(null)
+  const vesselMarkerRef = useRef(null)
+  const waypointMarkersRef = useRef([])
+  const harborMarkerRef = useRef(null)
   const gisMarkersRef = useRef([])
   const initialLocationRef = useRef(selectedLocation)
   const locationHandlerRef = useRef(onMapLocation)
+  const [inspectedPFZ, setInspectedPFZ] = useState(null)
 
   const [mapStatus, setMapStatus] = useState('loading')
 
@@ -373,7 +383,7 @@ export default function MapCanvas({
           })
         }
 
-        // 4. Search Radius Circle
+        // 4. Search Radius Circle & Outer Glow Ring (High Contrast)
         if (!map.getLayer('orca-fill-search-radius')) {
           map.addLayer({
             id: 'orca-fill-search-radius',
@@ -382,7 +392,20 @@ export default function MapCanvas({
             filter: ['==', ['get', 'kind'], 'search-radius'],
             paint: {
               'fill-color': '#0284c7',
-              'fill-opacity': 0.08,
+              'fill-opacity': 0.12,
+            },
+          })
+        }
+        if (!map.getLayer('orca-line-search-radius-glow')) {
+          map.addLayer({
+            id: 'orca-line-search-radius-glow',
+            type: 'line',
+            source: 'orca-layers',
+            filter: ['==', ['get', 'kind'], 'search-radius'],
+            paint: {
+              'line-color': '#38bdf8',
+              'line-width': 7,
+              'line-opacity': 0.4,
             },
           })
         }
@@ -394,9 +417,37 @@ export default function MapCanvas({
             filter: ['==', ['get', 'kind'], 'search-radius'],
             paint: {
               'line-color': '#0284c7',
-              'line-width': 2.2,
+              'line-width': 2.8,
               'line-dasharray': [4, 2],
-              'line-opacity': 0.85,
+              'line-opacity': 0.95,
+            },
+          })
+        }
+
+        // 4.5. PFZ Operational Fishing Buffer Zone (4 km Catch Corridor Halo)
+        if (!map.getLayer('orca-pfz-buffer-fill')) {
+          map.addLayer({
+            id: 'orca-pfz-buffer-fill',
+            type: 'fill',
+            source: 'orca-layers',
+            filter: ['==', ['get', 'kind'], 'pfz-operational-buffer'],
+            paint: {
+              'fill-color': '#10b981',
+              'fill-opacity': 0.2,
+            },
+          })
+        }
+        if (!map.getLayer('orca-pfz-buffer-line')) {
+          map.addLayer({
+            id: 'orca-pfz-buffer-line',
+            type: 'line',
+            source: 'orca-layers',
+            filter: ['==', ['get', 'kind'], 'pfz-operational-buffer'],
+            paint: {
+              'line-color': '#059669',
+              'line-width': 2.5,
+              'line-dasharray': [3, 2],
+              'line-opacity': 0.9,
             },
           })
         }
@@ -407,7 +458,7 @@ export default function MapCanvas({
             id: 'orca-fill-default',
             type: 'fill',
             source: 'orca-layers',
-            filter: ['all', ['==', '$type', 'Polygon'], ['!=', ['get', 'layer'], 'marine_areas'], ['!=', ['get', 'layer'], 'restricted_zones'], ['!=', ['get', 'layer'], 'hazards'], ['!=', ['get', 'kind'], 'search-radius']],
+            filter: ['all', ['==', '$type', 'Polygon'], ['!=', ['get', 'layer'], 'marine_areas'], ['!=', ['get', 'layer'], 'restricted_zones'], ['!=', ['get', 'layer'], 'hazards'], ['!=', ['get', 'kind'], 'search-radius'], ['!=', ['get', 'kind'], 'pfz-operational-buffer']],
             paint: {
               'fill-color': '#0ea5e9',
               'fill-opacity': 0.2,
@@ -513,6 +564,34 @@ export default function MapCanvas({
               'line-width': 4.5,
               'line-dasharray': [3, 1.5],
               'line-opacity': 0.95,
+            },
+          })
+        }
+
+        // 11. Multi-Modal Land Road Route (Amber / Gold Real Road Track)
+        if (!map.getLayer('orca-land-route-casing')) {
+          map.addLayer({
+            id: 'orca-land-route-casing',
+            type: 'line',
+            source: 'orca-layers',
+            filter: ['==', ['get', 'kind'], 'land-road-route'],
+            paint: {
+              'line-color': '#78350f',
+              'line-width': 8,
+              'line-opacity': 0.8,
+            },
+          })
+        }
+        if (!map.getLayer('orca-land-route-line')) {
+          map.addLayer({
+            id: 'orca-land-route-line',
+            type: 'line',
+            source: 'orca-layers',
+            filter: ['==', ['get', 'kind'], 'land-road-route'],
+            paint: {
+              'line-color': '#f59e0b',
+              'line-width': 5,
+              'line-opacity': 1.0,
             },
           })
         }
@@ -681,8 +760,19 @@ export default function MapCanvas({
         'top-right'
       )
 
-      map.once('style.load', activateOverlay)
-      map.once('load', activateOverlay)
+      if (map.isStyleLoaded()) {
+        activateOverlay()
+      } else {
+        map.once('style.load', activateOverlay)
+        map.once('load', activateOverlay)
+      }
+
+      map.on('styledata', () => {
+        if (!map.getSource('orca-layers')) {
+          styleReady = false
+          activateOverlay()
+        }
+      })
 
       map.on('click', (event) => {
         if (!map || !map.getLayer) return
@@ -717,6 +807,8 @@ export default function MapCanvas({
 
     return () => {
       window.clearTimeout(timeoutId)
+      markerRef.current?.remove()
+      radiusMarkerRef.current?.remove()
       gisMarkersRef.current.forEach((m) => {
         try { m.remove() } catch {}
       })
@@ -818,6 +910,40 @@ export default function MapCanvas({
       })
     }
 
+    // 4 km Operational Fishing Buffer Zone (Halo around Selected or Clicked PFZ)
+    let bufferCenter = null
+    let bufferName = 'Nearest Suitable PFZ'
+
+    if (inspectedPFZ && (inspectedPFZ.geometry || inspectedPFZ.rep_point)) {
+      bufferCenter = inspectedPFZ.rep_point || representativePoint(inspectedPFZ.geometry)
+      bufferName = inspectedPFZ.name || inspectedPFZ.properties?.name || 'Inspected PFZ'
+    } else if (selectedPFZGeometry) {
+      bufferCenter = representativePoint(selectedPFZGeometry)
+      bufferName = 'Nearest Suitable PFZ'
+    } else if (selectedPFZId) {
+      const allPFZFeatures = visibleLayers.filter((l) => String(l?.id || '').toLowerCase() === 'pfz').flatMap((l) => l.features || [])
+      const found = allPFZFeatures.find((f) => String(f.id || f.properties?.id || '').toLowerCase() === String(selectedPFZId).toLowerCase())
+      if (found) {
+        bufferCenter = representativePoint(found.geometry || found)
+        bufferName = found.properties?.name || found.name || 'Nearest Suitable PFZ'
+      }
+    }
+
+    if (bufferCenter && Array.isArray(bufferCenter) && bufferCenter.length >= 2 && Number.isFinite(bufferCenter[0]) && Number.isFinite(bufferCenter[1])) {
+      const bufferGeom = createCirclePolygon(bufferCenter, 4.0, 48)
+      if (bufferGeom) {
+        features.push({
+          type: 'Feature',
+          geometry: bufferGeom,
+          properties: {
+            kind: 'pfz-operational-buffer',
+            name: `${bufferName} (4 km Fishing Corridor)`,
+            radius_km: 4.0,
+          },
+        })
+      }
+    }
+
     if (pfzRouteGeometry) {
       features.push({
         type: 'Feature',
@@ -839,6 +965,17 @@ export default function MapCanvas({
       })
     }
 
+    if (landTransit?.road_geometry) {
+      features.push({
+        type: 'Feature',
+        geometry: landTransit.road_geometry,
+        properties: {
+          kind: 'land-road-route',
+          harbor_name: landTransit.harbor?.name || 'Departure Harbor',
+        },
+      })
+    }
+
     try {
       if (map.getSource && map.getSource('orca-layers')) {
         map.getSource('orca-layers').setData(featureCollection(features))
@@ -847,9 +984,6 @@ export default function MapCanvas({
       console.warn('Failed to update map features:', e)
     }
 
-    /*
-     * Remove existing GIS & PFZ DOM markers and create new interactive ones.
-     */
     gisMarkersRef.current.forEach((marker) => {
       try { marker.remove() } catch {}
     })
@@ -977,25 +1111,39 @@ export default function MapCanvas({
             isInRadius = distVal <= radiusKm
           }
 
-          el.className = `gis-interactive-marker pfz-marker ${isInRadius ? 'pfz-marker-in-radius' : 'pfz-marker-outside'}`
+          const isSelectedPFZ = Boolean(
+            selectedPFZId &&
+            (String(feature.id || '').toLowerCase() === String(selectedPFZId).toLowerCase() ||
+             String(props.id || '').toLowerCase() === String(selectedPFZId).toLowerCase() ||
+             featIdKey === String(selectedPFZId).toLowerCase())
+          )
 
-          const borderCol = isInRadius ? '#22c55e' : '#06b6d4'
-          const bgCol = isInRadius ? '#dcfce7' : '#ecfeff'
-          const textCol = isInRadius ? '#15803d' : '#0e7490'
-          const badgeLabel = isInRadius
+          const isStarPFZ = isSelectedPFZ
+          const borderCol = isStarPFZ ? '#f59e0b' : (isInRadius ? '#22c55e' : '#06b6d4')
+          const bgCol = isStarPFZ ? '#fef9c3' : (isInRadius ? '#dcfce7' : '#ecfeff')
+          const textCol = isStarPFZ ? '#854d0e' : (isInRadius ? '#15803d' : '#0e7490')
+          const badgeLabel = isStarPFZ
+            ? `<span>⭐ 🟢</span><strong>NEAREST PFZ (${Number.isFinite(distVal) && distVal !== Infinity ? `${distVal.toFixed(1)} km` : ''})</strong>`
+            : isInRadius
             ? `<span>🟢</span><strong>PFZ (${Number.isFinite(distVal) && distVal !== Infinity ? `${distVal.toFixed(1)} km` : ''})</strong>`
-            : `<span>🐟</span><strong>PFZ (${Number.isFinite(distVal) && distVal !== Infinity ? `${distVal.toFixed(1)} km` : ''})</strong>`
+            : '<span>🐟</span><strong>PFZ</strong>'
 
+          el.className = `gis-interactive-marker pfz-marker ${isStarPFZ ? 'pfz-marker-selected-star' : (isInRadius ? 'pfz-marker-in-radius' : 'pfz-marker-outside')}`
+          const shadowStyle = isStarPFZ
+            ? 'box-shadow: 0 0 16px rgba(245, 158, 11, 0.85), 0 0 0 3px rgba(34, 197, 94, 0.65); z-index: 10;'
+            : (isInRadius ? 'box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.45);' : '')
 
-          el.innerHTML = `<div class="gis-marker-bubble pfz-bubble" style="background: ${bgCol}; color: ${textCol}; border-color: ${borderCol}; font-weight: ${isInRadius ? '800' : '600'}; ${isInRadius ? 'box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.45);' : ''}">${badgeLabel}</div>`
+          el.innerHTML = `<div class="gis-marker-bubble pfz-bubble ${isStarPFZ ? 'star-bubble' : ''}" style="background: ${bgCol}; color: ${textCol}; border-color: ${borderCol}; font-weight: ${isStarPFZ || isInRadius ? '800' : '600'}; ${shadowStyle}">${badgeLabel}</div>`
 
-          const popup = new Popup({ offset: 15, maxWidth: '290px' }).setHTML(`
+          const popup = new Popup({ offset: 15, maxWidth: '300px' }).setHTML(`
             <div style="font-family: system-ui, sans-serif; color: #0f172a; padding: 4px;">
               <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
-                <span style="font-size: 20px;">${isInRadius ? '🟢' : '🐟'}</span>
+                <span style="font-size: 22px;">${isStarPFZ ? '⭐ 🟢' : (isInRadius ? '🟢' : '🐟')}</span>
                 <div>
-                  <strong style="color: ${borderCol}; font-size: 13px; display: block;">Potential Fishing Zone</strong>
-                  <small style="color: ${isInRadius ? '#15803d' : '#64748b'}; font-weight: 700; font-size: 11px;">${isInRadius ? '🟢 Inside Search Radius (GREEN)' : 'Outside Search Radius'}</small>
+                  <strong style="color: ${borderCol}; font-size: 13px; display: block;">${isStarPFZ ? '⭐ NEAREST SUITABLE PFZ' : 'Potential Fishing Zone'}</strong>
+                  <small style="color: ${isStarPFZ ? '#854d0e' : (isInRadius ? '#15803d' : '#64748b')}; font-weight: 700; font-size: 11px;">
+                    ${isStarPFZ ? '⭐ SELECTED OPTIMAL TARGET (Passed Weather + Ocean + GIS)' : (isInRadius ? '🟢 Inside Search Radius (GREEN)' : 'Outside Search Radius')}
+                  </small>
                 </div>
               </div>
               <div style="font-size: 12px; line-height: 1.5; border-top: 1px solid #e2e8f0; padding-top: 6px; color: #334155;">
@@ -1012,6 +1160,9 @@ export default function MapCanvas({
             </div>
           `)
           try {
+            el.addEventListener('click', () => {
+              setInspectedPFZ(feature)
+            })
             const marker = new Marker({ element: el }).setLngLat(repCoord).setPopup(popup).addTo(map)
             gisMarkersRef.current.push(marker)
           } catch {}
@@ -1020,26 +1171,32 @@ export default function MapCanvas({
     })
 
     /*
-     * If route geometry is active, zoom to route bounds.
+     * If route or land transit geometry is active, zoom to encompass full multi-modal bounds.
      */
-    if (routeGeometry?.coordinates?.length >= 2) {
+    const allRouteCoords = [
+      ...(Array.isArray(landTransit?.road_geometry?.coordinates) ? landTransit.road_geometry.coordinates : []),
+      ...(Array.isArray(routeGeometry?.coordinates) ? routeGeometry.coordinates : []),
+    ]
+
+    if (allRouteCoords.length >= 2) {
       try {
-        const routeBounds = routeGeometry.coordinates.reduce(
+        const routeBounds = allRouteCoords.reduce(
           (b, pt) => (Array.isArray(pt) && pt.length >= 2 ? b.extend(pt) : b),
-          new LngLatBounds(routeGeometry.coordinates[0], routeGeometry.coordinates[0])
+          new LngLatBounds(allRouteCoords[0], allRouteCoords[0])
         )
         map.fitBounds(routeBounds, {
-          padding: 80,
-          maxZoom: 9,
+          padding: 70,
+          maxZoom: 11,
           duration: 700,
         })
       } catch (e) {
-        console.warn('Failed to fit route bounds:', e)
+        console.warn('Failed to fit multi-modal route bounds:', e)
       }
     }
   }, [
     layers,
     routeGeometry,
+    landTransit,
     radiusKm,
     selectedPFZGeometry,
     pfzRouteGeometry,
@@ -1048,7 +1205,7 @@ export default function MapCanvas({
   ])
 
   /*
-   * Selected location marker.
+   * Selected location marker with radar pulse ring & operational radius badge.
    */
   useEffect(() => {
     const map = mapRef.current
@@ -1074,22 +1231,55 @@ export default function MapCanvas({
 
     try {
       markerRef.current?.remove()
+      radiusMarkerRef.current?.remove()
 
       const locationLabel =
         selectedLocation.label ||
         selectedLocation.name ||
         'Selected map coordinate'
 
+      const el = document.createElement('div')
+      el.className = 'orca-map-pointer-wrap'
+      el.innerHTML = `
+        <div class="orca-pointer-pulse-ring"></div>
+        <div class="orca-pointer-core">
+          <div class="orca-pointer-dot"></div>
+        </div>
+      `
+
       markerRef.current = new Marker({
-        color: '#0ea5e9',
+        element: el,
+        anchor: 'center',
       })
         .setLngLat([longitude, latitude])
         .setPopup(
-          new Popup({ offset: 20 }).setText(
-            locationLabel
-          )
+          new Popup({ offset: 20 }).setHTML(`
+            <div style="font-family: system-ui, -apple-system, sans-serif; padding: 4px; min-width: 170px;">
+              <strong style="color: #0284c7; font-size: 13px; display: block;">📍 ${locationLabel}</strong>
+              <div style="color: #64748b; font-size: 11px; margin-top: 2px;">${latitude.toFixed(4)}°N, ${longitude.toFixed(4)}°E</div>
+              <div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #0369a1; font-weight: 700;">
+                ⭕ Operational Radius: ${radiusKm || 50} km
+              </div>
+            </div>
+          `)
         )
         .addTo(map)
+
+      // Radius Badge Marker at northern perimeter of the radius circle
+      if (radiusKm && radiusKm > 0) {
+        const kmPerLat = 111.32
+        const topLat = latitude + radiusKm / kmPerLat
+        const badgeEl = document.createElement('div')
+        badgeEl.className = 'orca-radius-badge'
+        badgeEl.innerHTML = `⭕ ${radiusKm} km Search Radius`
+
+        radiusMarkerRef.current = new Marker({
+          element: badgeEl,
+          anchor: 'bottom',
+        })
+          .setLngLat([longitude, topLat])
+          .addTo(map)
+      }
 
       map.flyTo({
         center: [longitude, latitude],
@@ -1099,7 +1289,145 @@ export default function MapCanvas({
     } catch (e) {
       console.warn('Failed to update selected location marker:', e)
     }
-  }, [selectedLocation, mapStatus])
+  }, [selectedLocation, radiusKm, mapStatus])
+
+  /*
+   * Live Vessel GPS Position Marker & Auto-Tracking Camera
+   */
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || mapStatus !== 'ready') return
+
+    if (
+      !liveVesselLocation ||
+      !Number.isFinite(Number(liveVesselLocation.latitude)) ||
+      !Number.isFinite(Number(liveVesselLocation.longitude))
+    ) {
+      vesselMarkerRef.current?.remove()
+      vesselMarkerRef.current = null
+      return
+    }
+
+    const lat = Number(liveVesselLocation.latitude)
+    const lon = Number(liveVesselLocation.longitude)
+
+    try {
+      if (!vesselMarkerRef.current) {
+        const el = document.createElement('div')
+        el.className = 'live-vessel-map-marker'
+        el.innerHTML = `
+          <div style="position: relative; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;">
+            <div style="position: absolute; width: 100%; height: 100%; border-radius: 50%; background: rgba(56, 189, 248, 0.35); border: 2px solid #0284c7; animation: radarPulse 1.8s infinite;"></div>
+            <div style="position: relative; width: 24px; height: 24px; border-radius: 50%; background: #0284c7; color: white; display: flex; align-items: center; justify-content: center; font-size: 13px; box-shadow: 0 2px 8px rgba(0,0,0,0.4); font-weight: bold; border: 2px solid #ffffff;">
+              ⛵
+            </div>
+          </div>
+        `
+        const popup = new Popup({ offset: 18 }).setHTML(`
+          <div style="font-family: inherit; font-size: 12px; color: #0f172a; padding: 2px 4px;">
+            <strong style="color: #0284c7;">📍 Live Vessel Position</strong><br/>
+            ${lat.toFixed(4)}°N, ${lon.toFixed(4)}°E
+            ${liveVesselLocation.accuracy ? `<br/><small style="color: #64748b;">Accuracy: ±${Math.round(liveVesselLocation.accuracy)}m</small>` : ''}
+          </div>
+        `)
+        vesselMarkerRef.current = new Marker({ element: el })
+          .setLngLat([lon, lat])
+          .setPopup(popup)
+          .addTo(map)
+      } else {
+        vesselMarkerRef.current.setLngLat([lon, lat])
+      }
+
+      if (isTracking) {
+        map.easeTo({
+          center: [lon, lat],
+          zoom: Math.max(map.getZoom(), 11),
+          duration: 1000,
+        })
+      }
+    } catch (e) {
+      console.warn('Failed to update live vessel marker:', e)
+    }
+  }, [liveVesselLocation, isTracking, mapStatus])
+
+  /*
+   * Turn-by-Turn Navigation Waypoint Pins
+   */
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || mapStatus !== 'ready') return
+
+    waypointMarkersRef.current.forEach((m) => m.remove())
+    waypointMarkersRef.current = []
+
+    if (!Array.isArray(navigationWaypoints) || navigationWaypoints.length === 0) return
+
+    navigationWaypoints.forEach((wp, idx) => {
+      const lat = Number(wp.latitude)
+      const lon = Number(wp.longitude)
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return
+
+      const isLast = idx === navigationWaypoints.length - 1
+      const label = isLast ? '🎯' : `W${wp.waypoint_number || idx + 1}`
+
+      const el = document.createElement('div')
+      el.className = 'navigation-waypoint-pin'
+      el.innerHTML = `
+        <div style="background: ${isLast ? '#10b981' : '#0284c7'}; color: white; font-weight: 800; font-size: 11px; padding: 2px 6px; border-radius: 12px; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.35); cursor: pointer; white-space: nowrap;">
+          ${label}
+        </div>
+      `
+
+      const popup = new Popup({ offset: 15 }).setHTML(`
+        <div style="font-family: inherit; font-size: 12px; color: #0f172a; padding: 2px;">
+          <strong style="color: ${isLast ? '#059669' : '#0284c7'};">${isLast ? '🎯 Destination PFZ' : `Waypoint ${wp.waypoint_number || idx + 1}`}</strong><br/>
+          <strong>Coords:</strong> ${lat.toFixed(4)}°N, ${lon.toFixed(4)}°E<br/>
+          ${wp.bearing_deg != null ? `<strong>Course:</strong> ${wp.bearing_deg}° ${wp.compass_heading || ''}<br/>` : ''}
+          ${wp.leg_distance_nm != null ? `<strong>Leg Distance:</strong> ${wp.leg_distance_nm} NM<br/>` : ''}
+          <strong>Safety:</strong> <span style="color: ${wp.safety_status === 'UNSAFE' ? '#dc2626' : wp.safety_status === 'CAUTION' ? '#d97706' : '#16a34a'}; font-weight: bold;">${wp.safety_status || 'SAFE'}</span>
+        </div>
+      `)
+
+      const marker = new Marker({ element: el })
+        .setLngLat([lon, lat])
+        .setPopup(popup)
+        .addTo(map)
+
+      waypointMarkersRef.current.push(marker)
+    })
+
+    // If land transit to a coastal harbor is active, add an Amber Harbor Departure pin
+    if (landTransit?.harbor && landTransit?.land_transit_needed) {
+      const hLon = Number(landTransit.harbor.longitude)
+      const hLat = Number(landTransit.harbor.latitude)
+      if (Number.isFinite(hLon) && Number.isFinite(hLat)) {
+        const el = document.createElement('div')
+        el.className = 'harbor-departure-pin'
+        el.innerHTML = `
+          <div style="background: #f59e0b; color: #0f172a; font-weight: 800; font-size: 11px; padding: 3px 8px; border-radius: 14px; border: 2px solid #ffffff; box-shadow: 0 3px 10px rgba(0,0,0,0.45); cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 4px;">
+            <span style="font-size: 13px;">⚓</span> ${landTransit.harbor.name || 'Harbor'}
+          </div>
+        `
+        const popup = new Popup({ offset: 16 }).setHTML(`
+          <div style="font-family: inherit; font-size: 12px; color: #0f172a; padding: 2px;">
+            <strong style="color: #b45309; font-size: 13px;">⚓ Departure Fishing Harbor</strong><br/>
+            <strong>${landTransit.harbor.name}</strong><br/>
+            <span style="color: #64748b;">${landTransit.harbor.state || ''} · ${landTransit.harbor.type || 'Fishing Harbor'}</span><br/>
+            <strong>Road Distance:</strong> ${landTransit.distance_km} km (${landTransit.formatted_duration || ''})<br/>
+            <strong>Coordinates:</strong> ${hLat.toFixed(4)}°N, ${hLon.toFixed(4)}°E<br/>
+            <div style="margin-top: 4px; padding: 3px 6px; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 4px; color: #065f46; font-weight: 600; font-size: 11px;">
+              ⛵ Transition point from road transit to marine voyage
+            </div>
+          </div>
+        `)
+        const marker = new Marker({ element: el })
+          .setLngLat([hLon, hLat])
+          .setPopup(popup)
+          .addTo(map)
+        waypointMarkersRef.current.push(marker)
+      }
+    }
+  }, [navigationWaypoints, landTransit, mapStatus])
 
   useEffect(() => {
     try {

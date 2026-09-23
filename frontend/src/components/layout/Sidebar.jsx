@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { calculateCurrentUnreadCount, ALERTS_UPDATED_EVENT } from '../../services/alertService'
-import orcaLogo from '../../assets/orcologo.jpeg'
 
 const DashboardIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -69,7 +68,7 @@ const mainNavigation = [
   ['reports', 'Reports', ReportsIcon],
 ]
 
-export default function Sidebar({ path, navigate, onLogout, isOpen, onClose }) {
+export default function Sidebar({ path, navigate, onLogout, isOpen, onClose, onToggle }) {
   const [unreadCount, setUnreadCount] = useState(() => calculateCurrentUnreadCount())
 
   useEffect(() => {
@@ -98,8 +97,22 @@ export default function Sidebar({ path, navigate, onLogout, isOpen, onClose }) {
       aria-label="Sidebar Navigation"
       aria-hidden={!isOpen}
     >
-      {/* Brand Header Row with 3-Line Menu Close/Toggle Button */}
+      {/* Brand Header Row with 3-Line Sidebar Button replacing Orca Logo */}
       <div className="sidebar-brand-row">
+        <button
+          type="button"
+          className="sidebar-close-toggle-btn"
+          onClick={() => (onClose ? onClose() : onToggle?.())}
+          aria-label="Toggle sidebar navigation menu"
+          title="Toggle sidebar"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="4" y1="6" x2="20" y2="6" />
+            <line x1="4" y1="12" x2="20" y2="12" />
+            <line x1="4" y1="18" x2="20" y2="18" />
+          </svg>
+        </button>
+
         <button
           className="brand font-sora"
           onClick={() => {
@@ -109,27 +122,10 @@ export default function Sidebar({ path, navigate, onLogout, isOpen, onClose }) {
           type="button"
           aria-label="Go to Dashboard"
         >
-          <div className="brand-logo-badge">
-            <img src={orcaLogo} alt="ORCA Logo" className="brand-logo-img" />
-          </div>
           <div className="brand-titles">
             <strong className="brand-name font-sora">ORCA</strong>
             <small className="brand-subhead font-inter">MARINE INTELLIGENCE</small>
           </div>
-        </button>
-
-        <button
-          type="button"
-          className="sidebar-close-toggle-btn"
-          onClick={onClose}
-          aria-label="Close sidebar navigation menu"
-          title="Close menu"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="4" y1="6" x2="20" y2="6" />
-            <line x1="4" y1="12" x2="20" y2="12" />
-            <line x1="4" y1="18" x2="20" y2="18" />
-          </svg>
         </button>
       </div>
 

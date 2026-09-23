@@ -48,30 +48,36 @@
 .sidebar-brand-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  justify-content: flex-start;
+  gap: 12px;
   margin: 0 4px 18px;
 }
 
 .sidebar-close-toggle-btn {
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   padding: 0;
-  border-radius: 7px;
-  border: 1px solid rgba(34, 185, 242, 0.25);
-  background: rgba(78, 147, 162, 0.15);
+  border-radius: 8px;
+  border: 1px solid rgba(34, 185, 242, 0.35);
+  background: rgba(78, 147, 162, 0.18);
   color: #22B9F2;
   cursor: pointer;
   transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
 .sidebar-close-toggle-btn:hover {
-  background: rgba(78, 147, 162, 0.3);
+  background: rgba(78, 147, 162, 0.35);
   border-color: #22B9F2;
   color: #ffffff;
-  transform: scale(1.05);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(34, 185, 242, 0.25);
+}
+
+.sidebar-close-toggle-btn:active {
+  transform: translateY(0);
 }
 
 .brand {
@@ -317,9 +323,16 @@
 .topbar-brand-indicator {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   cursor: pointer;
   user-select: none;
+}
+
+.topbar-brand-logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 5px rgba(13, 65, 99, 0.18));
 }
 
 .topbar-brand-title {
@@ -713,6 +726,88 @@
   border-color: #06b6d4;
   box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.2), 0 4px 12px rgba(14, 116, 144, 0.25);
 }
+
+/* ORCA Map Pointer with Pulsing Radar Ring */
+.orca-map-pointer-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.orca-pointer-pulse-ring {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(14, 165, 233, 0.45) 0%, rgba(2, 132, 199, 0.08) 70%, transparent 100%);
+  border: 2px solid rgba(14, 165, 233, 0.85);
+  animation: orcaPointerPing 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+  pointer-events: none;
+}
+
+@keyframes orcaPointerPing {
+  0% {
+    transform: scale(0.35);
+    opacity: 1;
+  }
+  70% {
+    transform: scale(1.6);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+.orca-pointer-core {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #0284c7;
+  border: 3px solid #ffffff;
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.6), 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 2;
+  transition: transform 0.2s ease;
+}
+
+.orca-pointer-core:hover {
+  transform: scale(1.2);
+}
+
+.orca-pointer-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.orca-radius-badge {
+  background: rgba(15, 23, 42, 0.9);
+  color: #38bdf8;
+  border: 1.5px solid rgba(56, 189, 248, 0.6);
+  backdrop-filter: blur(8px);
+  padding: 3px 10px;
+  border-radius: 14px;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  white-space: nowrap;
+  transform: translateY(-8px);
+}
+
 
 /* Legend Styling */
 .legend-item-title-row {
@@ -1512,19 +1607,45 @@
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  padding: 12px 16px;
+  padding: 14px 18px;
   font-size: 12px;
-  min-width: 260px;
+  min-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .meta-row {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 4px;
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  align-items: baseline;
+  gap: 16px;
 }
 
-.meta-row:last-child {
-  margin-bottom: 0;
+.meta-row strong {
+  text-align: left;
+  white-space: nowrap;
+}
+
+.meta-row span {
+  text-align: right;
+  word-break: break-word;
+}
+
+@media (max-width: 640px) {
+  .header-meta-box {
+    min-width: auto;
+    width: 100%;
+  }
+
+  .meta-row {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  .meta-row span {
+    text-align: left;
+  }
 }
 
 .doc-divider {
@@ -1876,6 +1997,8 @@
 .search-input-wrapper {
   position: relative;
   flex: 1;
+  display: flex;
+  align-items: center;
 }
 
 .search-input-wrapper .search-icon {
@@ -1884,11 +2007,20 @@
   top: 50%;
   transform: translateY(-50%);
   color: #94a3b8;
+  font-size: 14px;
+  line-height: 1;
+  pointer-events: none;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.search-input-wrapper input {
-  padding-left: 36px;
+.search-input-wrapper input,
+.search-input-wrapper .orca-input {
   width: 100%;
+  padding-left: 38px !important;
+  box-sizing: border-box;
 }
 
 .saved-reports-empty {
@@ -2490,6 +2622,21 @@
 }
 
 
+/* Coastal Conditions Section Responsive Grid */
+.coastal-conditions-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
 
+@media (max-width: 1024px) {
+  .coastal-conditions-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
 
-
+@media (max-width: 640px) {
+  .coastal-conditions-grid {
+    grid-template-columns: 1fr;
+  }
+}

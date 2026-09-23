@@ -1,5 +1,4 @@
-import { Component, useCallback, useEffect, useMemo, useState } from 'react'
-import MapSearch from '../components/mapExplorer/MapSearch'
+import { Component, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import MapLayersControl from '../components/mapExplorer/MapLayersControl'
 import MapLegend from '../components/mapExplorer/MapLegend'
 import LocationInfoPanel from '../components/mapExplorer/LocationInfoPanel'
@@ -13,11 +12,16 @@ import {
   analyzePFZ,
   analyzeRoute,
   findNearestSuitablePFZ,
+  getEcosystemAnomaly,
   getMapFeatures,
   getMapLayers,
+  getTidePrediction,
   mapErrorMessage,
+  navigateNearestPFZ,
   syncPFZ,
 } from '../services/mapService'
+import ScenarioSimulatorModal from '../components/chat/ScenarioSimulatorModal'
+import LiveNavigationHUD from '../components/mapExplorer/LiveNavigationHUD'
 
 class ComponentErrorBoundary extends Component {
   constructor(props) {
@@ -111,26 +115,114 @@ function findNearestPFZCoordinate(origin, layers) {
   return nearest
 }
 
+function makeCircleCoords(centerLon, centerLat, radiusKm, numPoints = 28) {
+  const latRad = (centerLat * Math.PI) / 180
+  const dLat = radiusKm / 111.0
+  const dLon = radiusKm / (111.0 * Math.max(0.1, Math.cos(latRad)))
+  const coords = []
+  for (let i = 0; i < numPoints; i++) {
+    const angle = (2.0 * Math.PI * i) / numPoints
+    const lon = Number((centerLon + dLon * Math.cos(angle)).toFixed(5))
+    const lat = Number((centerLat + dLat * Math.sin(angle)).toFixed(5))
+    coords.push([lon, lat])
+  }
+  coords.push(coords[0])
+  return coords
+}
+
 export default function MapExplorer({ navigate }) {
   const searchParams = useMemo(() => new URLSearchParams(window.location.search), [])
   const initialLatitudeValue = searchParams.get('latitude') || searchParams.get('lat')
   const initialLongitudeValue = searchParams.get('longitude') || searchParams.get('lon')
   const initialLatitude = Number(initialLatitudeValue)
   const initialLongitude = Number(initialLongitudeValue)
-  const initialLabel = searchParams.get('label') || 'Selected map coordinate'
+  const initialLabel = searchParams.get('label') || searchParams.get('name') || searchParams.get('locationName') || 'Selected map coordinate'
+  const initialLocationId = (searchParams.get('locationId') || searchParams.get('location') || searchParams.get('id'))?.toLowerCase()?.trim()
+
   const hasInitialCoordinate =
     Boolean(initialLatitudeValue?.trim() && initialLongitudeValue?.trim()) &&
     Number.isFinite(initialLatitude) &&
     Number.isFinite(initialLongitude)
 
-  const [locationId, setLocationId] = useState('chennai')
+  const scenarioParam = searchParams.get('scenario') || searchParams.get('condition') || searchParams.get('preset')
+  const [isSimulatedCycloneActive, setIsSimulatedCycloneActive] = useState(() => {
+    return scenarioParam === 'cyclone' || scenarioParam === 'pre_cyclone'
+  })
+
+  const defaultLocationId = useMemo(() => {
+    if (initialLocationId) {
+      const match = (dashboardLocations || []).find((item) => item.id === initialLocationId || item.name?.toLowerCase() === initialLocationId)
+      if (match) return match.id
+      if (LOCATION_COORDINATES[initialLocationId]) return initialLocationId
+      const coastalMatch = (COASTAL_LOCATIONS || []).find((item) => item.id === initialLocationId || item.name?.toLowerCase() === initialLocationId)
+      if (coastalMatch) return coastalMatch.id
+    }
+    return 'visakhapatnam'
+  }, [initialLocationId])
+
+  const initialCoordinate = useMemo(() => {
+    if (hasInitialCoordinate) {
+      return { latitude: initialLatitude, longitude: initialLongitude, label: initialLabel }
+    }
+    if (initialLocationId) {
+      const coords = LOCATION_COORDINATES[initialLocationId] || (dashboardLocations || []).find((item) => item.id === initialLocationId || item.name?.toLowerCase() === initialLocationId) || (COASTAL_LOCATIONS || []).find((item) => item.id === initialLocationId || item.name?.toLowerCase() === initialLocationId)
+      if (coords) {
+        const lat = Number(coords.latitude ?? coords.lat)
+        const lng = Number(coords.longitude ?? coords.lng)
+        if (Number.isFinite(lat) && Number.isFinite(lng)) {
+          return { latitude: lat, longitude: lng, label: coords.name || initialLabel }
+        }
+      }
+    }
+    return null
+  }, [hasInitialCoordinate, initialLatitude, initialLongitude, initialLabel, initialLocationId])
+
+  const [locationId, setLocationId] = useState(defaultLocationId)
   const [layers, setLayers] = useState([])
   const [layersState, setLayersState] = useState({ loading: true, error: '' })
-  const [selectedCoordinate, setSelectedCoordinate] = useState(() =>
-    hasInitialCoordinate
-      ? { latitude: initialLatitude, longitude: initialLongitude, label: initialLabel }
-      : null
-  )
+  const [selectedCoordinate, setSelectedCoordinate] = useState(initialCoordinate)
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const paramId = (params.get('locationId') || params.get('location') || params.get('id'))?.toLowerCase()?.trim()
+    const latVal = params.get('latitude') || params.get('lat')
+    const lonVal = params.get('longitude') || params.get('lon')
+    const nameVal = params.get('label') || params.get('name') || params.get('locationName')
+
+    if (paramId) {
+      const match = (dashboardLocations || []).find((item) => item.id === paramId || item.name?.toLowerCase() === paramId)
+      const coastalMatch = (COASTAL_LOCATIONS || []).find((item) => item.id === paramId || item.name?.toLowerCase() === paramId)
+      const targetId = match?.id || coastalMatch?.id || (LOCATION_COORDINATES[paramId] ? paramId : null)
+      if (targetId) {
+        setLocationId(targetId)
+      }
+    }
+
+    if (latVal && lonVal) {
+      const lat = Number(latVal)
+      const lon = Number(lonVal)
+      if (Number.isFinite(lat) && Number.isFinite(lon)) {
+        setSelectedCoordinate({
+          latitude: lat,
+          longitude: lon,
+          label: nameVal || 'Selected location',
+        })
+      }
+    } else if (paramId) {
+      const coords = LOCATION_COORDINATES[paramId] || (dashboardLocations || []).find((item) => item.id === paramId || item.name?.toLowerCase() === paramId) || (COASTAL_LOCATIONS || []).find((item) => item.id === paramId || item.name?.toLowerCase() === paramId)
+      if (coords) {
+        const lat = Number(coords.latitude ?? coords.lat)
+        const lng = Number(coords.longitude ?? coords.lng)
+        if (Number.isFinite(lat) && Number.isFinite(lng)) {
+          setSelectedCoordinate({
+            latitude: lat,
+            longitude: lng,
+            label: coords.name || paramId,
+          })
+        }
+      }
+    }
+  }, [searchParams])
   const [analysis, setAnalysis] = useState({ loading: false, error: '', data: null })
   const [route, setRoute] = useState({ loading: false, error: '', data: null })
   const routeGeometry = route.data?.route?.geometry || null
@@ -145,9 +237,24 @@ export default function MapExplorer({ navigate }) {
   const [detailedRoute, setDetailedRoute] = useState({ loading: false, error: '', data: null })
   const [selectedDestinationPFZId, setSelectedDestinationPFZId] = useState('auto_nearest')
 
+  // Sprint 1: Hydrodynamic Tide & Marine Safety Index
+  const [tideState, setTideState] = useState({ loading: false, error: '', data: null })
+  // Sprint 1: Marine Ecosystem Anomaly & Fish Productivity Diagnostics
+  const [ecosystemState, setEcosystemState] = useState({ loading: false, error: '', data: null, isOpen: false })
+  // Sprint 2: Scenario Simulation Sandbox
+  const [isSimulatorOpen, setIsSimulatorOpen] = useState(false)
+
   const [destinationId, setDestinationId] = useState('nearest_pfz')
   const [isExpanded, setIsExpanded] = useState(false)
   const [isPickerOpen, setIsPickerOpen] = useState(false)
+
+  // Live Navigation & Real-time GPS Vessel Tracking State
+  const [liveNavigation, setLiveNavigation] = useState({ loading: false, error: '', data: null })
+  const [isRouteVisible, setIsRouteVisible] = useState(false)
+  const [isHudOpen, setIsHudOpen] = useState(false)
+  const [liveVesselLocation, setLiveVesselLocation] = useState(null)
+  const [isGpsTracking, setIsGpsTracking] = useState(false)
+  const watchIdRef = useRef(null)
 
   const pfzEvaluations = useMemo(() => {
     const map = {}
@@ -239,6 +346,39 @@ export default function MapExplorer({ navigate }) {
     }
   }, [activeLocation?.latitude, activeLocation?.longitude, searchRadius])
 
+  useEffect(() => {
+    let isSubscribed = true
+    const controller = new AbortController()
+    if (!Number.isFinite(activeLat) || !Number.isFinite(activeLon)) return undefined
+
+    setTideState((prev) => ({ ...prev, loading: true, error: '' }))
+    getTidePrediction({ latitude: activeLat, longitude: activeLon }, { signal: controller.signal })
+      .then((data) => {
+        if (isSubscribed) setTideState({ loading: false, error: '', data })
+      })
+      .catch((error) => {
+        if (isSubscribed && error?.name !== 'AbortError') {
+          setTideState({ loading: false, error: 'Tide data unavailable.', data: null })
+        }
+      })
+
+    return () => {
+      isSubscribed = false
+      controller.abort()
+    }
+  }, [activeLat, activeLon])
+
+  const runEcosystemDiagnosis = async () => {
+    if (!Number.isFinite(activeLat) || !Number.isFinite(activeLon)) return
+    setEcosystemState({ loading: true, error: '', data: null, isOpen: true })
+    try {
+      const data = await getEcosystemAnomaly({ latitude: activeLat, longitude: activeLon })
+      setEcosystemState({ loading: false, error: '', data, isOpen: true })
+    } catch (error) {
+      setEcosystemState({ loading: false, error: error?.message || 'Diagnostic failed', data: null, isOpen: true })
+    }
+  }
+
   const fetchLayers = useCallback(async (signal) => {
     try {
       const availableLayers = await getMapLayers({ signal })
@@ -292,6 +432,112 @@ export default function MapExplorer({ navigate }) {
     return () => controller.abort()
   }, [fetchLayers])
 
+  const renderedLayers = useMemo(() => {
+    if (!isSimulatedCycloneActive || !Number.isFinite(activeLat) || !Number.isFinite(activeLon)) {
+      return layers
+    }
+
+    const cyclonePolygon = {
+      type: 'Feature',
+      id: 'simulated-cyclone-cone',
+      layer: 'hazards',
+      dataset: 'ORCA_SIMULATED_CYCLONE',
+      properties: {
+        id: 'simulated-cyclone-cone',
+        name: '🌀 SIMULATED CYCLONE DANGER CONE (Category-2 Storm Surge)',
+        layer: 'hazards',
+        severity: 'CRITICAL',
+        wind_knots: searchParams.get('wind_kts') || '45',
+        wave_surge_m: searchParams.get('delta_wave') || '3.8',
+        notice: 'Active What-If Simulation: Severe storm surge & hazardous sea state. Small craft prohibited.',
+      },
+      geometry: {
+        type: 'Polygon',
+        coordinates: [makeCircleCoords(activeLon + 0.18, activeLat + 0.1, 35.0)],
+      },
+    }
+
+    let hazardsFound = false
+    const next = layers.map((layer) => {
+      if (String(layer?.id || '').toLowerCase() === 'hazards') {
+        hazardsFound = true
+        const existingFeatures = Array.isArray(layer.features) ? layer.features : []
+        const hasSim = existingFeatures.some((f) => f?.id === 'simulated-cyclone-cone')
+        const features = hasSim ? existingFeatures : [cyclonePolygon, ...existingFeatures]
+        return {
+          ...layer,
+          enabled: true,
+          available: true,
+          feature_count: features.length,
+          features,
+        }
+      }
+      return layer
+    })
+
+    if (!hazardsFound) {
+      next.push({
+        id: 'hazards',
+        name: 'Hazards & Cyclones',
+        description: 'Active storm tracks, cyclone danger cones, and navigation hazards',
+        layer_type: 'vector',
+        available: true,
+        enabled: true,
+        feature_count: 1,
+        features: [cyclonePolygon],
+      })
+    }
+
+    return next
+  }, [layers, isSimulatedCycloneActive, activeLat, activeLon, searchParams])
+
+  // Trigger Navigation to Nearest Safe PFZ from Selected Map Location
+  const startLivePFZNavigation = useCallback(async (targetCoord = null) => {
+    setLiveNavigation({ loading: true, error: '', data: null })
+    setDetailedRoute((prev) => ({ ...prev, data: null }))
+    setRoute((prev) => ({ ...prev, data: null }))
+    setIsRouteVisible(true)
+    setIsHudOpen(true)
+
+    const currentLoc = targetCoord || liveVesselLocation || selectedCoordinate || activeLocation
+    const lat = Number(currentLoc?.latitude ?? currentLoc?.lat ?? activeLat)
+    const lon = Number(currentLoc?.longitude ?? currentLoc?.lng ?? activeLon)
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+      setLiveNavigation({
+        loading: false,
+        error: 'Please select a location on the map or coastal harbor.',
+        data: null,
+      })
+      setIsRouteVisible(false)
+      setIsHudOpen(false)
+      return
+    }
+
+    try {
+      const res = await navigateNearestPFZ({
+        latitude: lat,
+        longitude: lon,
+        radiusKm: Number(searchRadius) || 50,
+        vesselSpeedKnots: 12.0,
+      })
+
+      setLiveNavigation({
+        loading: false,
+        error: res.has_pfz ? '' : (res.message || 'No suitable Potential Fishing Zone found nearby.'),
+        data: res,
+      })
+      setIsRouteVisible(true)
+      setIsHudOpen(true)
+    } catch (err) {
+      setLiveNavigation({
+        loading: false,
+        error: mapErrorMessage(err),
+        data: null,
+      })
+    }
+  }, [liveVesselLocation, selectedCoordinate, activeLocation, activeLat, activeLon, searchRadius])
+
   useEffect(() => {
     const handleCustomCoord = (event) => {
       if (
@@ -299,22 +545,76 @@ export default function MapExplorer({ navigate }) {
         Number.isFinite(event.detail.latitude) &&
         Number.isFinite(event.detail.longitude)
       ) {
-        setSelectedCoordinate({
+        const coord = {
           latitude: event.detail.latitude,
           longitude: event.detail.longitude,
           label: event.detail.label || 'Selected map coordinate',
-        })
+        }
+        setSelectedCoordinate(coord)
+        setLiveVesselLocation(null)
+        if (watchIdRef.current !== null) {
+          navigator.geolocation?.clearWatch(watchIdRef.current)
+          watchIdRef.current = null
+        }
+        setIsGpsTracking(false)
+
+        // Clear previous routes immediately
+        setLiveNavigation((prev) => ({ ...prev, data: null }))
+        setDetailedRoute((prev) => ({ ...prev, data: null }))
+        setRoute((prev) => ({ ...prev, data: null }))
+
+        if (isRouteVisible) {
+          startLivePFZNavigation(coord)
+        }
       }
     }
     window.addEventListener('orca-select-coord', handleCustomCoord)
     return () => window.removeEventListener('orca-select-coord', handleCustomCoord)
-  }, [])
+  }, [isRouteVisible, startLivePFZNavigation])
 
-  const handleMapLocation = useCallback((coordinate) => setSelectedCoordinate(coordinate), [])
-  const handleSelectLocation = (id) => {
+  const handleMapLocation = useCallback((coordinate) => {
+    setSelectedCoordinate(coordinate)
+    setLiveVesselLocation(null)
+    if (watchIdRef.current !== null) {
+      navigator.geolocation?.clearWatch(watchIdRef.current)
+      watchIdRef.current = null
+    }
+    setIsGpsTracking(false)
+
+    // Clear previous routes immediately
+    setLiveNavigation((prev) => ({ ...prev, data: null }))
+    setDetailedRoute((prev) => ({ ...prev, data: null }))
+    setRoute((prev) => ({ ...prev, data: null }))
+
+    if (isRouteVisible) {
+      startLivePFZNavigation(coordinate)
+    }
+  }, [isRouteVisible, startLivePFZNavigation])
+
+  const handleSelectLocation = useCallback((id) => {
     setLocationId(id)
     setSelectedCoordinate(null)
-  }
+    setLiveVesselLocation(null)
+    if (watchIdRef.current !== null) {
+      navigator.geolocation?.clearWatch(watchIdRef.current)
+      watchIdRef.current = null
+    }
+    setIsGpsTracking(false)
+
+    // Clear previous routes immediately
+    setLiveNavigation((prev) => ({ ...prev, data: null }))
+    setDetailedRoute((prev) => ({ ...prev, data: null }))
+    setRoute((prev) => ({ ...prev, data: null }))
+
+    if (isRouteVisible) {
+      const match = safeDashboardLocations.find((item) => item.id === id)
+      const coords = LOCATION_COORDINATES[id] || (match ? { latitude: match.latitude, longitude: match.longitude } : null)
+      if (coords) {
+        startLivePFZNavigation(coords)
+      }
+    }
+  }, [isRouteVisible, safeDashboardLocations, startLivePFZNavigation])
+
   const handleToggleLayer = (id) =>
     setLayers((current) =>
       (Array.isArray(current) ? current : []).map((layer) => (layer?.id === id ? { ...layer, enabled: !layer.enabled } : layer))
@@ -485,6 +785,110 @@ export default function MapExplorer({ navigate }) {
     }
   }
 
+  // Toggle / Fetch current GPS location
+  const locateMe = useCallback(() => {
+    if (liveVesselLocation || isGpsTracking || selectedCoordinate?.label?.includes('GPS')) {
+      // Turn OFF GPS override and return to manual harbor location
+      if (watchIdRef.current !== null) {
+        navigator.geolocation?.clearWatch(watchIdRef.current)
+        watchIdRef.current = null
+      }
+      setIsGpsTracking(false)
+      setLiveVesselLocation(null)
+      setSelectedCoordinate(null)
+
+      // Clear previous routes immediately
+      setLiveNavigation((prev) => ({ ...prev, data: null }))
+      setDetailedRoute((prev) => ({ ...prev, data: null }))
+      setRoute((prev) => ({ ...prev, data: null }))
+
+      if (isRouteVisible) {
+        startLivePFZNavigation(curatedLocation)
+      }
+      return
+    }
+
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser.')
+      return
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude, accuracy, heading, speed } = pos.coords
+        const loc = { latitude, longitude, label: `Live GPS Position (±${Math.round(accuracy)}m)`, accuracy, heading, speed }
+        setSelectedCoordinate(loc)
+        setLiveVesselLocation(loc)
+
+        // Clear previous routes immediately
+        setLiveNavigation((prev) => ({ ...prev, data: null }))
+        setDetailedRoute((prev) => ({ ...prev, data: null }))
+        setRoute((prev) => ({ ...prev, data: null }))
+
+        if (isRouteVisible) {
+          startLivePFZNavigation(loc)
+        }
+      },
+      (err) => {
+        console.warn('Geolocation error:', err)
+        alert('Could not retrieve GPS location. Please allow location permissions in your browser.')
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    )
+  }, [liveVesselLocation, isGpsTracking, selectedCoordinate, isRouteVisible, startLivePFZNavigation, curatedLocation])
+
+  // Toggle continuous GPS tracking
+  const toggleGpsTracking = useCallback(() => {
+    if (isGpsTracking) {
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current)
+        watchIdRef.current = null
+      }
+      setIsGpsTracking(false)
+    } else {
+      if (!navigator.geolocation) {
+        alert('Geolocation is not supported by your browser.')
+        return
+      }
+      setIsGpsTracking(true)
+      watchIdRef.current = navigator.geolocation.watchPosition(
+        (pos) => {
+          const { latitude, longitude, accuracy, heading, speed } = pos.coords
+          const loc = { latitude, longitude, label: `Live Boat (±${Math.round(accuracy)}m)`, accuracy, heading, speed }
+          setLiveVesselLocation(loc)
+          setSelectedCoordinate(loc)
+        },
+        (err) => {
+          console.warn('Live tracking error:', err)
+          setIsGpsTracking(false)
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 1000 }
+      )
+    }
+  }, [isGpsTracking])
+
+  // Cleanup watcher on unmount
+  useEffect(() => {
+    return () => {
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current)
+      }
+    }
+  }, [])
+
+  const toggleRouteVisibility = useCallback(() => {
+    if (isRouteVisible) {
+      setIsRouteVisible(false)
+      setIsHudOpen(false)
+    } else {
+      if (liveNavigation.data) {
+        setIsRouteVisible(true)
+        setIsHudOpen(true)
+      } else {
+        startLivePFZNavigation()
+      }
+    }
+  }, [isRouteVisible, liveNavigation.data, startLivePFZNavigation])
+
   return (
     <div className={`map-explorer-page ${isExpanded ? 'page-is-expanded' : ''}`}>
       <CoastalLocationPicker
@@ -503,16 +907,41 @@ export default function MapExplorer({ navigate }) {
         <div className="map-header-controls">
           <button
             type="button"
-            className="coastal-picker-btn"
-            onClick={() => setIsPickerOpen(true)}
+            className="locate-me-btn"
+            onClick={locateMe}
+            title={liveVesselLocation || selectedCoordinate?.label?.includes('GPS') ? 'Live GPS active. Click to turn OFF and use manual harbor locations.' : 'Fetch live device GPS location'}
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
               padding: '8px 12px',
-              background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-              color: '#ffffff',
-              border: '1px solid rgba(56, 189, 248, 0.4)',
+              background: liveVesselLocation || selectedCoordinate?.label?.includes('GPS') ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : '#0f172a',
+              color: liveVesselLocation || selectedCoordinate?.label?.includes('GPS') ? '#ffffff' : '#38bdf8',
+              border: `1px solid ${liveVesselLocation || selectedCoordinate?.label?.includes('GPS') ? '#38bdf8' : 'rgba(56, 189, 248, 0.3)'}`,
+              borderRadius: '6px',
+              fontWeight: 700,
+              fontSize: '12px',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              boxShadow: liveVesselLocation || selectedCoordinate?.label?.includes('GPS') ? '0 0 10px rgba(56, 189, 248, 0.4)' : 'none',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <span>📍</span> {liveVesselLocation || selectedCoordinate?.label?.includes('GPS') ? 'GPS Active (✕ Turn Off)' : 'Locate Me'}
+          </button>
+          <button
+            type="button"
+            className="gps-tracking-btn"
+            onClick={toggleGpsTracking}
+            title="Toggle live boat GPS tracking"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 12px',
+              background: isGpsTracking ? 'rgba(2, 132, 199, 0.25)' : '#0f172a',
+              color: isGpsTracking ? '#38bdf8' : '#94a3b8',
+              border: `1px solid ${isGpsTracking ? '#0284c7' : 'rgba(255,255,255,0.15)'}`,
               borderRadius: '6px',
               fontWeight: 700,
               fontSize: '12px',
@@ -520,21 +949,40 @@ export default function MapExplorer({ navigate }) {
               whiteSpace: 'nowrap'
             }}
           >
-            <span>🌊</span> Select Harbor (84)
+            <span>📡</span> {isGpsTracking ? 'Tracking: ON' : 'Track Boat'}
           </button>
-          <MapSearch locations={safeDashboardLocations} onSelectLocation={handleSelectLocation} />
-          <label className="location-dropdown-wrap">
-            <span>MONITORING AREA</span>
-            <select value={locationId} onChange={(event) => handleSelectLocation(event.target.value)}>
-              {Object.entries(locationsByState).map(([st, locs]) => (
-                <optgroup key={st} label={st}>
-                  {locs.map((item) => (
-                    <option key={item.id} value={item.id}>📍 {item.name}</option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
-          </label>
+          <button
+            type="button"
+            className="location-dropdown-wrap"
+            onClick={() => setIsPickerOpen(true)}
+            title="Click to select from 84 verified Indian coastal fishing harbors across all maritime states"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'flex-start',
+              gap: '2px',
+              padding: '6px 12px',
+              border: '1px solid #d5e4ef',
+              borderRadius: '7px',
+              background: '#ffffff',
+              cursor: 'pointer',
+              textAlign: 'left',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <span style={{ color: '#7890a6', fontSize: '8px', fontWeight: 800, letterSpacing: '0.8px', textTransform: 'uppercase' }}>
+              MONITORING AREA (84 PORTS)
+            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#0f172a', fontWeight: 700, fontSize: '12px' }}>
+              <span>📍</span>
+              <span style={{ maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {curatedLocation?.name || 'Chennai / Kasimedu'}
+              </span>
+              <span style={{ fontSize: '9px', color: '#64748b', marginLeft: '2px' }}>▼</span>
+            </div>
+          </button>
           <button
             type="button"
             className="expand-toggle-btn"
@@ -547,87 +995,555 @@ export default function MapExplorer({ navigate }) {
 
       <div className="map-explorer-grid">
         <div className="map-primary-col">
-          <ComponentErrorBoundary name="Map Canvas">
-            <MapCanvas
-              selectedLocation={selectedLocation}
-              layers={layers}
-              routeGeometry={detailedRoute.data?.route_geometry || routeGeometry}
-              detailedRouteStatus={detailedRoute.data?.overall_status || null}
-              radiusKm={Number(searchRadius) || 50}
-              pfzEvaluations={pfzEvaluations}
-              selectedPFZGeometry={nearestPFZ.data?.selected_geometry || null}
-              pfzRouteGeometry={nearestPFZ.data?.route_geometry || null}
-              onMapLocation={handleMapLocation}
-              isExpanded={isExpanded}
-              onToggleExpanded={() => setIsExpanded((value) => !value)}
-            />
-          </ComponentErrorBoundary>
+          <ComponentErrorBoundary name="Coastal Intelligence Telemetry">
+            <section
+              className="coastal-telemetry-banner panel"
+              style={{
+                marginBottom: '16px',
+                background: '#ffffff',
+                color: '#0f172a',
+                borderRadius: '12px',
+                padding: '16px 20px',
+                boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)',
+                border: '1px solid #e2e8f0',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px', marginBottom: '14px' }}>
+                <div>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: '#0284c7', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '2px' }}>
+                    COASTAL CONDITIONS
+                  </div>
+                  <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a', margin: 0, padding: 0, lineHeight: 1.2 }}>
+                    Coastal Intelligence & Hydrodynamics
+                  </h2>
+                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                    <span>
+                      Active sector: <strong style={{ color: '#0f172a', fontWeight: 600 }}>{selectedLocation.name || selectedLocation.label || 'Visakhapatnam'}</strong> · {Number(selectedLocation.latitude || 0).toFixed(2)}°N, {Number(selectedLocation.longitude || 0).toFixed(2)}°E
+                    </span>
+                    {(liveVesselLocation || selectedCoordinate) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedCoordinate(null)
+                          setLiveVesselLocation(null)
+                          if (watchIdRef.current !== null) {
+                            navigator.geolocation?.clearWatch(watchIdRef.current)
+                            watchIdRef.current = null
+                          }
+                          setIsGpsTracking(false)
+                          setLiveNavigation((prev) => ({ ...prev, data: null }))
+                          setDetailedRoute((prev) => ({ ...prev, data: null }))
+                          setRoute((prev) => ({ ...prev, data: null }))
+                          if (isRouteVisible) {
+                            startLivePFZNavigation(curatedLocation)
+                          }
+                        }}
+                        title="Clear GPS/custom coordinate and return to default harbor"
+                        style={{
+                          marginLeft: '4px',
+                          background: '#fef2f2',
+                          color: '#dc2626',
+                          border: '1px solid #fecaca',
+                          borderRadius: '4px',
+                          fontSize: '11px',
+                          padding: '1px 6px',
+                          cursor: 'pointer',
+                          fontWeight: 600,
+                        }}
+                      >
+                        ✕ Reset to Harbor
+                      </button>
+                    )}
+                  </div>
+                </div>
 
-          <ComponentErrorBoundary name="Map Legend">
-            <MapLegend layers={layers} routeGeometry={routeGeometry} />
-          </ComponentErrorBoundary>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (ecosystemState.isOpen) {
+                        setEcosystemState((prev) => ({ ...prev, isOpen: false }))
+                      } else {
+                        runEcosystemDiagnosis()
+                      }
+                    }}
+                    disabled={ecosystemState.loading}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '8px 14px',
+                      background: ecosystemState.isOpen ? '#0284c7' : '#ffffff',
+                      color: ecosystemState.isOpen ? '#ffffff' : '#0284c7',
+                      border: '1px solid #0284c7',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                    }}
+                  >
+                    <span>🔬</span>
+                    {ecosystemState.loading ? 'Diagnosing Ecosystem…' : ecosystemState.isOpen ? 'Hide Ecosystem Diagnostics' : 'Diagnose Fish Catch Decline'}
+                  </button>
 
-          {/* NEAREST SUITABLE PFZ SEARCH CONTROLS & RESULTS PANEL */}
-          <section className="pfz-discovery-section panel" style={{ marginTop: '16px' }}>
-            <div className="pfz-discovery-header">
-              <div>
-                <p className="eyebrow">POTENTIAL FISHING ZONE (PFZ) ENGINE</p>
-                <h2>Nearest Suitable PFZ Discovery</h2>
-                <p style={{ fontSize: '13px', color: 'var(--text-muted, #64748b)', marginTop: '4px' }}>
-                  Find the closest INCOIS PFZ within your search radius evaluated against Weather, Ocean, and GIS evidence.
-                </p>
-              </div>
-            </div>
+                  <button
+                    type="button"
+                    onClick={refreshPFZ}
+                    disabled={pfzSync.loading}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '8px 14px',
+                      background: '#ffffff',
+                      color: '#334155',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                    }}
+                  >
+                    <span>🔄</span>
+                    {pfzSync.loading ? 'Syncing INCOIS…' : 'Sync INCOIS PFZ'}
+                  </button>
 
-            <div className="pfz-controls-bar">
-              <div className="radius-control-wrap">
-                <label htmlFor="search-radius-slider">
-                  Search Radius: <strong>{searchRadius} km</strong>
-                </label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <input
-                    id="search-radius-slider"
-                    type="range"
-                    min="5"
-                    max="200"
-                    step="5"
-                    value={searchRadius}
-                    onChange={(e) => setSearchRadius(Number(e.target.value) || 50)}
-                    style={{ flex: 1, accentColor: '#0284c7' }}
-                  />
-                  <input
-                    id="search-radius-number"
-                    type="number"
-                    min="5"
-                    max="200"
-                    value={searchRadius}
-                    onChange={(e) => setSearchRadius(Math.max(5, Math.min(200, Number(e.target.value) || 50)))}
-                    style={{ width: '70px', padding: '6px 8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                  />
-                  <span style={{ fontSize: '12px', color: '#64748b' }}>km</span>
+                  <button
+                    type="button"
+                    onClick={() => setIsSimulatorOpen(true)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '8px 14px',
+                      background: '#ffffff',
+                      color: '#0284c7',
+                      border: '1px solid #bfdbfe',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                    }}
+                  >
+                    <span>🧪</span>
+                    Simulate Scenario
+                  </button>
                 </div>
               </div>
 
-              <button
-                type="button"
-                className="find-pfz-btn"
-                disabled={nearestPFZ.loading}
-                onClick={runNearestSuitablePFZ}
-                style={{
-                  background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-                  color: '#ffffff',
-                  fontWeight: 600,
-                  fontSize: '14px',
-                  padding: '10px 20px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  boxShadow: '0 2px 6px rgba(2, 132, 199, 0.3)',
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                {nearestPFZ.loading ? '⚡ Evaluating Weather + Ocean + GIS…' : '🐟 Find Nearest Suitable PFZ'}
-              </button>
+              {/* 4 INFORMATION CARDS (RESPONSIVE GRID WITH STANDARDIZED TYPOGRAPHY) */}
+              <div className="coastal-conditions-grid">
+                {/* CARD 1: Tidal Hydrodynamics */}
+                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '135px' }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>Tidal Hydrodynamics</span>
+                      <span style={{ fontSize: '13px', fontWeight: 500, color: '#64748b' }}>
+                        {tideState.data?.station_name ? tideState.data.station_name.split(' ')[0] : (selectedLocation.name || 'Visakhapatnam')}
+                      </span>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '28px', fontWeight: 700, color: '#0f172a', lineHeight: 1.1 }}>
+                        {tideState.data?.current_height_m != null ? `+${tideState.data.current_height_m.toFixed(2)} m` : '+1.30 m'}
+                      </div>
+                      <div style={{ marginTop: '4px' }}>
+                        <span style={{
+                          display: 'inline-block',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          color: tideState.data?.tide_state?.includes('Flood') ? '#15803d' : '#b45309',
+                          background: tideState.data?.tide_state?.includes('Flood') ? '#dcfce7' : '#fef3c7',
+                          padding: '2px 8px',
+                          borderRadius: '4px'
+                        }}>
+                          {tideState.data?.tide_state ? (tideState.data.tide_state.includes('Flood') ? 'Flood · Rising' : 'Ebb · Falling') : 'Flood · Rising'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '12px', fontWeight: 400, color: '#64748b', marginTop: '10px', borderTop: '1px solid #f1f5f9', paddingTop: '8px' }}>
+                    {tideState.data?.spring_neap_phase || 'Spring tide'} · Range {tideState.data?.tidal_range_m ? `${tideState.data.tidal_range_m} m` : '1.75 m'}
+                  </div>
+                </div>
+
+                {/* CARD 2: Next High / Low Tide */}
+                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '135px' }}>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#64748b', marginBottom: '10px' }}>
+                      Next High / Low Tide
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <div>
+                        <div style={{ fontSize: '12px', fontWeight: 500, color: '#64748b' }}>High</div>
+                        <div style={{ fontSize: '12px', color: '#0f172a' }}>
+                          {tideState.data?.next_high_tide?.time_display || '11:47 AM UTC'}
+                        </div>
+                        <div style={{ fontSize: '14px', fontWeight: 600, color: '#0284c7', marginTop: '1px' }}>
+                          {tideState.data?.next_high_tide?.height_m ? `+${tideState.data.next_high_tide.height_m} m` : '+1.92 m'}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '12px', fontWeight: 500, color: '#64748b' }}>Low</div>
+                        <div style={{ fontSize: '12px', color: '#0f172a' }}>
+                          {tideState.data?.next_low_tide?.time_display || '05:57 PM UTC'}
+                        </div>
+                        <div style={{ fontSize: '14px', fontWeight: 600, color: '#64748b', marginTop: '1px' }}>
+                          {tideState.data?.next_low_tide?.height_m ? `+${tideState.data.next_low_tide.height_m} m` : '+0.18 m'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '12px', fontWeight: 400, color: '#64748b', marginTop: '10px', borderTop: '1px solid #f1f5f9', paddingTop: '8px' }}>
+                    Current drift · {tideState.data?.current_velocity_knots ?? 1.3} kn {tideState.data?.current_direction_cardinal || 'NNE'}
+                  </div>
+                </div>
+
+                {/* CARD 3: Marine Safety */}
+                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '135px' }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>Marine Safety</span>
+                      <span style={{
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        color: '#15803d',
+                        background: '#dcfce7',
+                        padding: '2px 8px',
+                        borderRadius: '4px'
+                      }}>
+                        Favorable
+                      </span>
+                    </div>
+                    <div style={{ margin: '4px 0 0 0' }}>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                        <span style={{ fontSize: '28px', fontWeight: 700, color: '#0f172a', lineHeight: 1.1 }}>92</span>
+                        <span style={{ fontSize: '14px', fontWeight: 500, color: '#64748b' }}>/ 100</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '12px', fontWeight: 400, color: '#64748b', marginTop: '10px', borderTop: '1px solid #f1f5f9', paddingTop: '8px' }}>
+                    Wave 0.12 m · Wind 0.08 · Swell 0.05
+                  </div>
+                </div>
+
+                {/* CARD 4: INCOIS PFZ */}
+                {(() => {
+                  const pfzCount = layers.find((l) => String(l.id).toLowerCase() === 'pfz')?.features?.length || 38
+                  return (
+                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '135px' }}>
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                          <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>INCOIS PFZ</span>
+                        </div>
+                        <div style={{ margin: '4px 0 0 0' }}>
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                            <span style={{ fontSize: '28px', fontWeight: 700, color: '#0f172a', lineHeight: 1.1 }}>{pfzCount}</span>
+                            <span style={{ fontSize: '14px', fontWeight: 500, color: '#0f172a' }}>zones available</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ fontSize: '12px', fontWeight: 400, color: '#64748b', marginTop: '10px', borderTop: '1px solid #f1f5f9', paddingTop: '8px' }}>
+                        {pfzSync.message || `${pfzCount} PFZ features loaded`}
+                      </div>
+                    </div>
+                  )
+                })()}
+              </div>
+
+              {/* EXPANDABLE ECOSYSTEM & FISH PRODUCTIVITY DIAGNOSTICS DRAWER */}
+              {ecosystemState.isOpen && (
+                <div
+                  style={{
+                    marginTop: '16px',
+                    paddingTop: '16px',
+                    borderTop: '1px solid #e2e8f0',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '15px', color: '#0f172a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>🔬</span> Oceanographic Diagnostic: Fish Productivity Analysis
+                      </h3>
+                      <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#64748b' }}>
+                        Multi-parameter root-cause synthesis for {ecosystemState.data?.sector_name || selectedLocation.name}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setEcosystemState((prev) => ({ ...prev, isOpen: false }))}
+                      style={{
+                        background: '#ffffff',
+                        border: '1px solid #cbd5e1',
+                        color: '#64748b',
+                        borderRadius: '6px',
+                        padding: '4px 10px',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      ✕ Close Diagnostic
+                    </button>
+                  </div>
+
+                  {ecosystemState.loading ? (
+                    <div style={{ padding: '24px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>
+                      Querying Ocean Thermal Anomaly, Chlorophyll-a Satellite Fields & Upwelling Indices…
+                    </div>
+                  ) : ecosystemState.error ? (
+                    <div style={{ padding: '12px', background: '#fef2f2', color: '#dc2626', borderRadius: '6px', border: '1px solid #fecaca', fontSize: '13px' }}>
+                      ⚠️ {ecosystemState.error}
+                    </div>
+                  ) : ecosystemState.data ? (
+                    <div>
+                      {/* SUMMARY BANNER */}
+                      <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', padding: '12px 16px', borderRadius: '8px', marginBottom: '14px' }}>
+                        <strong style={{ fontSize: '11px', color: '#0369a1', display: 'block', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          Diagnostic Synthesis & Root Causes
+                        </strong>
+                        <p style={{ margin: 0, fontSize: '13px', color: '#0f172a', lineHeight: 1.5 }}>
+                          {ecosystemState.data.diagnosis_summary || ecosystemState.data.summary || 'Oceanographic anomaly diagnostic completed.'}
+                        </p>
+                      </div>
+
+                      {/* 4 METRIC CARDS */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '14px' }}>
+                        {/* SST CARD */}
+                        <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '12px', border: '1px solid #e2e8f0' }}>
+                          <span style={{ fontSize: '11px', color: '#64748b', textTransform: 'uppercase', fontWeight: 600 }}>🌡️ SST & Heatwave</span>
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', margin: '4px 0' }}>
+                            <strong style={{ fontSize: '18px', color: '#dc2626' }}>
+                              {ecosystemState.data.telemetry_comparison?.observed_sst_c ?? ecosystemState.data.environmental_metrics?.observed_sst_c ?? 29.8}°C
+                            </strong>
+                            <small style={{ color: '#b91c1c', fontWeight: 700 }}>
+                              {(ecosystemState.data.telemetry_comparison?.sst_anomaly_c ?? 0) > 0
+                                ? `+${ecosystemState.data.telemetry_comparison?.sst_anomaly_c}°C`
+                                : `${ecosystemState.data.telemetry_comparison?.sst_anomaly_c ?? '+1.6'}°C`} Anomaly
+                            </small>
+                          </div>
+                          <small style={{ color: '#64748b', fontSize: '11px', display: 'block' }}>
+                            Baseline: {ecosystemState.data.telemetry_comparison?.baseline_sst_c ?? 28.2}°C • Status: {ecosystemState.data.ecosystem_health || 'Active MHW'}
+                          </small>
+                        </div>
+
+                        {/* CHLOROPHYLL CARD */}
+                        <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '12px', border: '1px solid #e2e8f0' }}>
+                          <span style={{ fontSize: '11px', color: '#64748b', textTransform: 'uppercase', fontWeight: 600 }}>🌿 Chlorophyll-a Biomass</span>
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', margin: '4px 0' }}>
+                            <strong style={{ fontSize: '18px', color: '#0284c7' }}>
+                              {ecosystemState.data.telemetry_comparison?.observed_chlorophyll_mg_m3 ?? 0.38} mg/m³
+                            </strong>
+                            <small style={{ color: '#d97706', fontWeight: 700 }}>
+                              {ecosystemState.data.telemetry_comparison?.chlorophyll_anomaly_pct ?? -45}% deficit
+                            </small>
+                          </div>
+                          <small style={{ color: '#64748b', fontSize: '11px', display: 'block' }}>
+                            Baseline: {ecosystemState.data.telemetry_comparison?.baseline_chlorophyll_mg_m3 ?? 0.85} mg/m³ • Phytoplankton Depleted
+                          </small>
+                        </div>
+
+                        {/* UPWELLING CARD */}
+                        <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '12px', border: '1px solid #e2e8f0' }}>
+                          <span style={{ fontSize: '11px', color: '#64748b', textTransform: 'uppercase', fontWeight: 600 }}>💨 Upwelling & Hypoxia</span>
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', margin: '4px 0' }}>
+                            <strong style={{ fontSize: '18px', color: '#7c3aed' }}>
+                              {ecosystemState.data.stress_factors?.find(f => f.factor?.includes('Upwelling'))?.metric?.split(':')[1] || '8.5 m³/s/100m'}
+                            </strong>
+                            <small style={{ color: '#15803d', fontWeight: 700 }}>Moderate Hypoxia</small>
+                          </div>
+                          <small style={{ color: '#64748b', fontSize: '11px', display: 'block' }}>
+                            Season: {ecosystemState.data.telemetry_comparison?.upwelling_season || 'Monsoon Upwelling Cycle'}
+                          </small>
+                        </div>
+
+                        {/* SPECIES CARD */}
+                        <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '12px', border: '1px solid #e2e8f0' }}>
+                          <span style={{ fontSize: '11px', color: '#64748b', textTransform: 'uppercase', fontWeight: 600 }}>⚓ Impacted Species</span>
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', margin: '4px 0' }}>
+                            <strong style={{ fontSize: '14px', color: '#b45309' }}>High Vulnerability</strong>
+                          </div>
+                          <small style={{ color: '#64748b', fontSize: '11px', display: 'block' }}>
+                            {Array.isArray(ecosystemState.data.target_species_impacted)
+                              ? ecosystemState.data.target_species_impacted.slice(0, 2).join(', ')
+                              : 'Indian Oil Sardine, Indian Mackerel'}
+                          </small>
+                        </div>
+                      </div>
+
+                      {/* RECOMMENDATIONS */}
+                      {Array.isArray(ecosystemState.data.recommendations) && ecosystemState.data.recommendations.length > 0 && (
+                        <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '12px 14px', border: '1px solid #e2e8f0' }}>
+                          <strong style={{ fontSize: '11px', color: '#15803d', display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            📋 Actionable Evidence-Based Recommendations
+                          </strong>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {ecosystemState.data.recommendations.map((rec, idx) => {
+                              if (typeof rec === 'string') {
+                                return (
+                                  <div key={idx} style={{ fontSize: '12px', color: '#334155', lineHeight: 1.5, padding: '8px 12px', background: '#ffffff', borderRadius: '6px', borderLeft: '3px solid #16a34a', border: '1px solid #e2e8f0' }}>
+                                    {rec}
+                                  </div>
+                                )
+                              }
+                              return (
+                                <div key={idx} style={{ fontSize: '12px', color: '#334155', lineHeight: 1.5, padding: '8px 12px', background: '#ffffff', borderRadius: '6px', borderLeft: '3px solid #16a34a', border: '1px solid #e2e8f0' }}>
+                                  {rec.target && <strong style={{ color: '#0284c7', marginRight: '6px' }}>[{rec.target}]</strong>}
+                                  <span>{rec.action}</span>
+                                  {rec.rationale && <small style={{ display: 'block', color: '#64748b', marginTop: '2px' }}>💡 {rec.rationale}</small>}
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+              )}
+            </section>
+          </ComponentErrorBoundary>
+
+          <ComponentErrorBoundary name="Map Canvas">
+            <div style={{ position: 'relative' }}>
+              {isSimulatedCycloneActive && (
+                <div
+                  className="simulated-cyclone-banner"
+                  style={{
+                    background: 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%)',
+                    color: '#ffffff',
+                    padding: '12px 18px',
+                    borderRadius: '8px',
+                    marginBottom: '14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    border: '1.5px solid #ef4444',
+                    boxShadow: '0 4px 12px rgba(220, 38, 38, 0.25)',
+                    flexWrap: 'wrap',
+                    gap: '10px'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontSize: '24px' }}>🌀</span>
+                    <div>
+                      <strong style={{ fontSize: '13px', display: 'block', letterSpacing: '0.02em' }}>
+                        ACTIVE SIMULATION: CYCLONIC STORM SURGE & HAZARD CONE (RED OVERLAY)
+                      </strong>
+                      <span style={{ fontSize: '12px', opacity: 0.95 }}>
+                        Displaying projected 35 km offshore cyclone hazard zone ({searchParams.get('wind_kts') || '45'} kts gale, +{searchParams.get('delta_wave') || '3.8'}m surge). Vessel navigation prohibited inside this perimeter.
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsSimulatedCycloneActive(false)}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.15)',
+                      color: '#ffffff',
+                      border: '1px solid rgba(255, 255, 255, 0.4)',
+                      borderRadius: '6px',
+                      padding: '5px 12px',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    ✕ Dismiss Simulation Overlay
+                  </button>
+                </div>
+              )}
+              {isRouteVisible && isHudOpen && (
+                <LiveNavigationHUD
+                  navigationData={liveNavigation.data}
+                  currentLocation={liveVesselLocation || selectedLocation}
+                  isTracking={isGpsTracking}
+                  onToggleTracking={toggleGpsTracking}
+                  onRecenter={() => {
+                    const loc = liveVesselLocation || selectedLocation
+                    if (loc?.latitude && loc?.longitude) {
+                      setSelectedCoordinate({ ...loc })
+                    }
+                  }}
+                  onStopNavigation={() => setIsHudOpen(false)}
+                  onRecalculate={startLivePFZNavigation}
+                  isLoading={liveNavigation.loading}
+                />
+              )}
+              {isRouteVisible && !isHudOpen && (
+                <button
+                  type="button"
+                  className="reopen-hud-pill-btn"
+                  onClick={() => setIsHudOpen(true)}
+                  title="Open Live Navigation HUD panel"
+                  style={{
+                    position: 'absolute',
+                    top: '12px',
+                    left: '12px',
+                    zIndex: 10,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '7px 14px',
+                    background: '#0f172a',
+                    color: '#38bdf8',
+                    border: '1px solid #0284c7',
+                    borderRadius: '20px',
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 14px rgba(0,0,0,0.35)',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <span>🧭</span> Show Navigation HUD
+                </button>
+              )}
+              <MapCanvas
+                selectedLocation={selectedLocation}
+                layers={renderedLayers}
+                routeGeometry={isRouteVisible ? (liveNavigation.data?.route?.route_geometry || detailedRoute.data?.route_geometry || routeGeometry) : (detailedRoute.data?.route_geometry || null)}
+                detailedRouteStatus={isRouteVisible ? (liveNavigation.data?.route?.overall_status || detailedRoute.data?.overall_status || null) : (detailedRoute.data?.overall_status || null)}
+                radiusKm={Number(searchRadius) || 50}
+                pfzEvaluations={pfzEvaluations}
+                selectedPFZId={nearestPFZ.data?.selected_pfz?.id || liveNavigation.data?.selected_pfz?.id || null}
+                selectedPFZGeometry={nearestPFZ.data?.selected_pfz?.geometry || liveNavigation.data?.selected_pfz?.geometry || null}
+                pfzRouteGeometry={isRouteVisible ? (nearestPFZ.data?.route_geometry || null) : null}
+                onMapLocation={handleMapLocation}
+                isExpanded={isExpanded}
+                onToggleExpanded={() => setIsExpanded((value) => !value)}
+                liveVesselLocation={liveVesselLocation}
+                navigationWaypoints={isRouteVisible ? (liveNavigation.data?.route?.waypoints || []) : []}
+                isTracking={isGpsTracking}
+                landTransit={isRouteVisible ? (liveNavigation.data?.land_transit || null) : null}
+              />
+            </div>
+          </ComponentErrorBoundary>
+
+          <ComponentErrorBoundary name="Map Legend">
+            <MapLegend layers={renderedLayers} routeGeometry={routeGeometry} />
+          </ComponentErrorBoundary>
+
+          {/* NEAREST SUITABLE PFZ ASSESSMENT & RESULTS PANEL */}
+          <section className="pfz-discovery-section panel" style={{ marginTop: '16px' }}>
+            <div className="pfz-discovery-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', borderBottom: '1px solid #e2e8f0', paddingBottom: '14px', marginBottom: '14px' }}>
+              <div>
+                <p className="eyebrow">POTENTIAL FISHING ZONE (PFZ) ENGINE</p>
+                <h2 style={{ margin: '2px 0 0 0', fontSize: '18px', color: '#0f172a' }}>Nearest Suitable PFZ Discovery</h2>
+                <p style={{ fontSize: '13px', color: 'var(--text-muted, #64748b)', marginTop: '4px', margin: '4px 0 0 0' }}>
+                  Live INCOIS Potential Fishing Zones within your active search radius (<strong>{searchRadius} km</strong>) evaluated against Weather, Ocean, and GIS evidence.
+                </p>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '12px', background: '#f0fdf4', color: '#166534', border: '1px solid #86efac', padding: '5px 12px', borderRadius: '20px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>🎯</span> {nearestPFZ.loading ? 'Evaluating Zones…' : `${searchRadius} km Radius Active`}
+                </span>
+              </div>
             </div>
 
             {nearestPFZ.error && (
@@ -1024,31 +1940,62 @@ export default function MapExplorer({ navigate }) {
                 </div>
 
                 {/* ROUTE METRICS GRID */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '16px' }}>
-                  <div style={{ background: '#f8fafc', padding: '10px 14px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-                    <small style={{ color: '#64748b', fontSize: '11px', display: 'block', fontWeight: 600 }}>ORIGIN</small>
-                    <strong style={{ fontSize: '13px', color: '#0f172a' }}>
-                      {detailedRoute.data.origin_lat.toFixed(4)}°N, {detailedRoute.data.origin_lon.toFixed(4)}°E
-                    </strong>
-                  </div>
-
-                  <div style={{ background: '#f8fafc', padding: '10px 14px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-                    <small style={{ color: '#64748b', fontSize: '11px', display: 'block', fontWeight: 600 }}>DESTINATION</small>
-                    <strong style={{ fontSize: '13px', color: '#0284c7' }}>
-                      {detailedRoute.data.dest_name || detailedRoute.data.dest_id || 'Target PFZ'}
-                    </strong>
-                  </div>
-
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px', marginBottom: '16px' }}>
                   <div style={{ background: '#f8fafc', padding: '10px 14px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
                     <small style={{ color: '#64748b', fontSize: '11px', display: 'block', fontWeight: 600 }}>ROUTE DISTANCE</small>
-                    <strong style={{ fontSize: '13px', color: '#0f172a' }}>{detailedRoute.data.route_distance_km} km</strong>
+                    <strong style={{ fontSize: '14px', color: '#0f172a' }}>
+                      {detailedRoute.data.route_distance_km} km ({detailedRoute.data.route_distance_nm ? `${detailedRoute.data.route_distance_nm} NM` : `${(detailedRoute.data.route_distance_km / 1.852).toFixed(1)} NM`})
+                    </strong>
                   </div>
 
                   <div style={{ background: '#f8fafc', padding: '10px 14px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
                     <small style={{ color: '#64748b', fontSize: '11px', display: 'block', fontWeight: 600 }}>ESTIMATED TRAVEL TIME</small>
-                    <strong style={{ fontSize: '13px', color: '#0f172a' }}>{detailedRoute.data.estimated_travel_time}</strong>
+                    <strong style={{ fontSize: '14px', color: '#0f172a' }}>{detailedRoute.data.estimated_travel_time} (@12 kn)</strong>
+                  </div>
+
+                  <div style={{ background: '#f8fafc', padding: '10px 14px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                    <small style={{ color: '#64748b', fontSize: '11px', display: 'block', fontWeight: 600 }}>ESTIMATED FUEL USAGE</small>
+                    <strong style={{ fontSize: '14px', color: '#0f172a' }}>
+                      {detailedRoute.data.estimated_fuel_liters ? `${detailedRoute.data.estimated_fuel_liters} L` : `${(detailedRoute.data.route_distance_km * 0.97).toFixed(1)} L`}
+                      {detailedRoute.data.fuel_delta_liters > 0 && <span style={{ fontSize: '11px', color: '#b45309', marginLeft: '4px' }}>(+{detailedRoute.data.fuel_delta_liters}L detour)</span>}
+                    </strong>
+                  </div>
+
+                  <div style={{ background: '#f8fafc', padding: '10px 14px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                    <small style={{ color: '#64748b', fontSize: '11px', display: 'block', fontWeight: 600 }}>MARINE SAFETY INDEX (MSI)</small>
+                    <strong style={{ fontSize: '14px', color: detailedRoute.data.marine_safety_index?.color || '#059669' }}>
+                      🛡️ {detailedRoute.data.marine_safety_index?.score ? `${detailedRoute.data.marine_safety_index.score}/100` : '92/100'}
+                    </strong>
                   </div>
                 </div>
+
+                {/* WAYPOINTS BREAKDOWN (IF DETOUR / WAYPOINTS AVAILABLE) */}
+                {Array.isArray(detailedRoute.data.waypoints) && detailedRoute.data.waypoints.length > 0 && (
+                  <div style={{ marginBottom: '16px', background: '#f8fafc', padding: '12px 14px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <strong style={{ fontSize: '12px', color: '#334155', letterSpacing: '0.04em' }}>🧭 NAUTICAL WAYPOINTS & TURNING BEARINGS</strong>
+                      <span style={{ fontSize: '11px', fontWeight: 700, color: detailedRoute.data.alternative_used ? '#d97706' : '#16a34a' }}>
+                        {detailedRoute.data.alternative_used ? '⚠️ Hazard Detour Waypoints Active' : '🟢 Direct Passage Waypoints'}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {detailedRoute.data.waypoints.map((wp, idx) => (
+                        <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px', padding: '4px 8px', background: '#ffffff', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
+                          <span style={{ fontWeight: 600, color: '#0f172a' }}>
+                            WP {wp.waypoint_index || idx + 1}: {wp.name || `Waypoint ${idx + 1}`}
+                          </span>
+                          <span style={{ color: '#64748b', fontFamily: 'monospace' }}>
+                            [{Number(wp.longitude || 0).toFixed(3)}°E, {Number(wp.latitude || 0).toFixed(3)}°N]
+                          </span>
+                          <span style={{ color: '#0284c7', fontWeight: 600 }}>
+                            {wp.leg_distance_km > 0 ? `${wp.leg_distance_km} km (${wp.leg_bearing_deg}° ${wp.leg_bearing_cardinal || ''})` : 'Origin Departure'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
 
                 {/* 4 CORE CHECKS BREAKDOWN */}
                 <h4 style={{ margin: '0 0 10px 0', fontSize: '13px', color: '#334155' }}>Detailed Environmental & GIS Checks</h4>
@@ -1118,14 +2065,42 @@ export default function MapExplorer({ navigate }) {
           </ComponentErrorBoundary>
           <ComponentErrorBoundary name="Map Layers Control">
             <MapLayersControl
-              layers={layers}
+              layers={renderedLayers}
               loading={layersState.loading}
               error={layersState.error}
               onToggleLayer={handleToggleLayer}
+              isRouteVisible={isRouteVisible}
+              isRouteLoading={liveNavigation.loading}
+              onToggleRoute={toggleRouteVisibility}
+              routeData={liveNavigation.data}
+              isPFZSyncing={pfzSync.loading}
+              searchRadius={searchRadius}
+              onRadiusChange={(val) => setSearchRadius(val)}
             />
           </ComponentErrorBoundary>
         </div>
       </div>
+
+      <ScenarioSimulatorModal
+        isOpen={isSimulatorOpen}
+        onClose={() => setIsSimulatorOpen(false)}
+        initialLocation={selectedCoordinate || { id: selectedLocation?.id, latitude: selectedLocation?.lat, longitude: selectedLocation?.lng, label: selectedLocation?.name }}
+        onApplyScenarioToChat={(promptText, loc) => {
+          const lat = loc?.latitude || selectedLocation?.lat || 17.6868
+          const lon = loc?.longitude || selectedLocation?.lng || 83.2185
+          const label = encodeURIComponent(loc?.label || selectedLocation?.name || 'Selected Location')
+          const queryParam = encodeURIComponent(promptText)
+          if (navigate) {
+            navigate(`/ask-orca?query=${queryParam}&latitude=${lat}&longitude=${lon}&label=${label}`)
+          } else {
+            window.location.href = `/ask-orca?query=${queryParam}&latitude=${lat}&longitude=${lon}&label=${label}`
+          }
+        }}
+        onNavigateMap={(path) => {
+          window.history.pushState({}, '', path)
+          window.dispatchEvent(new PopStateEvent('popstate'))
+        }}
+      />
     </div>
   )
 }

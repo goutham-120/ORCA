@@ -80,6 +80,10 @@ class OpenAICompatibleLLM:
     @staticmethod
     def _full_language_name(code: str) -> str:
         c = (code or "").lower()
+        if c in {"ml", "ml-in", "malayalam"}:
+            return "Malayalam (മലയാളം)"
+        if c in {"kn", "kn-in", "kannada"}:
+            return "Kannada (ಕನ್ನಡ)"
         if c in {"mr", "mr-in", "marathi"}:
             return "Marathi (मराठी)"
         if c in {"gu", "gu-in", "gujarati"}:

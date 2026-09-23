@@ -36,6 +36,8 @@ class SafetyDecisionResponse(BaseModel):
     warnings: list[str] = Field(default_factory=list)
     unavailable_data: list[str] = Field(default_factory=list)
     time: datetime | None = None
+    marine_safety_index: dict[str, Any] | None = None
+    tide: dict[str, Any] | None = None
 
 
 class PFZNearbyRequest(BaseModel):
@@ -68,7 +70,7 @@ class NearestSuitablePFZResponse(BaseModel):
 
 
 class PFZFeatureResponse(BaseModel):
-    id: int
+    id: int | str
     geometry: dict[str, Any] | None
     distance_km: float
     source: str
@@ -91,7 +93,6 @@ class PFZDecisionResponse(BaseModel):
     unavailable_data: list[str] = Field(default_factory=list)
 
 
-
 class HazardDecisionResponse(BaseModel):
     status: DecisionStatus
     hazard_status: Literal["relevant_hazard_found", "no_relevant_hazard_found", "source_unavailable"]
@@ -110,6 +111,7 @@ class AnomalyDecisionResponse(BaseModel):
     evidence: list[DecisionEvidence] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     unavailable_data: list[str] = Field(default_factory=list)
+    ecosystem_diagnosis: dict[str, Any] | None = None
 
 
 class RouteDecisionRequest(BaseModel):
@@ -131,6 +133,9 @@ class RouteDecisionResponse(BaseModel):
     route_geometry: dict[str, Any]
     distance_km: float | None = None
     hazard_segments: list[dict[str, Any]] = Field(default_factory=list)
+    waypoints: list[dict[str, Any]] = Field(default_factory=list)
+    estimated_travel_time: str | None = None
+    marine_safety_index: dict[str, Any] | None = None
     evidence: list[DecisionEvidence] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     unavailable_data: list[str] = Field(default_factory=list)

@@ -124,9 +124,14 @@ class PFZDiscoveryService:
                 in_radius_candidates.append(pfz_info)
 
         print(f"[PFZ Discovery Engine] Candidates inside search radius ({radius_km:g} km): {len(in_radius_candidates)} of {len(all_evaluated_pfzs)}")
+        # Multi-Modal Land Transit Check (Road to Shore vs Sea Voyage)
+        from app.services.road_routing_service import RoadRoutingService
+        road_svc = RoadRoutingService()
+        land_transit = await road_svc.get_land_to_harbor_route(latitude, longitude)
 
+        # 2. Check if candidates exist inside search radius
         if not in_radius_candidates:
-            nearest_outside = min(all_evaluated_pfzs, key=lambda c: c["distance_km"]) if all_evaluated_pfzs else None
+            nearest_outside = all_evaluated_pfzs[0] if all_evaluated_pfzs else None
             outside_dist_str = f" Nearest PFZ outside radius is at {nearest_outside['distance_km']} km." if nearest_outside else ""
             print(f"[PFZ Discovery Engine] Result: no_pfz_found.{outside_dist_str}")
             return {
@@ -145,6 +150,7 @@ class PFZDiscoveryService:
                 "candidate_pfzs": [],
                 "all_pfzs": all_evaluated_pfzs,
                 "route_geometry": None,
+                "land_transit": land_transit if land_transit.get("land_transit_needed") else None,
             }
 
         # 3. Sort candidates within radius by distance ascending (nearest first)
@@ -221,19 +227,30 @@ class PFZDiscoveryService:
             selected = evaluated_candidates[0]
             overall_status = "unsuitable"
             reason = (
-                f"PFZs were found within the search radius of {radius_km:g} km (nearest: {selected['name']} at {selected['distance_km']} km), "
-                f"but none passed the required Weather, Ocean, or GIS safety thresholds."
+                f"PFZ candidate(s) found within {radius_km:g} km radius (nearest: {selected['name']} at {selected['distance_km']} km), "
+                f"but failed safety or environmental suitability thresholds."
             )
-
         route_geom = None
-        if selected:
-            route_geom = {
-                "type": "LineString",
-                "coordinates": [
-                    [longitude, latitude],
-                    selected["rep_point"],
-                ],
-            }
+        if selected and selected.get("rep_point"):
+            if land_transit.get("land_transit_needed") and land_transit.get("harbor"):
+                h_lon = land_transit["harbor"]["longitude"]
+                h_lat = land_transit["harbor"]["latitude"]
+                # Straight marine track from harbor to offshore PFZ
+                route_geom = {
+                    "type": "LineString",
+                    "coordinates": [
+                        [h_lon, h_lat],
+                        selected["rep_point"],
+                    ],
+                }
+            else:
+                route_geom = {
+                    "type": "LineString",
+                    "coordinates": [
+                        [longitude, latitude],
+                        selected["rep_point"],
+                    ],
+                }
 
         print(f"[PFZ Discovery Result] Overall Suitability: '{overall_status}'")
         print(f"[PFZ Discovery Result] Selected PFZ: {selected['name'] if selected else 'None'} | Distance: {selected['distance_km'] if selected else 'N/A'} km")
@@ -255,6 +272,7 @@ class PFZDiscoveryService:
             "candidate_pfzs": evaluated_candidates,
             "all_pfzs": all_evaluated_pfzs,
             "route_geometry": route_geom,
+            "land_transit": land_transit if land_transit.get("land_transit_needed") else None,
         }
 
     async def _evaluate_weather(self, location: dict[str, Any]) -> dict[str, Any]:

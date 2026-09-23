@@ -150,12 +150,47 @@ function generateLocationFallback(locDef, locationId) {
     trends: {
       waves: { label: 'Wave height (m)', values: [1.1, 1.2, 1.25, waveHeight], current: `${waveHeight} m`, direction: 'Stable' },
       wind: { label: 'Wind speed (km/h)', values: [12, 14, 15, windSpeed], current: `${windSpeed} km/h`, direction: 'Steady' },
-      temperature: { label: 'Surface temp (°C)', values: [27.8, 28.0, seaTemp], current: `${seaTemp} °C`, direction: 'Stable' }
     }
   }
 }
 
+export function registerCustomLocation(customLoc) {
+  if (!customLoc || !customLoc.id) return null
+  const lat = Number(customLoc.lat ?? customLoc.latitude ?? 17.6868)
+  const lng = Number(customLoc.lng ?? customLoc.longitude ?? 83.2185)
+  const coordsStr = customLoc.coordinatesStr || customLoc.coordinates || `${Math.abs(lat).toFixed(4)}° ${lat >= 0 ? 'N' : 'S'} · ${Math.abs(lng).toFixed(4)}° ${lng >= 0 ? 'E' : 'W'}`
+  const registered = {
+    ...customLoc,
+    lat,
+    lng,
+    latitude: lat,
+    longitude: lng,
+    region: customLoc.region || `${customLoc.state || 'Custom'}, India`,
+    coordinatesStr: coordsStr,
+    coordinates: coordsStr,
+    mapPosition: customLoc.mapPosition || { x: 50, y: 50 }
+  }
+  LOCATION_COORDINATES[customLoc.id] = registered
+  return registered
+}
+
 export async function fetchLiveLocationData(locationId) {
+  // Handle custom coordinate IDs from localStorage or picker
+  if (typeof locationId === 'string' && locationId.startsWith('custom_') && !LOCATION_COORDINATES[locationId]) {
+    const parts = locationId.replace('custom_', '').split('_')
+    const lat = parseFloat(parts[0])
+    const lng = parseFloat(parts[1])
+    if (!isNaN(lat) && !isNaN(lng)) {
+      registerCustomLocation({
+        id: locationId,
+        name: `Custom Point (${lat.toFixed(2)}°, ${lng.toFixed(2)}°)`,
+        lat,
+        lng,
+        state: 'Custom Coordinates'
+      })
+    }
+  }
+
   const locKey = String(locationId || 'visakhapatnam').trim().toLowerCase()
   const locDef = LOCATION_COORDINATES[locationId] 
     || LOCATION_COORDINATES[locKey]

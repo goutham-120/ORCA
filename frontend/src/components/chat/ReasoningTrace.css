@@ -1,0 +1,224 @@
+.reasoning-trace-container {
+  margin-top: 14px;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.25s ease;
+}
+
+.reasoning-trace-container:hover {
+  border-color: rgba(56, 189, 248, 0.45);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.reasoning-trace-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: rgba(30, 41, 59, 0.7);
+  border: none;
+  cursor: pointer;
+  color: #e2e8f0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: left;
+  transition: background 0.2s ease;
+}
+
+.reasoning-trace-header:hover {
+  background: rgba(51, 65, 85, 0.8);
+}
+
+.trace-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.trace-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #38bdf8;
+  box-shadow: 0 0 8px #38bdf8;
+  animation: pulse-dot 2s infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
+}
+
+.trace-title {
+  color: #38bdf8;
+  letter-spacing: 0.02em;
+}
+
+.trace-provenance-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.prov-chip {
+  font-size: 0.7rem;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  color: #7dd3fc;
+  font-weight: 500;
+}
+
+.prov-chip.isro {
+  background: rgba(249, 115, 22, 0.15);
+  border-color: rgba(249, 115, 22, 0.4);
+  color: #fb923c;
+}
+
+.prov-chip.incois {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #34d399;
+}
+
+.trace-chevron {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  transition: transform 0.2s ease;
+}
+
+.trace-chevron.open {
+  transform: rotate(180deg);
+}
+
+.reasoning-trace-body {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-top: 1px solid rgba(56, 189, 248, 0.15);
+  background: rgba(15, 23, 42, 0.4);
+}
+
+.trace-step-card {
+  display: flex;
+  gap: 12px;
+  position: relative;
+}
+
+.trace-step-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: 28px;
+}
+
+.step-circle {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(30, 41, 59, 0.9);
+  border: 1.5px solid #38bdf8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  color: #38bdf8;
+  font-weight: 700;
+  z-index: 1;
+}
+
+.step-circle.completed {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: #10b981;
+  color: #34d399;
+}
+
+.step-line {
+  flex-grow: 1;
+  width: 2px;
+  background: rgba(56, 189, 248, 0.25);
+  margin-top: 4px;
+  margin-bottom: -4px;
+}
+
+.trace-step-content {
+  flex-grow: 1;
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.step-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.step-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+
+.step-status-tag {
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.step-status-tag.verified {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.step-status-tag.computed {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.step-status-tag.cleared {
+  background: rgba(99, 102, 241, 0.15);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.step-status-tag.verdict {
+  background: rgba(234, 179, 8, 0.15);
+  color: #facc15;
+  border: 1px solid rgba(234, 179, 8, 0.3);
+}
+
+.step-desc {
+  font-size: 0.77rem;
+  color: #94a3b8;
+  line-height: 1.4;
+  margin: 0 0 6px 0;
+}
+
+.step-data-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.data-metric-pill {
+  font-size: 0.72rem;
+  padding: 2px 6px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  color: #cbd5e1;
+  font-family: monospace;
+}

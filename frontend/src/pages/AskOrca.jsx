@@ -7,7 +7,12 @@ import { askOrca } from '../services/orcaService'
 import { LOCATION_COORDINATES } from '../services/openMeteoService'
 import { speakResponse, stopSpeech } from '../utils/speech'
 import { buildSpokenSummary } from '../utils/speechSummary'
+import ScenarioSimulatorModal from '../components/chat/ScenarioSimulatorModal'
+import EmergencySOSModal from '../components/common/EmergencySOSModal'
+import ProactiveAlertBanner from '../components/chat/ProactiveAlertBanner'
+import { cacheOffshoreBundle } from '../services/offlineSync'
 import './AskOrca.css'
+
 
 const PREFERENCES_KEY = 'orca-dashboard-preferences'
 const newId = () => globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`
@@ -55,9 +60,12 @@ export default function AskOrca({ navigate }) {
   const [error, setError] = useState('')
   const [failedQuery, setFailedQuery] = useState('')
   const [language, setLanguage] = useState('en')
+  const [persona, setPersona] = useState('fisherman')
   const [conversationId, setConversationId] = useState(newId)
   const [isLocationOpen, setIsLocationOpen] = useState(false)
   const [browserLocation, setBrowserLocation] = useState(null)
+  const [isSimulatorOpen, setIsSimulatorOpen] = useState(false)
+  const [isSOSOpen, setIsSOSOpen] = useState(false)
 
   // Active Location state synced with Dashboard preference
   const [location, setLocation] = useState(() => {
@@ -91,6 +99,17 @@ export default function AskOrca({ navigate }) {
       }
     }
   }, [location])
+
+  useEffect(() => {
+    const handleOpenSimulator = (e) => {
+      if (e?.detail?.location) {
+        setLocation(e.detail.location)
+      }
+      setIsSimulatorOpen(true)
+    }
+    window.addEventListener('orca-open-simulator', handleOpenSimulator)
+    return () => window.removeEventListener('orca-open-simulator', handleOpenSimulator)
+  }, [])
 
   const requestBrowserLocation = () => {
     if (!navigator.geolocation) { setError('Browser location is not supported on this device.'); return }
@@ -135,6 +154,10 @@ export default function AskOrca({ navigate }) {
     setLoading(true)
     stopSpeech()
 
+    const historyPayload = messages
+      .slice(-8)
+      .map((m) => ({ role: m.role, content: m.text }))
+
     try {
       const response = await askOrca({
         query: text,
@@ -147,8 +170,10 @@ export default function AskOrca({ navigate }) {
           : undefined,
         context: { ...(lastContext ? { conversation_context: lastContext } : {}), ...(browserLocation ? { browser_location: browserLocation } : {}) },
         conversation_id: conversationId,
-        language
+        language,
+        history: historyPayload,
       })
+
 
       const assistantMessage = {
         id: response.query_id || newId(),
@@ -161,6 +186,19 @@ export default function AskOrca({ navigate }) {
       setMessages((prev) => [...prev, assistantMessage])
       const spokenBriefing = buildSpokenSummary(response, response.answer, response.language || language)
       speakResponse(spokenBriefing, response.language || language)
+
+      // Auto-cache offshore bundle for low-bandwidth / disconnected field use (5.4)
+      try {
+        cacheOffshoreBundle(location?.label || 'Current Offshore Zone', {
+          evidence: response.evidence,
+          waypoints: response.waypoints || [],
+          marine_safety_index: response.marine_safety_index,
+          tide: response.evidence?.hydrodynamics?.tide_phase || 'Active',
+          advisory: response.answer
+        })
+      } catch (cacheErr) {
+        console.warn('Offline cache failed:', cacheErr)
+      }
     } catch (err) {
       setError(err.message || 'ORCA could not complete this analysis request.')
       setFailedQuery(text)
@@ -197,16 +235,28 @@ export default function AskOrca({ navigate }) {
     send(promptQuery)
   }
 
+  const handleApplyScenarioToChat = (promptText, newLoc) => {
+    if (newLoc) {
+      setLocation(newLoc)
+    }
+    setQuery(promptText)
+    send(promptText)
+  }
+
   return (
     <section className="ask-orca-command-center font-sans">
       {/* 1. TOP HEADER */}
       <ChatHeader
         language={language}
         onLanguageChange={setLanguage}
+        persona={persona}
+        onPersonaChange={setPersona}
         onClearSession={handleClearSession}
         locationLabel={location?.label}
         onToggleLocation={() => setIsLocationOpen((prev) => !prev)}
         isLocationOpen={isLocationOpen}
+        onOpenSimulator={() => setIsSimulatorOpen(true)}
+        onOpenSOS={() => setIsSOSOpen(true)}
       />
 
       {/* 2. LOCATION CONTEXT PANEL */}
@@ -219,6 +269,9 @@ export default function AskOrca({ navigate }) {
         onRequestBrowserLocation={requestBrowserLocation}
       />
 
+      {/* 2.5 PROACTIVE HAZARD & GEOFENCE MONITORING BANNER */}
+      <ProactiveAlertBanner location={location} />
+
       {/* 3. CHAT VIEWPORT & WELCOME SCREEN */}
       <ChatWindow
         messages={messages}
@@ -226,6 +279,7 @@ export default function AskOrca({ navigate }) {
         onSelectPrompt={handleSelectPrompt}
         language={language}
       />
+
 
       {/* ERROR / RETRY BANNER */}
       {error && (
@@ -253,6 +307,22 @@ export default function AskOrca({ navigate }) {
         onSend={() => send()}
         loading={loading}
         language={language}
+      />
+
+      {/* 5. WHAT-IF SCENARIO SIMULATOR MODAL */}
+      <ScenarioSimulatorModal
+        isOpen={isSimulatorOpen}
+        onClose={() => setIsSimulatorOpen(false)}
+        initialLocation={location}
+        onApplyScenarioToChat={handleApplyScenarioToChat}
+        onNavigateMap={(path) => navigate && navigate(path)}
+      />
+
+      {/* 6. EMERGENCY SOS / VHF DISTRESS BROADCAST MODAL */}
+      <EmergencySOSModal
+        isOpen={isSOSOpen}
+        onClose={() => setIsSOSOpen(false)}
+        location={location}
       />
     </section>
   )

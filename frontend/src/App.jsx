@@ -53,11 +53,11 @@ export default function App() {
     if (user) {
       return (
         <MainLayout path={currentPath} navigate={navigate}>
-          <MapExplorer navigate={navigate} />
+          <MapExplorer key={window.location.search} navigate={navigate} />
         </MainLayout>
       )
     }
-    return <MapExplorer navigate={navigate} />
+    return <MapExplorer key={window.location.search} navigate={navigate} />
   }
 
   if (!user) return <Login navigate={navigate} />
