@@ -134,9 +134,11 @@ export default function Personalization({ navigate }) {
   const [selectedActivity, setSelectedActivity] = useState(() => {
     return localStorage.getItem(`orca_user_activity_${userKey}`) || localStorage.getItem('orca_user_activity') || 'beach'
   })
+  const suitabilityInfo = ACTIVITY_SUITABILITY_MAP[selectedActivity] || ACTIVITY_SUITABILITY_MAP.beach
   const [preferredSpot, setPreferredSpot] = useState(() => {
     return localStorage.getItem(`orca_preferred_spot_${userKey}`) || localStorage.getItem('orca_preferred_spot') || 'Chennai, Tamil Nadu'
   })
+  const [savedSpots, setSavedSpots] = useState(() => loadUserData('orca_saved_spots', []))
   const [spotInput, setSpotInput] = useState(preferredSpot)
   // 5. FISHERMAN / MARINERS ANNOUNCEMENTS STATE (LIVE FROM BACKEND)
   const [fishermanAnnouncements, setFishermanAnnouncements] = useState([])

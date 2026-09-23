@@ -1067,7 +1067,7 @@ export default function MapExplorer({ navigate }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                   <button
                     type="button"
-                    onClick={diagnoseCatchDecline}
+                    onClick={ecosystemState.isOpen ? () => setEcosystemState((prev) => ({ ...prev, isOpen: false })) : runEcosystemDiagnosis}
                     disabled={ecosystemState.loading}
                     style={{
                       display: 'inline-flex',
@@ -1718,9 +1718,9 @@ export default function MapExplorer({ navigate }) {
                           </tr>
                         </thead>
                         <tbody>
-                          {nearestPFZ.data.candidate_pfzs.map((cand) => (
+                          {nearestPFZ.data.candidate_pfzs.map((cand, idx) => (
                             <tr
-                              key={cand?.id || Math.random()}
+                              key={cand?.id || `cand-${idx}`}
                               style={{
                                 borderBottom: '1px solid #f1f5f9',
                                 background: nearestPFZ.data?.selected_pfz?.id === cand?.id ? '#f0fdf4' : '#ffffff',
