@@ -71,15 +71,6 @@ export default function Home({ navigate }) {
             >
               Ask ORCA
             </button>
-            {!user && (
-              <button
-                type="button"
-                className="nav-btn"
-                onClick={() => handleNav('/login')}
-              >
-                Sign In
-              </button>
-            )}
           </nav>
         </div>
       </header>
@@ -109,32 +100,13 @@ export default function Home({ navigate }) {
             <cite className="quote-attribution">&mdash; Jacques-Yves Cousteau</cite>
 
             <div className="hero-actions">
-              {user ? (
-                <button
-                  type="button"
-                  className="btn-primary btn-large"
-                  onClick={() => handleNav('/ask-orca')}
-                >
-                  Get Started
-                </button>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    className="btn-primary btn-large"
-                    onClick={() => handleNav('/register')}
-                  >
-                    Get Started
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-secondary btn-large"
-                    onClick={() => handleNav('/login')}
-                  >
-                    Sign In
-                  </button>
-                </>
-              )}
+              <button
+                type="button"
+                className="btn-primary btn-large"
+                onClick={() => handleNav('/dashboard')}
+              >
+                Get Started
+              </button>
             </div>
           </div>
         </section>

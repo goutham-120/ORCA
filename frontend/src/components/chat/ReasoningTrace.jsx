@@ -45,9 +45,9 @@ export default function ReasoningTrace({ message, persona = 'fisherman' }) {
           </span>
         </div>
         <div className="trace-provenance-chips">
-          <span className="prov-chip isro">ISRO Oceansat-3</span>
+          {/* <span className="prov-chip isro">ISRO Oceansat-3</span>
           <span className="prov-chip incois">INCOIS PFZ</span>
-          <span className="prov-chip">Open-Meteo</span>
+          <span className="prov-chip">Open-Meteo</span> */}
           <span className={`trace-chevron ${isOpen ? 'open' : ''}`}>▼</span>
         </div>
       </button>

@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { COASTAL_STATES, COASTAL_LOCATIONS, filterCoastalLocations } from '../../data/coastalLocations'
 import { registerCustomLocation } from '../../services/openMeteoService'
+import monitoringPinIcon from '../../assets/monitoring-pin.png'
 import './CoastalLocationPicker.css'
 
 export default function CoastalLocationPicker({
@@ -131,7 +132,13 @@ export default function CoastalLocationPicker({
     <div className="coastal-location-picker" onClick={(e) => e.stopPropagation()}>
       <div className="clp-header">
         <div className="clp-header-title">
-          <span className="clp-wave-icon" aria-hidden="true">🌊</span>
+          <img
+            src={monitoringPinIcon}
+            alt=""
+            className="clp-wave-icon"
+            aria-hidden="true"
+            style={{ width: '28px', height: '28px', objectFit: 'contain', flexShrink: 0 }}
+          />
           <div>
             <h3>{title}</h3>
             <p className="clp-subtitle">

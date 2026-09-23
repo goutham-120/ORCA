@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react'
 import MainLayout from './components/layout/MainLayout'
-import Login from './pages/Login'
-import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import AskOrca from './pages/AskOrca'
 import MapExplorer from './pages/MapExplorer'
@@ -45,22 +43,23 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  if (currentPath === '/login') return <Login navigate={navigate} />
-  if (currentPath === '/register') return <Register navigate={navigate} />
+  if (currentPath === '/login' || currentPath === '/register') {
+    return (
+      <MainLayout path="/dashboard" navigate={navigate}>
+        <Dashboard navigate={navigate} />
+      </MainLayout>
+    )
+  }
+
   if (currentPath === '/') return <Home navigate={navigate} />
 
   if (currentPath === '/map' || currentPath === '/map-explorer') {
-    if (user) {
-      return (
-        <MainLayout path={currentPath} navigate={navigate}>
-          <MapExplorer navigate={navigate} />
-        </MainLayout>
-      )
-    }
-    return <MapExplorer navigate={navigate} />
+    return (
+      <MainLayout path={currentPath} navigate={navigate}>
+        <MapExplorer navigate={navigate} />
+      </MainLayout>
+    )
   }
-
-  if (!user) return <Login navigate={navigate} />
 
   return (
     <MainLayout path={currentPath} navigate={navigate}>

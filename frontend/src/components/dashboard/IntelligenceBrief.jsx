@@ -9,7 +9,6 @@ export default function IntelligenceBrief({ location, onAsk }) {
 
   return (
     <section className="intelligence-brief panel font-sans">
-      <div className="brief-orb font-mono">OR</div>
       <div className="brief-content font-sans">
         <p className="eyebrow font-mono">ORCA INTELLIGENCE</p>
         <h2 className="font-sans">{location.name} Operating Picture</h2>
