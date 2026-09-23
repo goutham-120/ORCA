@@ -561,15 +561,20 @@ async def navigate_nearest_pfz(
 
     selected = discovery.get("selected_pfz")
     selected_geom = discovery.get("selected_geometry")
+    all_candidates = discovery.get("all_pfzs") or discovery.get("candidate_pfzs") or []
 
     if not selected or not selected_geom:
-        all_candidates = discovery.get("all_pfzs") or discovery.get("candidate_pfzs") or []
         closest_cand = None
         closest_dist = None
         if all_candidates:
             closest_cand = min(all_candidates, key=lambda c: c.get("distance_km") or 999999)
             closest_dist = closest_cand.get("distance_km")
 
+        road_svc = RoadRoutingService()
+        land_transit = await road_svc.get_land_to_harbor_route(
+            origin_lat=payload.latitude,
+            origin_lon=payload.longitude,
+        )
         msg = discovery.get("reason") or "No suitable Potential Fishing Zone found within the specified search radius."
         if closest_cand and closest_dist:
             msg += f" Nearest recorded PFZ is at {closest_dist:.1f} km."
@@ -583,6 +588,7 @@ async def navigate_nearest_pfz(
             distance_nm=round(closest_dist * 0.539957, 1) if closest_dist else None,
             candidate_count=len(all_candidates),
             all_candidates=all_candidates,
+            land_transit=land_transit if land_transit.get("land_transit_needed") else None,
         )
 
     dest_pt = _get_representative_point(selected_geom)
