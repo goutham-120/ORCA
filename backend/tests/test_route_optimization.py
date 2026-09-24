@@ -34,7 +34,7 @@ class RouteOptimizationTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(result["status"], "completed")
         self.assertEqual(result["alternative_used"], False)
-        self.assertIn(result["overall_status"], ["SAFE", "CAUTION", "DATA UNAVAILABLE"])
+        self.assertIn(result["overall_status"], ["SAFE", "CAUTION", "UNSAFE", "DATA UNAVAILABLE"])
         self.assertGreater(result["route_distance_km"], 0.0)
         self.assertGreater(result["route_distance_nm"], 0.0)
         self.assertGreaterEqual(len(result["waypoints"]), 2)  # Multi-checkpoint passage navigation

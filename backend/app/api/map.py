@@ -782,3 +782,46 @@ async def get_ecosystem_anomaly(
         current_chlorophyll=chlorophyll,
     )
 
+
+@router.get("/satellite-overpasses")
+async def get_satellite_overpasses(
+    latitude: float = Query(default=17.6868, ge=-90, le=90),
+    longitude: float = Query(default=83.2185, ge=-180, le=180),
+) -> dict[str, Any]:
+    """
+    Return ISRO EOS-06 (Oceansat-3) and INSAT-3DS orbital overpass schedule,
+    swath polygons, and sensor telemetry.
+    """
+    from app.services.satellite_overpass_service import satellite_overpass_service
+    return satellite_overpass_service.get_satellite_overpass_schedule(latitude, longitude)
+
+
+@router.get("/navic/status")
+async def get_navic_status(
+    latitude: float = Query(default=17.6868, ge=-90, le=90),
+    longitude: float = Query(default=83.2185, ge=-180, le=180),
+) -> dict[str, Any]:
+    """
+    Return real-time status of ISRO NavIC satellite receiver dongle.
+    """
+    from app.services.navic_service import navic_service
+    return navic_service.get_receiver_status(latitude, longitude)
+
+
+@router.post("/navic/sos")
+async def dispatch_navic_sos(
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    """
+    Dispatch emergency NavIC distress beacon to Coast Guard MRCC.
+    """
+    from app.services.navic_service import navic_service
+    return navic_service.dispatch_navic_distress_sos(
+        vessel_name=payload.get("vessel_name", "IND-COASTAL-CRAFT-01"),
+        registration_id=payload.get("registration_id", "IND-AP-07-MM-4421"),
+        lat=float(payload.get("latitude", 17.6868)),
+        lon=float(payload.get("longitude", 83.2185)),
+        nature_of_distress=payload.get("nature_of_distress", "Vessel Emergency / High Waves"),
+    )
+
+

@@ -10,6 +10,7 @@ import { speakResponse, stopSpeech } from '../utils/speech'
 import { buildSpokenSummary } from '../utils/speechSummary'
 import ScenarioSimulatorModal from '../components/chat/ScenarioSimulatorModal'
 import EmergencySOSModal from '../components/common/EmergencySOSModal'
+import NavICStatusModal from '../components/common/NavICStatusModal'
 import ProactiveAlertBanner from '../components/chat/ProactiveAlertBanner'
 import { cacheOffshoreBundle } from '../services/offlineSync'
 import './AskOrca.css'
@@ -118,6 +119,7 @@ export default function AskOrca({ navigate }) {
   const [browserLocation, setBrowserLocation] = useState(null)
   const [isSimulatorOpen, setIsSimulatorOpen] = useState(false)
   const [isSOSOpen, setIsSOSOpen] = useState(false)
+  const [isNavICOpen, setIsNavICOpen] = useState(false)
   const [activeSpeech, setActiveSpeech] = useState(null)
   const autoSentRef = useRef(false)
 
@@ -368,6 +370,7 @@ export default function AskOrca({ navigate }) {
         isLocationOpen={isLocationOpen}
         onOpenSimulator={() => setIsSimulatorOpen(true)}
         onOpenSOS={() => setIsSOSOpen(true)}
+        onOpenNavIC={() => setIsNavICOpen(true)}
       />
 
       {/* 2. LOCATION CONTEXT PANEL */}
@@ -453,6 +456,13 @@ export default function AskOrca({ navigate }) {
       <EmergencySOSModal
         isOpen={isSOSOpen}
         onClose={() => setIsSOSOpen(false)}
+        location={location}
+      />
+
+      {/* 7. ISRO NAVIC SATELLITE TRANSCEIVER MODAL */}
+      <NavICStatusModal
+        isOpen={isNavICOpen}
+        onClose={() => setIsNavICOpen(false)}
         location={location}
       />
     </section>

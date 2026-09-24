@@ -33,7 +33,8 @@ export default function ChatHeader({
   onToggleLocation,
   isLocationOpen,
   onOpenSimulator,
-  onOpenSOS
+  onOpenSOS,
+  onOpenNavIC,
 }) {
   const [systemOnline, setSystemOnline] = useState(true)
   const [isLangOpen, setIsLangOpen] = useState(false)
@@ -234,6 +235,25 @@ export default function ChatHeader({
             </ul>
           )}
         </div>
+
+        {/* NavIC Satellite Dongle Mode Button */}
+        {onOpenNavIC && (
+          <button
+            type="button"
+            className="header-action-btn font-inter"
+            onClick={onOpenNavIC}
+            title="ISRO NavIC Satellite Transceiver (Offline Mode)"
+            style={{
+              background: 'rgba(16, 185, 129, 0.18)',
+              color: '#34d399',
+              border: '1px solid rgba(16, 185, 129, 0.4)',
+              fontWeight: 600,
+            }}
+          >
+            <span className="icon">🛰️</span>
+            <span className="btn-label">NavIC Sat Mode</span>
+          </button>
+        )}
 
         {/* Scenario Simulator Button */}
         {onOpenSimulator && (

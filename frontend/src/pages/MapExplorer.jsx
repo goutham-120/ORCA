@@ -22,6 +22,8 @@ import {
 } from '../services/mapService'
 import ScenarioSimulatorModal from '../components/chat/ScenarioSimulatorModal'
 import LiveNavigationHUD from '../components/mapExplorer/LiveNavigationHUD'
+import SatelliteOrbitHUD from '../components/mapExplorer/SatelliteOrbitHUD'
+import NavICStatusModal from '../components/common/NavICStatusModal'
 import monitoringPinIcon from '../assets/monitoring-pin.png'
 
 class ComponentErrorBoundary extends Component {
@@ -255,6 +257,8 @@ export default function MapExplorer({ navigate }) {
   const [isHudOpen, setIsHudOpen] = useState(false)
   const [liveVesselLocation, setLiveVesselLocation] = useState(null)
   const [isGpsTracking, setIsGpsTracking] = useState(false)
+  const [isSatelliteHudOpen, setIsSatelliteHudOpen] = useState(false)
+  const [isNavICModalOpen, setIsNavICModalOpen] = useState(false)
   const watchIdRef = useRef(null)
 
   const pfzEvaluations = useMemo(() => {
@@ -1505,6 +1509,74 @@ export default function MapExplorer({ navigate }) {
                   <span>🧭</span> Show Navigation HUD
                 </button>
               )}
+
+              {/* ISRO Space Assets & NavIC Quick Action Toolbar */}
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '12px',
+                  right: '12px',
+                  zIndex: 10,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setIsSatelliteHudOpen((v) => !v)}
+                  title="Toggle ISRO EOS-06 & INSAT-3DS Orbit HUD"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '7px 13px',
+                    background: isSatelliteHudOpen ? '#0284c7' : 'rgba(15, 23, 42, 0.92)',
+                    color: isSatelliteHudOpen ? '#ffffff' : '#38bdf8',
+                    border: '1px solid rgba(56, 189, 248, 0.4)',
+                    borderRadius: '20px',
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 14px rgba(0,0,0,0.4)',
+                    backdropFilter: 'blur(6px)',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <span>🛰️</span> ISRO Satellites
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsNavICModalOpen(true)}
+                  title="Open ISRO NavIC Satellite Transceiver (Offline Mode)"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '7px 13px',
+                    background: 'rgba(6, 78, 59, 0.9)',
+                    color: '#34d399',
+                    border: '1px solid rgba(52, 211, 153, 0.4)',
+                    borderRadius: '20px',
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 14px rgba(0,0,0,0.4)',
+                    backdropFilter: 'blur(6px)',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <span>📡</span> NavIC Transceiver
+                </button>
+              </div>
+
+              {/* ISRO Satellite Orbit HUD */}
+              <SatelliteOrbitHUD
+                isOpen={isSatelliteHudOpen}
+                onClose={() => setIsSatelliteHudOpen(false)}
+                location={selectedLocation}
+              />
               <MapCanvas
                 selectedLocation={selectedLocation}
                 layers={renderedLayers}
@@ -2171,6 +2243,12 @@ export default function MapExplorer({ navigate }) {
           window.history.pushState({}, '', path)
           window.dispatchEvent(new PopStateEvent('popstate'))
         }}
+      />
+
+      <NavICStatusModal
+        isOpen={isNavICModalOpen}
+        onClose={() => setIsNavICModalOpen(false)}
+        location={selectedLocation}
       />
     </div>
   )

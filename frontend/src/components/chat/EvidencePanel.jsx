@@ -15,16 +15,29 @@ export default function EvidencePanel({ evidence = [] }) {
             const badgeClass = status === 'live' ? 'live' : status === 'cached' ? 'cached' : 'unavailable'
             const observedDate = item.observed_at ? new Date(item.observed_at).toLocaleString() : null
 
-            return (
-              <div key={`${item.source}-${index}`} className="evidence-item-card">
-                <div className="item-header">
-                  <span className="source-name font-sans">{item.source}</span>
-                  <span className={`evidence-badge font-mono ${badgeClass}`}>
-                    {status.toUpperCase()}
-                  </span>
-                </div>
+              return (
+                <div key={`${item.source}-${index}`} className="evidence-item-card">
+                  <div className="item-header">
+                    <span className="source-name font-sans">{item.source}</span>
+                    <span className={`evidence-badge font-mono ${badgeClass}`}>
+                      {status.toUpperCase()}
+                    </span>
+                  </div>
 
-                <p className="item-summary font-sans">{item.summary}</p>
+                  {item.satellite_mission && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', margin: '4px 0 6px 0' }}>
+                      <span style={{ background: 'rgba(34, 185, 242, 0.15)', border: '1px solid rgba(34, 185, 242, 0.35)', color: '#38bdf8', padding: '2px 7px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 700 }}>
+                        🛰️ {item.satellite_mission}
+                      </span>
+                      {item.metadata?.satellite_payload && (
+                        <span style={{ color: '#94a3b8', fontSize: '0.72rem' }}>
+                          [{item.metadata.satellite_payload}]
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  <p className="item-summary font-sans">{item.summary}</p>
 
                 <div className="item-footer font-mono">
                   {observedDate && <span className="timestamp">Observed: {observedDate}</span>}
