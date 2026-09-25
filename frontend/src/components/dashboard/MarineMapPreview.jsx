@@ -9,7 +9,7 @@ import {
   generateCurvedStreamlineFeatures,
 } from '../../services/spatialDataService'
 import TemperatureLegend from './TemperatureLegend'
-import { registerOmProtocol, OM_TEMPERATURE_URL, OM_WIND_URL } from '../../utils/omProtocolHelper'
+import { registerOmProtocol, OM_TEMPERATURE_URL, OM_WIND_URL, OM_CLOUDS_URL } from '../../utils/omProtocolHelper'
 
 setWorkerUrl(workerUrl)
 registerOmProtocol()
@@ -260,10 +260,8 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
         },
         'insat-cloud-ir-source': {
           type: 'raster',
-          tiles: [INSAT_CLOUD_IR_TILES],
-          tileSize: 256,
-          maxzoom: 8,
-          attribution: 'ISRO MOSDAC / INSAT-3D/3DR TIR1 Cloud-Top Brightness Temperature',
+          url: 'om://' + OM_CLOUDS_URL,
+          maxzoom: 12,
         },
         'om-temperature-source': {
           type: 'raster',

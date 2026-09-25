@@ -8,10 +8,13 @@ import {
 } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 
+import { registerOmProtocol, OM_CLOUDS_URL } from '../../utils/omProtocolHelper'
+
+registerOmProtocol()
+
 export const ESRI_SATELLITE_TILES = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
 export const ESRI_BOUNDARIES_TILES = 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'
 export const OSM_TILES = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
-export const INSAT_CLOUD_IR_TILES = 'https://tilecache.rainviewer.com/v2/satellite/latest/256/{z}/{x}/{y}/1/1_1.png'
 
 const DEFAULT_STYLE = {
   version: 8,
@@ -39,10 +42,8 @@ const DEFAULT_STYLE = {
     },
     'insat-cloud-ir-source': {
       type: 'raster',
-      tiles: [INSAT_CLOUD_IR_TILES],
-      tileSize: 256,
-      maxzoom: 8,
-      attribution: 'ISRO MOSDAC / INSAT-3D/3DR TIR1 Cloud-Top Brightness Temperature',
+      url: 'om://' + OM_CLOUDS_URL,
+      maxzoom: 12,
     },
   },
   layers: [
