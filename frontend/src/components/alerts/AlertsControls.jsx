@@ -10,7 +10,8 @@ export default function AlertsControls({
   sortBy,
   onSortChange,
   unreadCount,
-  onMarkAllRead
+  onMarkAllRead,
+  categoryCounts,
 }) {
   return (
     <div className="alerts-controls-panel panel">
@@ -99,7 +100,9 @@ export default function AlertsControls({
         <div className="tabs-list">
           {['all', 'high', 'moderate', 'advisory', 'info'].map((cat) => {
             const isSelected = activeFilter === cat
-            const labels = { all: 'All Alerts', high: '🔴 High', moderate: '🟠 Moderate', advisory: '🟡 Advisory', info: '🔵 Info' }
+            const count = categoryCounts ? categoryCounts[cat] : null
+            const baseLabels = { all: 'All Alerts', high: '🔴 High', moderate: '🟠 Moderate', advisory: '🟡 Advisory', info: '🔵 Info' }
+            const labelText = count != null ? `${baseLabels[cat]} (${count})` : baseLabels[cat]
             return (
               <button
                 key={cat}
@@ -107,7 +110,7 @@ export default function AlertsControls({
                 className={`tab-btn ${isSelected ? 'is-active' : ''}`}
                 onClick={() => onFilterChange(cat)}
               >
-                {labels[cat]}
+                {labelText}
               </button>
             )
           })}

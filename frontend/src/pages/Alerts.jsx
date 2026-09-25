@@ -199,15 +199,9 @@ export default function Alerts({ navigate }) {
     return found ? found.name : 'All Locations'
   }, [selectedLocationId])
 
-  // Filtered & Searched Alerts
-  const filteredAlerts = useMemo(() => {
+  // Base searched & location-filtered subset (before severity category filtering)
+  const searchFilteredAlerts = useMemo(() => {
     return rawLocationAlerts.filter((alert) => {
-      if (activeFilter === 'unread') {
-        if (readAlertIds.has(alert.id)) return false
-      } else if (activeFilter !== 'all') {
-        if (alert.severity !== activeFilter) return false
-      }
-
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim()
         const titleMatch = alert.title.toLowerCase().includes(q)
@@ -216,10 +210,33 @@ export default function Alerts({ navigate }) {
         const areaMatch = alert.affectedArea.toLowerCase().includes(q)
         if (!titleMatch && !detailMatch && !locationMatch && !areaMatch) return false
       }
-
       return true
     })
-  }, [rawLocationAlerts, activeFilter, searchQuery, readAlertIds])
+  }, [rawLocationAlerts, searchQuery])
+
+  // Dynamic Category Counts across current searched/location subset
+  const categoryCounts = useMemo(() => {
+    return {
+      all: searchFilteredAlerts.length,
+      high: searchFilteredAlerts.filter((a) => a.severity === 'high').length,
+      moderate: searchFilteredAlerts.filter((a) => a.severity === 'moderate').length,
+      advisory: searchFilteredAlerts.filter((a) => a.severity === 'advisory').length,
+      info: searchFilteredAlerts.filter((a) => a.severity === 'info').length,
+      unread: searchFilteredAlerts.filter((a) => !readAlertIds.has(a.id)).length,
+    }
+  }, [searchFilteredAlerts, readAlertIds])
+
+  // Filtered & Searched Alerts
+  const filteredAlerts = useMemo(() => {
+    return searchFilteredAlerts.filter((alert) => {
+      if (activeFilter === 'unread') {
+        if (readAlertIds.has(alert.id)) return false
+      } else if (activeFilter !== 'all') {
+        if (alert.severity !== activeFilter) return false
+      }
+      return true
+    })
+  }, [searchFilteredAlerts, activeFilter, readAlertIds])
 
   // Sorted Alerts
   const sortedAlerts = useMemo(() => {
@@ -235,10 +252,7 @@ export default function Alerts({ navigate }) {
   }, [filteredAlerts, sortBy])
 
   // Dynamic Unread Count
-  const unreadCount = useMemo(
-    () => rawLocationAlerts.filter((a) => !readAlertIds.has(a.id)).length,
-    [rawLocationAlerts, readAlertIds]
-  )
+  const unreadCount = categoryCounts.unread
 
   const handleToggleRead = (id, markRead) => {
     setReadAlertIds((prev) => {
@@ -314,10 +328,11 @@ export default function Alerts({ navigate }) {
 
       {/* Summary Count Statistics Cards */}
       <AlertsSummaryCards
-        alerts={rawLocationAlerts}
+        alerts={searchFilteredAlerts}
         unreadCount={unreadCount}
         activeFilter={activeFilter}
         onSelectFilter={setActiveFilter}
+        categoryCounts={categoryCounts}
       />
 
       {/* Controls Bar: Search, Filters, Location Selector & Sort */}
@@ -332,6 +347,7 @@ export default function Alerts({ navigate }) {
         onSortChange={setSortBy}
         unreadCount={unreadCount}
         onMarkAllRead={handleMarkAllRead}
+        categoryCounts={categoryCounts}
       />
 
       {/* Main Alerts Grid Workspace */}

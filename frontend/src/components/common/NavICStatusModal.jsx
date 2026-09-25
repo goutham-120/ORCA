@@ -100,7 +100,7 @@ export default function NavICStatusModal({ isOpen, onClose, location }) {
         <div className="navic-modal-header">
           <h2 className="navic-modal-title">
             <span>🛰️</span>
-            <span>ISRO NavIC Satellite Transceiver (Offline Mode)</span>
+            <span>NavIC / GNSS Location Sync (ISRO NavIC & Web Geolocation)</span>
           </h2>
           <button type="button" className="navic-close-btn" onClick={onClose} aria-label="Close">
             ✕
@@ -125,7 +125,7 @@ export default function NavICStatusModal({ isOpen, onClose, location }) {
                   </span>
                 </div>
                 <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
-                  Mode: <strong style={{ color: '#e2e8f0' }}>{navicData?.gnss_mode || 'L5/S-Band Dual-Frequency'}</strong> · Battery: <strong>{navicData?.battery_level_pct || 94}%</strong>
+                  Mode: <strong style={{ color: '#e2e8f0' }}>{navicData?.gnss_mode || 'NavIC / GNSS Hybrid Sync (L5/S-Band)'}</strong> · Battery: <strong>{navicData?.battery_level_pct || 94}%</strong>
                 </div>
 
                 <div className="navic-status-grid">
@@ -138,7 +138,7 @@ export default function NavICStatusModal({ isOpen, onClose, location }) {
                     <div className="navic-stat-val">{navicData?.carrier_to_noise_ratio_dbhz || 44.8} dB-Hz</div>
                   </div>
                   <div className="navic-stat-box">
-                    <div className="navic-stat-label">NavIC Fix Accuracy</div>
+                    <div className="navic-stat-label">NavIC / GNSS Sync Accuracy</div>
                     <div className="navic-stat-val" style={{ color: '#38bdf8' }}>±{navicData?.position_fix?.accuracy_m || 2.4} m</div>
                   </div>
                 </div>

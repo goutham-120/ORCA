@@ -1,5 +1,5 @@
-export default function AlertsSummaryCards({ alerts, unreadCount, activeFilter, onSelectFilter }) {
-  const counts = {
+export default function AlertsSummaryCards({ alerts = [], unreadCount, activeFilter, onSelectFilter, categoryCounts }) {
+  const counts = categoryCounts || {
     all: alerts.length,
     high: alerts.filter((a) => a.severity === 'high').length,
     moderate: alerts.filter((a) => a.severity === 'moderate').length,

@@ -1335,7 +1335,7 @@ export default function MapCanvas({
           new LngLatBounds(allRouteCoords[0], allRouteCoords[0])
         )
         map.fitBounds(routeBounds, {
-          padding: { top: 85, bottom: 85, left: 75, right: 75 },
+          padding: { top: 95, bottom: 95, left: 95, right: 95 },
           maxZoom: 12,
           duration: 800,
         })
