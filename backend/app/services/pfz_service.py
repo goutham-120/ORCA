@@ -80,12 +80,20 @@ class PFZDiscoveryService:
                 "route_geometry": None,
             }
 
-        # Fetch active hazard/restricted features for GIS evaluation
+        # Fetch active hazard/restricted features for GIS evaluation (including satellite-derived hazards)
+        from app.services.route_analysis_service import RouteAnalysisService
+        from app.services.satellite_overpass_service import satellite_overpass_service
+        route_eval = RouteAnalysisService(repository=self.repository)
         hazard_records = [
             r for r in self.repository.list()
-            if (getattr(r, "layer", "") or "").lower() in ("hazards", "restricted_zones")
-               or (getattr(r, "dataset", "") or "").lower() in ("hazards", "restricted_zones")
+            if route_eval._is_obstacle_feature(r)
         ]
+        try:
+            for sat_h in satellite_overpass_service.get_satellite_hazard_features():
+                if route_eval._is_obstacle_feature(sat_h) and sat_h not in hazard_records:
+                    hazard_records.append(sat_h)
+        except Exception:
+            pass
 
         # 2. Compute authoritative minimum geometry distance for EVERY PFZ record
         all_evaluated_pfzs = []
@@ -232,25 +240,30 @@ class PFZDiscoveryService:
             )
         route_geom = None
         if selected and selected.get("rep_point"):
-            if land_transit.get("land_transit_needed") and land_transit.get("harbor"):
-                h_lon = land_transit["harbor"]["longitude"]
-                h_lat = land_transit["harbor"]["latitude"]
-                # Straight marine track from harbor to offshore PFZ
-                route_geom = {
-                    "type": "LineString",
-                    "coordinates": [
-                        [h_lon, h_lat],
-                        selected["rep_point"],
-                    ],
-                }
+            origin_lon = land_transit["harbor"]["longitude"] if (land_transit.get("land_transit_needed") and land_transit.get("harbor")) else longitude
+            origin_lat = land_transit["harbor"]["latitude"] if (land_transit.get("land_transit_needed") and land_transit.get("harbor")) else latitude
+            
+            direct_line = {
+                "type": "LineString",
+                "coordinates": [
+                    [origin_lon, origin_lat],
+                    selected["rep_point"],
+                ],
+            }
+            # Check if direct line intersects any active hazard/restricted zone
+            has_obstacle = any(
+                h.geometry and self.gis.geometries_intersect(direct_line, h.geometry)
+                for h in hazard_records
+            )
+            if has_obstacle:
+                from app.services.route_analysis_service import RouteAnalysisService
+                route_svc = RouteAnalysisService(repository=self.repository)
+                alt_geom = route_svc._find_optimal_maritime_route(
+                    [origin_lon, origin_lat], selected["rep_point"], hazard_records
+                )
+                route_geom = alt_geom or direct_line
             else:
-                route_geom = {
-                    "type": "LineString",
-                    "coordinates": [
-                        [longitude, latitude],
-                        selected["rep_point"],
-                    ],
-                }
+                route_geom = direct_line
 
         print(f"[PFZ Discovery Result] Overall Suitability: '{overall_status}'")
         print(f"[PFZ Discovery Result] Selected PFZ: {selected['name'] if selected else 'None'} | Distance: {selected['distance_km'] if selected else 'N/A'} km")

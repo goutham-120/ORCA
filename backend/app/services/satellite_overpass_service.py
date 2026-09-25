@@ -213,5 +213,22 @@ class SatelliteOverpassService:
             "coordinates": [[p1, p2, p3, p4, p1]],
         }
 
+    def __init__(self) -> None:
+        self._active_hazards: list[Any] = []
+
+    def register_satellite_hazard(self, hazard: Any) -> None:
+        """Register a valid, active satellite-derived GIS hazard feature."""
+        if hazard not in self._active_hazards:
+            self._active_hazards.append(hazard)
+
+    def clear_satellite_hazards(self) -> None:
+        """Clear registered satellite hazard features."""
+        self._active_hazards.clear()
+
+    def get_satellite_hazard_features(self) -> list[Any]:
+        """Return active, valid satellite-derived GIS hazard geometries."""
+        return list(self._active_hazards)
+
 
 satellite_overpass_service = SatelliteOverpassService()
+

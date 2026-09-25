@@ -609,7 +609,7 @@ export default function MapCanvas({
           })
         }
 
-        // 7. PFZ Lines Inside Search Radius (Vibrant GREEN Highlight for Fishermen)
+        // 7. PFZ Lines Inside Search Radius (Context Layer)
         if (!map.getLayer('orca-line-pfz-in-radius-casing')) {
           map.addLayer({
             id: 'orca-line-pfz-in-radius-casing',
@@ -618,8 +618,8 @@ export default function MapCanvas({
             filter: ['all', ['==', '$type', 'LineString'], ['==', ['get', 'is_pfz'], true], ['==', ['get', 'is_in_radius'], true], ['!=', ['get', 'kind'], 'selected-pfz']],
             paint: {
               'line-color': '#15803d',
-              'line-width': 10,
-              'line-opacity': 0.45,
+              'line-width': 5,
+              'line-opacity': 0.25,
             },
           })
         }
@@ -631,8 +631,8 @@ export default function MapCanvas({
             filter: ['all', ['==', '$type', 'LineString'], ['==', ['get', 'is_pfz'], true], ['==', ['get', 'is_in_radius'], true], ['!=', ['get', 'kind'], 'selected-pfz']],
             paint: {
               'line-color': '#22c55e',
-              'line-width': 6,
-              'line-opacity': 0.98,
+              'line-width': 3.5,
+              'line-opacity': 0.6,
             },
           })
         }
@@ -646,8 +646,8 @@ export default function MapCanvas({
             filter: ['all', ['==', '$type', 'LineString'], ['==', ['get', 'is_pfz'], true], ['!=', ['get', 'is_in_radius'], true], ['!=', ['get', 'kind'], 'selected-pfz']],
             paint: {
               'line-color': '#06b6d4',
-              'line-width': 3,
-              'line-opacity': 0.65,
+              'line-width': 2.5,
+              'line-opacity': 0.5,
             },
           })
         }
@@ -661,8 +661,8 @@ export default function MapCanvas({
             filter: ['all', ['==', '$type', 'LineString'], ['!=', ['get', 'is_pfz'], true], ['!=', ['get', 'kind'], 'route'], ['!=', ['get', 'kind'], 'pfz-route'], ['!=', ['get', 'kind'], 'selected-pfz']],
             paint: {
               'line-color': '#06b6d4',
-              'line-width': 3.5,
-              'line-opacity': 0.95,
+              'line-width': 3.0,
+              'line-opacity': 0.85,
             },
           })
         }
@@ -676,9 +676,8 @@ export default function MapCanvas({
             filter: ['==', ['get', 'kind'], 'pfz-route'],
             paint: {
               'line-color': '#16a34a',
-              'line-width': 4.5,
-              'line-dasharray': [3, 1.5],
-              'line-opacity': 0.95,
+              'line-width': 6.5,
+              'line-opacity': 1.0,
             },
           })
         }
@@ -692,8 +691,8 @@ export default function MapCanvas({
             filter: ['==', ['get', 'kind'], 'land-road-route'],
             paint: {
               'line-color': '#78350f',
-              'line-width': 8,
-              'line-opacity': 0.8,
+              'line-width': 10,
+              'line-opacity': 0.85,
             },
           })
         }
@@ -705,12 +704,28 @@ export default function MapCanvas({
             filter: ['==', ['get', 'kind'], 'land-road-route'],
             paint: {
               'line-color': '#f59e0b',
-              'line-width': 5,
+              'line-width': 6.5,
               'line-opacity': 1.0,
             },
           })
         }
 
+        // 12. Active Navigation Route High-Contrast Dark Casing (Z-Order Priority)
+        if (!map.getLayer('orca-route-casing')) {
+          map.addLayer({
+            id: 'orca-route-casing',
+            type: 'line',
+            source: 'orca-layers',
+            filter: ['==', ['get', 'kind'], 'route'],
+            paint: {
+              'line-color': '#0f172a',
+              'line-width': 11,
+              'line-opacity': 0.85,
+            },
+          })
+        }
+
+        // 13. Active Maritime Navigation Route Main Line
         if (!map.getLayer('orca-route-line')) {
           map.addLayer({
             id: 'orca-route-line',
@@ -722,13 +737,12 @@ export default function MapCanvas({
                 'match',
                 ['get', 'status'],
                 'UNSAFE', '#dc2626',
-                'CAUTION', '#d97706',
-                'SAFE', '#16a34a',
-                '#16a34a',
+                'CAUTION', '#f59e0b',
+                'SAFE', '#10b981',
+                '#10b981',
               ],
-              'line-width': 5.5,
-              'line-dasharray': [2, 1],
-              'line-opacity': 0.95,
+              'line-width': 7.5,
+              'line-opacity': 1.0,
             },
           })
         }
@@ -1095,6 +1109,11 @@ export default function MapCanvas({
       if (map.getSource && map.getSource('orca-layers')) {
         map.getSource('orca-layers').setData(featureCollection(features))
       }
+      if (map.getLayer && map.getLayer('orca-route-casing')) map.moveLayer('orca-route-casing')
+      if (map.getLayer && map.getLayer('orca-route-line')) map.moveLayer('orca-route-line')
+      if (map.getLayer && map.getLayer('orca-pfz-route-line')) map.moveLayer('orca-pfz-route-line')
+      if (map.getLayer && map.getLayer('orca-land-route-casing')) map.moveLayer('orca-land-route-casing')
+      if (map.getLayer && map.getLayer('orca-land-route-line')) map.moveLayer('orca-land-route-line')
     } catch (e) {
       console.warn('Failed to update map features:', e)
     }
@@ -1288,21 +1307,37 @@ export default function MapCanvas({
     /*
      * If route or land transit geometry is active, zoom to encompass full multi-modal bounds.
      */
+    const extractCoords = (geom) => {
+      if (!geom) return []
+      if (Array.isArray(geom.coordinates)) {
+        if (geom.type === 'Point') return [geom.coordinates]
+        if (geom.type === 'LineString' || geom.type === 'MultiPoint') return geom.coordinates
+        if (geom.type === 'Polygon' || geom.type === 'MultiLineString') return geom.coordinates.flat(1)
+        if (geom.type === 'MultiPolygon') return geom.coordinates.flat(2)
+      }
+      return []
+    }
+
     const allRouteCoords = [
-      ...(Array.isArray(landTransit?.road_geometry?.coordinates) ? landTransit.road_geometry.coordinates : []),
-      ...(Array.isArray(routeGeometry?.coordinates) ? routeGeometry.coordinates : []),
+      ...extractCoords(landTransit?.road_geometry),
+      ...extractCoords(routeGeometry),
+      ...extractCoords(pfzRouteGeometry),
+      ...extractCoords(selectedPFZGeometry),
+      ...(Number.isFinite(Number(selectedLocation?.longitude)) && Number.isFinite(Number(selectedLocation?.latitude))
+        ? [[Number(selectedLocation.longitude), Number(selectedLocation.latitude)]]
+        : []),
     ]
 
     if (allRouteCoords.length >= 2) {
       try {
         const routeBounds = allRouteCoords.reduce(
-          (b, pt) => (Array.isArray(pt) && pt.length >= 2 ? b.extend(pt) : b),
+          (b, pt) => (Array.isArray(pt) && pt.length >= 2 && Number.isFinite(pt[0]) && Number.isFinite(pt[1]) ? b.extend(pt) : b),
           new LngLatBounds(allRouteCoords[0], allRouteCoords[0])
         )
         map.fitBounds(routeBounds, {
-          padding: 70,
-          maxZoom: 11,
-          duration: 700,
+          padding: { top: 85, bottom: 85, left: 75, right: 75 },
+          maxZoom: 12,
+          duration: 800,
         })
       } catch (e) {
         console.warn('Failed to fit multi-modal route bounds:', e)

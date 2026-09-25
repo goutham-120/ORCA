@@ -527,13 +527,13 @@ export default function MapExplorer({ navigate }) {
       const res = await navigateNearestPFZ({
         latitude: lat,
         longitude: lon,
-        radiusKm: Number(searchRadius) || 50,
+        radiusKm: Math.max(Number(searchRadius) || 50, 150),
         vesselSpeedKnots: 12.0,
       })
 
       setLiveNavigation({
         loading: false,
-        error: res.has_pfz ? '' : (res.message || 'No suitable Potential Fishing Zone found nearby.'),
+        error: (res.has_pfz && res.status !== 'route_blocked') ? '' : (res.message || 'No suitable Potential Fishing Zone found nearby.'),
         data: res,
       })
       setIsRouteVisible(true)
@@ -889,7 +889,7 @@ export default function MapExplorer({ navigate }) {
       setIsRouteVisible(false)
       setIsHudOpen(false)
     } else {
-      if (liveNavigation.data) {
+      if (liveNavigation.data?.has_pfz && liveNavigation.data?.route?.route_geometry) {
         setIsRouteVisible(true)
         setIsHudOpen(true)
       } else {
