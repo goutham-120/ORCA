@@ -264,7 +264,7 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
           tiles: [getVisibleCloudTileUrl()],
           tileSize: 256,
           maxzoom: 9,
-          attribution: 'NASA GIBS / Real Visible Satellite Cloud Canopy (MODIS TrueColor)',
+          attribution: 'NASA GIBS / VIIRS TrueColor Visible Cloud Canopy (Gap-Free)',
         },
         'insat-cloud-ir-source': {
           type: 'raster',

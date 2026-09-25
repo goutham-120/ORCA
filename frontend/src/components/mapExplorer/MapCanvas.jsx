@@ -45,7 +45,7 @@ const DEFAULT_STYLE = {
       tiles: [getVisibleCloudTileUrl()],
       tileSize: 256,
       maxzoom: 9,
-      attribution: 'NASA GIBS / INSAT-3D Optical Visible Cloud Canopy (True-Color)',
+      attribution: 'NASA GIBS / VIIRS TrueColor Visible Cloud Canopy (Gap-Free)',
     },
     'insat-cloud-ir-source': {
       type: 'raster',
