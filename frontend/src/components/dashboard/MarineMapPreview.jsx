@@ -9,7 +9,7 @@ import {
   generateCurvedStreamlineFeatures,
 } from '../../services/spatialDataService'
 import TemperatureLegend from './TemperatureLegend'
-import { registerOmProtocol, OM_TEMPERATURE_URL, OM_WIND_URL, getSatelliteCloudTileUrl } from '../../utils/omProtocolHelper'
+import { registerOmProtocol, OM_TEMPERATURE_URL, OM_WIND_URL, getSatelliteCloudTileUrl, getVisibleCloudTileUrl } from '../../utils/omProtocolHelper'
 
 setWorkerUrl(workerUrl)
 registerOmProtocol()
@@ -22,7 +22,7 @@ const layerLabels = {
   temperature: 'Temperature',
   wind: 'Wind',
   currents: 'Ocean Current Direction',
-  insat_clouds: 'INSAT Thermal IR Clouds',
+  insat_clouds: 'Satellite Meteorological Clouds',
 }
 
 /**
@@ -174,6 +174,7 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
 
   // Independent Opacity & Basemap Controls
   const [baseMapMode, setBaseMapMode] = useState('standard') // 'standard' | 'satellite'
+  const [cloudMode, setCloudMode] = useState('natural') // 'natural' | 'thermal_ir'
   const [tempOpacity, setTempOpacity] = useState(0.75)
   const [windOpacity, setWindOpacity] = useState(0.75)
   const [cloudIROpacity, setCloudIROpacity] = useState(0.75)
@@ -258,6 +259,13 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
           maxzoom: 19,
           attribution: 'Esri Boundaries & Places',
         },
+        'natural-clouds-source': {
+          type: 'raster',
+          tiles: [getVisibleCloudTileUrl()],
+          tileSize: 256,
+          maxzoom: 9,
+          attribution: 'NASA GIBS / Real Visible Satellite Cloud Canopy (MODIS TrueColor)',
+        },
         'insat-cloud-ir-source': {
           type: 'raster',
           tiles: [getSatelliteCloudTileUrl()],
@@ -301,6 +309,17 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
           source: 'esri-boundaries-source',
           layout: {
             visibility: 'none',
+          },
+        },
+        {
+          id: 'natural-clouds-layer',
+          type: 'raster',
+          source: 'natural-clouds-source',
+          layout: {
+            visibility: 'none',
+          },
+          paint: {
+            'raster-opacity': 0.85,
           },
         },
         {
@@ -454,6 +473,8 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
     const updateProperties = () => {
       const isSatellite = baseMapMode === 'satellite'
       const isCloudsActive = Boolean(layers.insat_clouds || layers.cloud_top_temp)
+      const isNaturalActive = isCloudsActive && (cloudMode === 'natural' || !cloudMode)
+      const isThermalActive = isCloudsActive && cloudMode === 'thermal_ir'
 
       if (map.getLayer('base-tiles-layer')) {
         map.setLayoutProperty('base-tiles-layer', 'visibility', isSatellite ? 'none' : 'visible')
@@ -464,8 +485,12 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
       if (map.getLayer('esri-boundaries-layer')) {
         map.setLayoutProperty('esri-boundaries-layer', 'visibility', isSatellite ? 'visible' : 'none')
       }
+      if (map.getLayer('natural-clouds-layer')) {
+        map.setLayoutProperty('natural-clouds-layer', 'visibility', isNaturalActive ? 'visible' : 'none')
+        map.setPaintProperty('natural-clouds-layer', 'raster-opacity', cloudIROpacity)
+      }
       if (map.getLayer('insat-cloud-ir-layer')) {
-        map.setLayoutProperty('insat-cloud-ir-layer', 'visibility', isCloudsActive ? 'visible' : 'none')
+        map.setLayoutProperty('insat-cloud-ir-layer', 'visibility', isThermalActive ? 'visible' : 'none')
         map.setPaintProperty('insat-cloud-ir-layer', 'raster-opacity', cloudIROpacity)
       }
       if (map.getLayer('om-temperature-layer')) {
@@ -483,7 +508,7 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
     } else {
       map.once('load', updateProperties)
     }
-  }, [baseMapMode, layers.insat_clouds, layers.cloud_top_temp, layers.temperature, layers.wind, tempOpacity, windOpacity, cloudIROpacity])
+  }, [baseMapMode, layers.insat_clouds, layers.cloud_top_temp, cloudMode, layers.temperature, layers.wind, tempOpacity, windOpacity, cloudIROpacity])
 
   // Fly map when location selection changes
   useEffect(() => {
@@ -664,18 +689,68 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
 
             {Boolean(layers.insat_clouds) && (
               <div style={{ borderTop: (layers.temperature !== false || Boolean(layers.wind)) ? '1px solid rgba(255,255,255,0.08)' : 'none', paddingTop: (layers.temperature !== false || Boolean(layers.wind)) ? '6px' : '0' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, color: '#c084fc', marginBottom: '4px' }}>
-                  <span>INSAT-3D/3DR THERMAL IR</span>
-                  <span style={{ fontSize: '9px', color: '#e9d5ff' }}>ISRO MOSDAC</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <span style={{ fontWeight: 600, color: cloudMode === 'natural' ? '#38bdf8' : '#c084fc' }}>
+                    {cloudMode === 'natural' ? 'OPTICAL SATELLITE CLOUDS' : 'INSAT-3D/3DR THERMAL IR'}
+                  </span>
+                  <span style={{ fontSize: '9px', background: cloudMode === 'natural' ? '#0369a1' : '#581c87', color: '#e0f2fe', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>
+                    {cloudMode === 'natural' ? 'MODIS / VIIRS' : 'ISRO MOSDAC'}
+                  </span>
                 </div>
-                <div style={{ height: '8px', borderRadius: '4px', background: 'linear-gradient(to right, #1e293b 0%, #0369a1 25%, #059669 50%, #eab308 65%, #dc2626 80%, #7e22ce 92%, #ffffff 100%)', marginBottom: '4px' }} />
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#94a3b8' }}>
-                  <span>&gt;20°C (Warm)</span>
-                  <span>0°C</span>
-                  <span>-40°C</span>
-                  <span style={{ color: '#f0abfc', fontWeight: 700 }}>&lt;-60°C Deep Tops</span>
+
+                {/* Cloud Mode Selector */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', marginBottom: '6px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setCloudMode('natural')}
+                    style={{
+                      padding: '3px 6px',
+                      fontSize: '9px',
+                      fontWeight: 700,
+                      borderRadius: '4px',
+                      border: cloudMode === 'natural' ? '1px solid #38bdf8' : '1px solid rgba(255,255,255,0.15)',
+                      background: cloudMode === 'natural' ? '#0284c7' : 'rgba(255,255,255,0.05)',
+                      color: '#ffffff',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    ☁️ Natural (White/Grey)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCloudMode('thermal_ir')}
+                    style={{
+                      padding: '3px 6px',
+                      fontSize: '9px',
+                      fontWeight: 700,
+                      borderRadius: '4px',
+                      border: cloudMode === 'thermal_ir' ? '1px solid #c084fc' : '1px solid rgba(255,255,255,0.15)',
+                      background: cloudMode === 'thermal_ir' ? '#7e22ce' : 'rgba(255,255,255,0.05)',
+                      color: '#ffffff',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    🌡️ Thermal IR Temp
+                  </button>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px', gap: '8px' }}>
+
+                {cloudMode === 'natural' ? (
+                  <div style={{ fontSize: '9px', color: '#cbd5e1', marginBottom: '6px' }}>
+                    Real Optical White/Grey Cloud Canopy & Vortex Swirls
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{ height: '8px', borderRadius: '4px', background: 'linear-gradient(to right, #1e293b 0%, #0369a1 25%, #059669 50%, #eab308 65%, #dc2626 80%, #7e22ce 92%, #ffffff 100%)', marginBottom: '4px' }} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#94a3b8', marginBottom: '6px' }}>
+                      <span>&gt;20°C (Warm)</span>
+                      <span>0°C</span>
+                      <span>-40°C</span>
+                      <span style={{ color: '#f0abfc', fontWeight: 700 }}>&lt;-60°C Deep Tops</span>
+                    </div>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
                   <span style={{ color: '#94a3b8', fontSize: '9px' }}>Cloud Opacity:</span>
                   <input
                     type="range"
@@ -684,9 +759,9 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
                     step="0.05"
                     value={cloudIROpacity}
                     onChange={(e) => setCloudIROpacity(parseFloat(e.target.value))}
-                    style={{ cursor: 'pointer', accentColor: '#a855f7', width: '90px' }}
+                    style={{ cursor: 'pointer', accentColor: cloudMode === 'natural' ? '#38bdf8' : '#a855f7', width: '90px' }}
                   />
-                  <span style={{ color: '#c084fc', fontSize: '9px', width: '28px', textAlign: 'right' }}>
+                  <span style={{ color: cloudMode === 'natural' ? '#38bdf8' : '#c084fc', fontSize: '9px', width: '28px', textAlign: 'right' }}>
                     {Math.round(cloudIROpacity * 100)}%
                   </span>
                 </div>

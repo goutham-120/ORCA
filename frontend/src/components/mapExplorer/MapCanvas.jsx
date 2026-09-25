@@ -8,7 +8,7 @@ import {
 } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 
-import { registerOmProtocol, getSatelliteCloudTileUrl } from '../../utils/omProtocolHelper'
+import { registerOmProtocol, getSatelliteCloudTileUrl, getVisibleCloudTileUrl } from '../../utils/omProtocolHelper'
 
 registerOmProtocol()
 
@@ -39,6 +39,13 @@ const DEFAULT_STYLE = {
       tileSize: 256,
       maxzoom: 19,
       attribution: 'Esri Boundaries & Places',
+    },
+    'natural-clouds-source': {
+      type: 'raster',
+      tiles: [getVisibleCloudTileUrl()],
+      tileSize: 256,
+      maxzoom: 9,
+      attribution: 'NASA GIBS / INSAT-3D Optical Visible Cloud Canopy (True-Color)',
     },
     'insat-cloud-ir-source': {
       type: 'raster',
@@ -71,6 +78,17 @@ const DEFAULT_STYLE = {
       source: 'esri-boundaries-source',
       layout: {
         visibility: 'none',
+      },
+    },
+    {
+      id: 'natural-clouds-layer',
+      type: 'raster',
+      source: 'natural-clouds-source',
+      layout: {
+        visibility: 'none',
+      },
+      paint: {
+        'raster-opacity': 0.85,
       },
     },
     {
@@ -304,6 +322,7 @@ export default function MapCanvas({
   landTransit = null,
   baseMapMode = 'standard',
   isCloudIRVisible = false,
+  cloudMode = 'natural',
   cloudIROpacity = 0.75,
 }) {
   const containerRef = useRef(null)
@@ -325,13 +344,15 @@ export default function MapCanvas({
   }, [onMapLocation])
 
   /*
-   * Reactive Basemap & Meteorological Cloud IR Layer Switching
+   * Reactive Basemap & Meteorological Cloud (Natural Optical vs Thermal IR) Layer Switching
    */
   useEffect(() => {
     const map = mapRef.current
     if (!map || mapStatus !== 'ready') return
 
     const isSatellite = baseMapMode === 'satellite'
+    const isNaturalActive = isCloudIRVisible && (cloudMode === 'natural' || !cloudMode)
+    const isThermalActive = isCloudIRVisible && cloudMode === 'thermal_ir'
 
     try {
       if (map.getLayer('base-tiles-osm-layer')) {
@@ -343,14 +364,18 @@ export default function MapCanvas({
       if (map.getLayer('esri-boundaries-layer')) {
         map.setLayoutProperty('esri-boundaries-layer', 'visibility', isSatellite ? 'visible' : 'none')
       }
+      if (map.getLayer('natural-clouds-layer')) {
+        map.setLayoutProperty('natural-clouds-layer', 'visibility', isNaturalActive ? 'visible' : 'none')
+        map.setPaintProperty('natural-clouds-layer', 'raster-opacity', Math.max(0.1, Math.min(1.0, Number(cloudIROpacity) || 0.85)))
+      }
       if (map.getLayer('insat-cloud-ir-layer')) {
-        map.setLayoutProperty('insat-cloud-ir-layer', 'visibility', isCloudIRVisible ? 'visible' : 'none')
+        map.setLayoutProperty('insat-cloud-ir-layer', 'visibility', isThermalActive ? 'visible' : 'none')
         map.setPaintProperty('insat-cloud-ir-layer', 'raster-opacity', Math.max(0.1, Math.min(1.0, Number(cloudIROpacity) || 0.75)))
       }
     } catch (err) {
       console.warn('Basemap/IR layer update warning:', err)
     }
-  }, [baseMapMode, isCloudIRVisible, cloudIROpacity, mapStatus])
+  }, [baseMapMode, isCloudIRVisible, cloudMode, cloudIROpacity, mapStatus])
 
   /*
    * Create the MapLibre map.

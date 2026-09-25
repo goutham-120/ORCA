@@ -16,6 +16,8 @@ export default function MapLayersControl({
   onToggleBaseMapMode,
   isCloudIRVisible = false,
   onToggleCloudIR,
+  cloudMode = 'natural',
+  onToggleCloudMode,
   cloudIROpacity = 0.75,
   onCloudIROpacityChange,
 }) {
@@ -102,14 +104,14 @@ export default function MapLayersControl({
 
       {!loading && (
         <div className="layers-list-container">
-          {/* 1. METEOROLOGICAL CLOUD & THERMAL IR (INSAT-3D/3DR) LAYER */}
+          {/* 1. METEOROLOGICAL SATELLITE CLOUD LAYER (NATURAL OPTICAL VS THERMAL IR) */}
           <div className={`layer-card-chip insat-cloud-chip ${isCloudIRVisible ? 'is-active' : ''}`}>
             <button
               type="button"
               className="layer-click-header"
               onClick={() => onToggleCloudIR?.()}
               aria-pressed={Boolean(isCloudIRVisible)}
-              title="Toggle ISRO INSAT-3D/3DR TIR1 & Water Vapor Cloud-Top Brightness Temperature"
+              title="Toggle Satellite Meteorological Cloud Canopy (Natural Visible White/Grey or Thermal IR Temp)"
             >
               <div className="layer-left-info">
                 <span className="layer-checkbox-custom">
@@ -118,19 +120,19 @@ export default function MapLayersControl({
                 <span className="layer-icon-emoji">☁️</span>
                 <div className="layer-text-group">
                   <span className="layer-title-text" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    INSAT Thermal IR Clouds
-                    <span className="insat-badge">ISRO MOSDAC</span>
+                    Satellite Clouds
+                    <span className="insat-badge">{cloudMode === 'natural' ? 'Optical Visible' : 'ISRO TIR1'}</span>
                   </span>
                   <span className="layer-sub-desc">
-                    TIR1 Cloud-Top Temp (&lt; -60°C Convective Tops)
+                    {cloudMode === 'natural' ? 'Real Optical White/Grey Cloud Canopy' : 'TIR1 Cloud-Top Temp (< -60°C Convective Tops)'}
                   </span>
                 </div>
               </div>
 
               <div className="layer-right-meta">
                 {isCloudIRVisible ? (
-                  <span className="layer-badge" style={{ background: '#7e22ce', color: '#f3e8ff', borderColor: '#a855f7' }}>
-                    Live IR
+                  <span className="layer-badge" style={{ background: cloudMode === 'natural' ? '#0284c7' : '#7e22ce', color: '#ffffff', borderColor: cloudMode === 'natural' ? '#38bdf8' : '#a855f7' }}>
+                    {cloudMode === 'natural' ? 'Visible' : 'Live IR'}
                   </span>
                 ) : (
                   <span className="layer-badge vector">
@@ -141,19 +143,63 @@ export default function MapLayersControl({
             </button>
 
             {isCloudIRVisible && (
-              <div className="cloud-opacity-slider-row">
-                <span className="opacity-label">IR Cloud Opacity:</span>
-                <input
-                  type="range"
-                  min="0.2"
-                  max="1.0"
-                  step="0.05"
-                  value={cloudIROpacity}
-                  onChange={(e) => onCloudIROpacityChange?.(Number(e.target.value))}
-                  className="marine-range-slider"
-                  style={{ height: '4px', flex: 1 }}
-                />
-                <span className="opacity-val font-mono">{Math.round(cloudIROpacity * 100)}%</span>
+              <div style={{ padding: '0 13px 10px 13px', display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px dashed #e9d5ff', background: 'rgba(243, 232, 255, 0.35)' }}>
+                {/* Mode Selector */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginTop: '6px' }}>
+                  <button
+                    type="button"
+                    onClick={() => onToggleCloudMode?.('natural')}
+                    title="Real Optical White/Grey Satellite Photo Cloud Swirls"
+                    style={{
+                      padding: '5px 8px',
+                      fontSize: '10.5px',
+                      fontWeight: 700,
+                      borderRadius: '5px',
+                      border: cloudMode === 'natural' ? '1.5px solid #0284c7' : '1px solid #cbd5e1',
+                      background: cloudMode === 'natural' ? 'linear-gradient(135deg, #0284c7, #0369a1)' : '#ffffff',
+                      color: cloudMode === 'natural' ? '#ffffff' : '#334155',
+                      cursor: 'pointer',
+                      boxShadow: cloudMode === 'natural' ? '0 2px 6px rgba(2, 132, 199, 0.25)' : 'none',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    ☁️ Natural (White/Grey)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onToggleCloudMode?.('thermal_ir')}
+                    title="ISRO INSAT-3D/3DR Thermal IR Brightness Temperature Heatmap"
+                    style={{
+                      padding: '5px 8px',
+                      fontSize: '10.5px',
+                      fontWeight: 700,
+                      borderRadius: '5px',
+                      border: cloudMode === 'thermal_ir' ? '1.5px solid #7e22ce' : '1px solid #cbd5e1',
+                      background: cloudMode === 'thermal_ir' ? 'linear-gradient(135deg, #7e22ce, #6b21a8)' : '#ffffff',
+                      color: cloudMode === 'thermal_ir' ? '#ffffff' : '#334155',
+                      cursor: 'pointer',
+                      boxShadow: cloudMode === 'thermal_ir' ? '0 2px 6px rgba(126, 34, 206, 0.25)' : 'none',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    🌡️ Thermal IR Temp
+                  </button>
+                </div>
+
+                <div className="cloud-opacity-slider-row" style={{ borderTop: 'none', padding: '0' }}>
+                  <span className="opacity-label">Opacity:</span>
+                  <input
+                    type="range"
+                    min="0.2"
+                    max="1.0"
+                    step="0.05"
+                    value={cloudIROpacity}
+                    onChange={(e) => onCloudIROpacityChange?.(Number(e.target.value))}
+                    className="marine-range-slider"
+                    style={{ height: '4px', flex: 1 }}
+                  />
+                  <span className="opacity-val font-mono">{Math.round(cloudIROpacity * 100)}%</span>
+                </div>
               </div>
             )}
           </div>
