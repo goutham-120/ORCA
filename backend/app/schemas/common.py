@@ -21,6 +21,7 @@ class Location(BaseModel):
 
 class EvidenceItem(BaseModel):
     source: str
+    satellite_mission: str | None = None
     summary: str
     url: str | None = None
     observed_at: datetime | None = None

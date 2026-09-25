@@ -1,0 +1,108 @@
+.satellite-orbit-hud {
+  position: absolute;
+  top: 70px;
+  right: 18px;
+  z-index: 1000;
+  width: 310px;
+  background: rgba(4, 17, 31, 0.92);
+  border: 1px solid rgba(34, 185, 242, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), 0 0 16px rgba(34, 185, 242, 0.15);
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: #e2f1fc;
+  backdrop-filter: blur(8px);
+  animation: fadeInRight 0.25s ease-out;
+  font-family: inherit;
+}
+
+@keyframes fadeInRight {
+  from {
+    transform: translateX(12px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.sat-hud-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(34, 185, 242, 0.25);
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+}
+
+.sat-hud-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #38bdf8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sat-hud-close {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.sat-mission-card {
+  background: rgba(11, 46, 73, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+}
+
+.sat-mission-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #f8fafc;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sat-badge-live {
+  background: #065f46;
+  color: #34d399;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
+.sat-detail-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.74rem;
+  color: #94a3b8;
+  margin-top: 3px;
+}
+
+.sat-detail-val {
+  color: #7dd3fc;
+  font-weight: 600;
+}
+
+.sat-payload-tag {
+  display: inline-block;
+  background: rgba(34, 185, 242, 0.15);
+  border: 1px solid rgba(34, 185, 242, 0.3);
+  color: #38bdf8;
+  font-size: 0.68rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-top: 4px;
+  margin-right: 4px;
+}

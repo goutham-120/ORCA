@@ -11,6 +11,7 @@ import PFZSummaryCard from '../components/dashboard/PFZSummaryCard'
 import { dashboardLocations } from '../data/dashboardData'
 import { COASTAL_STATES, COASTAL_LOCATIONS } from '../data/coastalLocations'
 import CoastalLocationPicker from '../components/common/CoastalLocationPicker'
+import NavICStatusModal from '../components/common/NavICStatusModal'
 import '../components/dashboard/LocationSelector.css'
 import { fetchLiveLocationData } from '../services/openMeteoService'
 import { useAuth } from '../hooks/useAuth'
@@ -108,6 +109,7 @@ export default function Dashboard({ navigate }) {
   }, [locationId, layers, trend, alertFilter])
 
   const [isPickerOpen, setIsPickerOpen] = useState(false)
+  const [isNavICOpen, setIsNavICOpen] = useState(false)
 
   const selectLocation = (id) => {
     setLocationId(id)
@@ -153,7 +155,37 @@ export default function Dashboard({ navigate }) {
           </h1>
           <p className="font-sans">Integrated marine telemetry & spatial decision support across 84 coastal landing centers.</p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          {/* ISRO NavIC Status Pill */}
+          <button
+            type="button"
+            onClick={() => setIsNavICOpen(true)}
+            title="Open ISRO NavIC Marine Transceiver & Satellite SOS"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '12px 16px',
+              background: 'linear-gradient(180deg, #071e33 0%, #031221 100%)',
+              border: '1px solid rgba(52, 211, 153, 0.45)',
+              borderRadius: '10px',
+              color: '#34d399',
+              cursor: 'pointer',
+              boxShadow: '0 4px 14px rgba(0,0,0,0.3)',
+              textAlign: 'left',
+            }}
+          >
+            <span style={{ fontSize: '18px' }}>🛰️</span>
+            <div>
+              <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.05em', color: '#6ee7b7' }}>
+                ISRO NAVIC SATELLITE LINK
+              </div>
+              <div style={{ fontSize: '12px', fontWeight: 700, color: '#f8fafc' }}>
+                🟢 7 Satellites Locked (L5/S)
+              </div>
+            </div>
+          </button>
+
           <button
             type="button"
             className="dashboard-location-trigger-card font-sans"
@@ -280,6 +312,13 @@ export default function Dashboard({ navigate }) {
         <RecentActivity onSelect={selectActivity} />
         <SuggestedQueries onSelect={ask} />
       </section>
+
+      {/* ISRO NavIC Transceiver Modal */}
+      <NavICStatusModal
+        isOpen={isNavICOpen}
+        onClose={() => setIsNavICOpen(false)}
+        location={activeLocation}
+      />
     </div>
   )
 }

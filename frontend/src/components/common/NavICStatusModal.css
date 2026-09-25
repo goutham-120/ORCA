@@ -1,0 +1,175 @@
+.navic-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 13, 24, 0.82);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 1rem;
+}
+
+.navic-modal-container {
+  background: linear-gradient(180deg, #07192b 0%, #030f1c 100%);
+  border: 1px solid rgba(34, 185, 242, 0.35);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6), 0 0 24px rgba(34, 185, 242, 0.15);
+  border-radius: 14px;
+  width: 100%;
+  max-width: 620px;
+  color: #e2f1fc;
+  overflow: hidden;
+  animation: navicPop 0.22s ease-out;
+}
+
+@keyframes navicPop {
+  from {
+    transform: scale(0.96);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.navic-modal-header {
+  padding: 1.1rem 1.4rem;
+  background: rgba(11, 46, 73, 0.5);
+  border-bottom: 1px solid rgba(34, 185, 242, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.navic-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #22b9f2;
+  letter-spacing: -0.01em;
+}
+
+.navic-close-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.4rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+
+.navic-close-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.navic-modal-body {
+  padding: 1.4rem;
+  max-height: 75vh;
+  overflow-y: auto;
+}
+
+.navic-status-card {
+  background: rgba(11, 46, 73, 0.4);
+  border: 1px solid rgba(34, 185, 242, 0.2);
+  border-radius: 10px;
+  padding: 1rem 1.2rem;
+  margin-bottom: 1.2rem;
+}
+
+.navic-status-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.navic-stat-box {
+  background: rgba(3, 15, 28, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+  padding: 8px 10px;
+  text-align: center;
+}
+
+.navic-stat-label {
+  font-size: 0.72rem;
+  color: #7dd3fc;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 2px;
+}
+
+.navic-stat-val {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.navic-sat-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 8px;
+  margin: 10px 0 16px 0;
+}
+
+.navic-sat-pill {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 0.76rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.navic-sat-name {
+  font-weight: 700;
+  color: #34d399;
+}
+
+.navic-sat-cno {
+  color: #94a3b8;
+  font-size: 0.7rem;
+}
+
+.navic-packet-box {
+  background: rgba(3, 15, 28, 0.85);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 8px;
+  padding: 12px;
+  font-family: monospace;
+  font-size: 0.82rem;
+  color: #fde68a;
+  word-break: break-all;
+  margin: 10px 0;
+}
+
+.navic-sos-action-btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+  color: #fff;
+  border: 1px solid #ef4444;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.navic-sos-action-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(220, 38, 38, 0.4);
+}

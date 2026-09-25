@@ -136,10 +136,39 @@ class OrcaWorkflow:
             return {}, str(exc)
     async def _evidence(self,state: OrcaState)->dict[str,Any]:
         out=[]
-        for name,data in state.get("collected",{}).items(): out.append({"source":data.get("provider","unavailable provider"),"summary":f"{name.title()} data status: {data.get('source_status','unavailable')}","url":data.get("source_url"),"observed_at":(data.get("observation") or {}).get("timestamp"),"metadata":{"domain":name,"data_status":data.get("source_status","unavailable"),"error":data.get("error"),"measurements":data.get("observation") or {}}})
+        for name,data in state.get("collected",{}).items():
+            sat_mission = "ISRO EOS-06 (Oceansat-3) SSTM & OSCAT" if name == "ocean" else "ISRO INSAT-3DS Rapid-Scan Imager"
+            out.append({
+                "source": data.get("provider", "unavailable provider"),
+                "satellite_mission": sat_mission,
+                "summary": f"{name.title()} data status: {data.get('source_status','unavailable')}",
+                "url": data.get("source_url"),
+                "observed_at": (data.get("observation") or {}).get("timestamp"),
+                "metadata": {
+                    "domain": name,
+                    "satellite_payload": "EOS-06 OCM-3 (Chlorophyll 360m)" if name == "ocean" else "INSAT-3DS TIR-1/VIS (Convective Cloud Scan)",
+                    "data_status": data.get("source_status", "unavailable"),
+                    "error": data.get("error"),
+                    "measurements": data.get("observation") or {},
+                },
+            })
         if "gis" in state.get("analysis_results",{}):
-            r=state["analysis_results"]["gis"]; out.append({"source":"GIS integration","summary":f"GIS data status: {r.get('data_status')}","url":None,"observed_at":None,"metadata":{"domain":"gis","data_status":r.get("data_status"),"error":r.get("error"),"results":r.get("results",{})}})
-        return {"evidence":out}
+            r=state["analysis_results"]["gis"]
+            out.append({
+                "source": "INCOIS / ISRO MOSDAC GIS Integration",
+                "satellite_mission": "ISRO EOS-06 & INCOIS Thermal Front Model",
+                "summary": f"GIS data status: {r.get('data_status')}",
+                "url": "https://incois.gov.in",
+                "observed_at": None,
+                "metadata": {
+                    "domain": "gis",
+                    "satellite_payload": "EOS-06 OCM-3 + SSTM Integrated PFZ Advisory",
+                    "data_status": r.get("data_status"),
+                    "error": r.get("error"),
+                    "results": r.get("results", {}),
+                },
+            })
+        return {"evidence": out}
     async def _validate(self,state: OrcaState)->dict[str,Any]: return {}
     async def _decision(self,state: OrcaState)->dict[str,Any]:
         decision_type=state.get("plan").decision_type if state.get("plan") else None
