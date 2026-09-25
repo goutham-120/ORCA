@@ -259,6 +259,9 @@ export default function MapExplorer({ navigate }) {
   const [isGpsTracking, setIsGpsTracking] = useState(false)
   const [isSatelliteHudOpen, setIsSatelliteHudOpen] = useState(false)
   const [isNavICModalOpen, setIsNavICModalOpen] = useState(false)
+  const [baseMapMode, setBaseMapMode] = useState('standard') // 'standard' | 'satellite'
+  const [isCloudIRVisible, setIsCloudIRVisible] = useState(false)
+  const [cloudIROpacity, setCloudIROpacity] = useState(0.75)
   const watchIdRef = useRef(null)
 
   const pfzEvaluations = useMemo(() => {
@@ -1520,8 +1523,35 @@ export default function MapExplorer({ navigate }) {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
+                  flexWrap: 'wrap',
                 }}
               >
+                {/* ESRI Satellite Basemap Switcher Pill */}
+                <button
+                  type="button"
+                  onClick={() => setBaseMapMode((m) => (m === 'satellite' ? 'standard' : 'satellite'))}
+                  title={baseMapMode === 'satellite' ? 'Switch to Standard Nautical Cartography' : 'Switch to ESRI High-Resolution World Satellite Imagery'}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '7px 13px',
+                    background: baseMapMode === 'satellite' ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : 'rgba(15, 23, 42, 0.92)',
+                    color: baseMapMode === 'satellite' ? '#ffffff' : '#93c5fd',
+                    border: baseMapMode === 'satellite' ? '1px solid #38bdf8' : '1px solid rgba(147, 197, 253, 0.3)',
+                    borderRadius: '20px',
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 14px rgba(0,0,0,0.4)',
+                    backdropFilter: 'blur(6px)',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <span>{baseMapMode === 'satellite' ? '🌍' : '🛰️'}</span>
+                  {baseMapMode === 'satellite' ? 'Satellite Basemap' : 'Satellite View'}
+                </button>
+
                 <button
                   type="button"
                   onClick={() => setIsSatelliteHudOpen((v) => !v)}
@@ -1577,6 +1607,55 @@ export default function MapExplorer({ navigate }) {
                 onClose={() => setIsSatelliteHudOpen(false)}
                 location={selectedLocation}
               />
+
+              {/* INSAT Thermal IR Brightness Temperature Legend (When Cloud Layer is Active) */}
+              {isCloudIRVisible && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    bottom: '24px',
+                    left: '12px',
+                    zIndex: 10,
+                    background: 'rgba(15, 23, 42, 0.92)',
+                    backdropFilter: 'blur(8px)',
+                    border: '1px solid rgba(168, 85, 247, 0.5)',
+                    borderRadius: '10px',
+                    padding: '10px 14px',
+                    color: '#f8fafc',
+                    boxShadow: '0 4px 18px rgba(0,0,0,0.45)',
+                    fontSize: '11px',
+                    maxWidth: '285px',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <strong style={{ color: '#d8b4fe', fontSize: '11.5px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <span>☁️</span> INSAT-3D/3DR Thermal IR
+                    </strong>
+                    <span style={{ fontSize: '9.5px', background: '#581c87', color: '#e9d5ff', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>
+                      ISRO MOSDAC
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '6px' }}>
+                    Cloud-Top Brightness Temp (Kelvin / °C)
+                  </div>
+                  <div
+                    style={{
+                      height: '10px',
+                      borderRadius: '4px',
+                      background: 'linear-gradient(to right, #1e293b 0%, #0369a1 25%, #059669 50%, #eab308 65%, #dc2626 80%, #7e22ce 92%, #ffffff 100%)',
+                      marginBottom: '4px',
+                      boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.3)',
+                    }}
+                  />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#cbd5e1', fontFamily: 'monospace' }}>
+                    <span>Warm (&gt;20°C)</span>
+                    <span>0°C</span>
+                    <span>-40°C</span>
+                    <span style={{ color: '#f0abfc', fontWeight: 700 }}>&lt;-60°C (Convective)</span>
+                  </div>
+                </div>
+              )}
+
               <MapCanvas
                 selectedLocation={selectedLocation}
                 layers={renderedLayers}
@@ -1594,6 +1673,9 @@ export default function MapExplorer({ navigate }) {
                 navigationWaypoints={isRouteVisible ? (liveNavigation.data?.route?.waypoints || []) : []}
                 isTracking={isGpsTracking}
                 landTransit={isRouteVisible ? (liveNavigation.data?.land_transit || null) : null}
+                baseMapMode={baseMapMode}
+                isCloudIRVisible={isCloudIRVisible}
+                cloudIROpacity={cloudIROpacity}
               />
             </div>
           </ComponentErrorBoundary>
@@ -2219,6 +2301,12 @@ export default function MapExplorer({ navigate }) {
               isPFZSyncing={pfzSync.loading}
               searchRadius={searchRadius}
               onRadiusChange={(val) => setSearchRadius(val)}
+              baseMapMode={baseMapMode}
+              onToggleBaseMapMode={setBaseMapMode}
+              isCloudIRVisible={isCloudIRVisible}
+              onToggleCloudIR={() => setIsCloudIRVisible((v) => !v)}
+              cloudIROpacity={cloudIROpacity}
+              onCloudIROpacityChange={setCloudIROpacity}
             />
           </ComponentErrorBoundary>
         </div>

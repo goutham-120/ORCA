@@ -12,6 +12,12 @@ export default function MapLayersControl({
   isPFZSyncing = false,
   searchRadius = 50,
   onRadiusChange,
+  baseMapMode = 'standard',
+  onToggleBaseMapMode,
+  isCloudIRVisible = false,
+  onToggleCloudIR,
+  cloudIROpacity = 0.75,
+  onCloudIROpacityChange,
 }) {
   const safeLayers = Array.isArray(layers) ? layers : []
 
@@ -20,8 +26,8 @@ export default function MapLayersControl({
 
   // Calculate active count
   const activeStandardCount = standardLayers.filter((l) => l?.enabled).length
-  const totalActiveCount = activeStandardCount + (isRouteVisible ? 1 : 0)
-  const totalLayersCount = standardLayers.length + 1
+  const totalActiveCount = activeStandardCount + (isRouteVisible ? 1 : 0) + (isCloudIRVisible ? 1 : 0)
+  const totalLayersCount = standardLayers.length + 2
 
   const getLayerIcon = (id, isPFZ) => {
     if (isPFZ) return '🐟'
@@ -45,14 +51,40 @@ export default function MapLayersControl({
     <div className="map-layers-panel">
       <div className="map-layers-header">
         <div>
-          <p className="eyebrow">MAP LAYERS</p>
+          <p className="eyebrow">MAP VIEW & GIS LAYERS</p>
           <h2>
-            <span>GIS Overlays & Routes</span>
+            <span>Cartography & Overlays</span>
           </h2>
         </div>
         <span className="map-layers-count-badge">
           {totalActiveCount} / {totalLayersCount} Active
         </span>
+      </div>
+
+      {/* 0. BASEMAP MODE SELECTOR */}
+      <div className="basemap-mode-container">
+        <div className="basemap-mode-label">
+          <span>🌍 EARTH BASEMAP</span>
+          <span className="basemap-tag">{baseMapMode === 'satellite' ? 'Maxar/Airbus High-Res' : 'Vector Chart'}</span>
+        </div>
+        <div className="basemap-switch-group">
+          <button
+            type="button"
+            className={`basemap-btn ${baseMapMode === 'standard' ? 'is-active' : ''}`}
+            onClick={() => onToggleBaseMapMode?.('standard')}
+            title="Switch to Standard Nautical / Vector Cartography"
+          >
+            <span>🗺️</span> Standard Chart
+          </button>
+          <button
+            type="button"
+            className={`basemap-btn ${baseMapMode === 'satellite' ? 'is-active' : ''}`}
+            onClick={() => onToggleBaseMapMode?.('satellite')}
+            title="Switch to ESRI High-Resolution World Imagery with Boundaries & Places"
+          >
+            <span>🛰️</span> ESRI Satellite
+          </button>
+        </div>
       </div>
 
       {loading && (
@@ -70,6 +102,61 @@ export default function MapLayersControl({
 
       {!loading && (
         <div className="layers-list-container">
+          {/* 1. METEOROLOGICAL CLOUD & THERMAL IR (INSAT-3D/3DR) LAYER */}
+          <div className={`layer-card-chip insat-cloud-chip ${isCloudIRVisible ? 'is-active' : ''}`}>
+            <button
+              type="button"
+              className="layer-click-header"
+              onClick={() => onToggleCloudIR?.()}
+              aria-pressed={Boolean(isCloudIRVisible)}
+              title="Toggle ISRO INSAT-3D/3DR TIR1 & Water Vapor Cloud-Top Brightness Temperature"
+            >
+              <div className="layer-left-info">
+                <span className="layer-checkbox-custom">
+                  {isCloudIRVisible ? '✓' : ''}
+                </span>
+                <span className="layer-icon-emoji">☁️</span>
+                <div className="layer-text-group">
+                  <span className="layer-title-text" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    INSAT Thermal IR Clouds
+                    <span className="insat-badge">ISRO MOSDAC</span>
+                  </span>
+                  <span className="layer-sub-desc">
+                    TIR1 Cloud-Top Temp (&lt; -60°C Convective Tops)
+                  </span>
+                </div>
+              </div>
+
+              <div className="layer-right-meta">
+                {isCloudIRVisible ? (
+                  <span className="layer-badge" style={{ background: '#7e22ce', color: '#f3e8ff', borderColor: '#a855f7' }}>
+                    Live IR
+                  </span>
+                ) : (
+                  <span className="layer-badge vector">
+                    Off
+                  </span>
+                )}
+              </div>
+            </button>
+
+            {isCloudIRVisible && (
+              <div className="cloud-opacity-slider-row">
+                <span className="opacity-label">IR Cloud Opacity:</span>
+                <input
+                  type="range"
+                  min="0.2"
+                  max="1.0"
+                  step="0.05"
+                  value={cloudIROpacity}
+                  onChange={(e) => onCloudIROpacityChange?.(Number(e.target.value))}
+                  className="marine-range-slider"
+                  style={{ height: '4px', flex: 1 }}
+                />
+                <span className="opacity-val font-mono">{Math.round(cloudIROpacity * 100)}%</span>
+              </div>
+            )}
+          </div>
           {/* 1. STANDARD GIS OVERLAYS */}
           {standardLayers.map((layer) => {
             const count = Array.isArray(layer?.features) ? layer.features.length : (layer?.feature_count || 0)

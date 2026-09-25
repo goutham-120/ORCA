@@ -14,10 +14,15 @@ import { registerOmProtocol, OM_TEMPERATURE_URL, OM_WIND_URL } from '../../utils
 setWorkerUrl(workerUrl)
 registerOmProtocol()
 
+export const ESRI_SATELLITE_TILES = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+export const ESRI_BOUNDARIES_TILES = 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'
+export const INSAT_CLOUD_IR_TILES = 'https://tilecache.rainviewer.com/v2/satellite/latest/256/{z}/{x}/{y}/1/1_1.png'
+
 const layerLabels = {
   temperature: 'Temperature',
   wind: 'Wind',
   currents: 'Ocean Current Direction',
+  insat_clouds: 'INSAT Thermal IR Clouds',
 }
 
 /**
@@ -167,9 +172,11 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
   const [hasDataError, setHasDataError] = useState(false)
   const [lastUpdatedTime, setLastUpdatedTime] = useState(null)
 
-  // Independent Opacity Controls
+  // Independent Opacity & Basemap Controls
+  const [baseMapMode, setBaseMapMode] = useState('standard') // 'standard' | 'satellite'
   const [tempOpacity, setTempOpacity] = useState(0.75)
   const [windOpacity, setWindOpacity] = useState(0.75)
+  const [cloudIROpacity, setCloudIROpacity] = useState(0.75)
 
   const lng = location.longitude ?? 78.9
   const lat = location.latitude ?? 20.5
@@ -237,6 +244,27 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
           tileSize: 256,
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         },
+        'esri-satellite-source': {
+          type: 'raster',
+          tiles: [ESRI_SATELLITE_TILES],
+          tileSize: 256,
+          maxzoom: 19,
+          attribution: 'Tiles &copy; Esri, Maxar, Earthstar Geographics, CNES/Airbus DS, Landsat',
+        },
+        'esri-boundaries-source': {
+          type: 'raster',
+          tiles: [ESRI_BOUNDARIES_TILES],
+          tileSize: 256,
+          maxzoom: 19,
+          attribution: 'Esri Boundaries & Places',
+        },
+        'insat-cloud-ir-source': {
+          type: 'raster',
+          tiles: [INSAT_CLOUD_IR_TILES],
+          tileSize: 256,
+          maxzoom: 8,
+          attribution: 'ISRO MOSDAC / INSAT-3D/3DR TIR1 Cloud-Top Brightness Temperature',
+        },
         'om-temperature-source': {
           type: 'raster',
           url: 'om://' + OM_TEMPERATURE_URL,
@@ -255,6 +283,36 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
           source: 'base-tiles',
           minzoom: 0,
           maxzoom: 19,
+          layout: {
+            visibility: 'visible',
+          },
+        },
+        {
+          id: 'esri-satellite-layer',
+          type: 'raster',
+          source: 'esri-satellite-source',
+          layout: {
+            visibility: 'none',
+          },
+        },
+        {
+          id: 'esri-boundaries-layer',
+          type: 'raster',
+          source: 'esri-boundaries-source',
+          layout: {
+            visibility: 'none',
+          },
+        },
+        {
+          id: 'insat-cloud-ir-layer',
+          type: 'raster',
+          source: 'insat-cloud-ir-source',
+          layout: {
+            visibility: 'none',
+          },
+          paint: {
+            'raster-opacity': 0.75,
+          },
         },
         {
           id: 'om-temperature-layer',
@@ -394,6 +452,22 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
     if (!map) return
 
     const updateProperties = () => {
+      const isSatellite = baseMapMode === 'satellite'
+      const isCloudsActive = Boolean(layers.insat_clouds || layers.cloud_top_temp)
+
+      if (map.getLayer('base-tiles-layer')) {
+        map.setLayoutProperty('base-tiles-layer', 'visibility', isSatellite ? 'none' : 'visible')
+      }
+      if (map.getLayer('esri-satellite-layer')) {
+        map.setLayoutProperty('esri-satellite-layer', 'visibility', isSatellite ? 'visible' : 'none')
+      }
+      if (map.getLayer('esri-boundaries-layer')) {
+        map.setLayoutProperty('esri-boundaries-layer', 'visibility', isSatellite ? 'visible' : 'none')
+      }
+      if (map.getLayer('insat-cloud-ir-layer')) {
+        map.setLayoutProperty('insat-cloud-ir-layer', 'visibility', isCloudsActive ? 'visible' : 'none')
+        map.setPaintProperty('insat-cloud-ir-layer', 'raster-opacity', cloudIROpacity)
+      }
       if (map.getLayer('om-temperature-layer')) {
         map.setLayoutProperty('om-temperature-layer', 'visibility', layers.temperature !== false ? 'visible' : 'none')
         map.setPaintProperty('om-temperature-layer', 'raster-opacity', tempOpacity)
@@ -409,7 +483,7 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
     } else {
       map.once('load', updateProperties)
     }
-  }, [layers.temperature, layers.wind, tempOpacity, windOpacity])
+  }, [baseMapMode, layers.insat_clouds, layers.cloud_top_temp, layers.temperature, layers.wind, tempOpacity, windOpacity, cloudIROpacity])
 
   // Fly map when location selection changes
   useEffect(() => {
@@ -450,7 +524,7 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
       <div className="panel-title">
         <div>
           <p className="eyebrow font-mono">ORCA SPATIAL OVERVIEW</p>
-          <h2 className="font-sans">Open-Meteo Weather & Marine Layers</h2>
+          <h2 className="font-sans">Open-Meteo & Satellite Earth Layers</h2>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {lastUpdatedTime && (
@@ -475,6 +549,34 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
           isVisible={isCurrentsActive}
           observationPoints={oceanCurrentPoints}
         />
+
+        {/* Basemap Mode Quick Toggle Button */}
+        <div style={{ position: 'absolute', top: '12px', left: '12px', zIndex: 10, display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button
+            type="button"
+            onClick={() => setBaseMapMode((m) => (m === 'satellite' ? 'standard' : 'satellite'))}
+            title={baseMapMode === 'satellite' ? 'Switch to Standard Cartography' : 'Switch to ESRI High-Resolution Satellite Basemap with Boundaries'}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 12px',
+              background: baseMapMode === 'satellite' ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : 'rgba(15, 23, 42, 0.92)',
+              color: baseMapMode === 'satellite' ? '#ffffff' : '#93c5fd',
+              border: baseMapMode === 'satellite' ? '1px solid #38bdf8' : '1px solid rgba(147, 197, 253, 0.3)',
+              borderRadius: '20px',
+              fontSize: '11px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+              backdropFilter: 'blur(6px)',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <span>{baseMapMode === 'satellite' ? '🌍' : '🛰️'}</span>
+            {baseMapMode === 'satellite' ? 'Satellite Basemap' : 'Satellite View'}
+          </button>
+        </div>
 
         <div className="map-controls" style={{ position: 'absolute', right: '12px', top: '12px', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '4px' }}>
           <button type="button" onClick={handleZoomIn} aria-label="Zoom in">+</button>
@@ -502,7 +604,7 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
           }}
         >
           <div style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94a3b8', marginBottom: '6px', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '3px', display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
-            <span>OPEN-METEO PROTOCOL (OM://)</span>
+            <span>SPATIAL & METEOROLOGICAL LAYERS</span>
             {lastUpdatedTime && <span>UPDATED: {lastUpdatedTime}</span>}
           </div>
 
@@ -560,8 +662,39 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
               </div>
             )}
 
-            {isCurrentsActive && (
+            {Boolean(layers.insat_clouds) && (
               <div style={{ borderTop: (layers.temperature !== false || Boolean(layers.wind)) ? '1px solid rgba(255,255,255,0.08)' : 'none', paddingTop: (layers.temperature !== false || Boolean(layers.wind)) ? '6px' : '0' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, color: '#c084fc', marginBottom: '4px' }}>
+                  <span>INSAT-3D/3DR THERMAL IR</span>
+                  <span style={{ fontSize: '9px', color: '#e9d5ff' }}>ISRO MOSDAC</span>
+                </div>
+                <div style={{ height: '8px', borderRadius: '4px', background: 'linear-gradient(to right, #1e293b 0%, #0369a1 25%, #059669 50%, #eab308 65%, #dc2626 80%, #7e22ce 92%, #ffffff 100%)', marginBottom: '4px' }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#94a3b8' }}>
+                  <span>&gt;20°C (Warm)</span>
+                  <span>0°C</span>
+                  <span>-40°C</span>
+                  <span style={{ color: '#f0abfc', fontWeight: 700 }}>&lt;-60°C Deep Tops</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px', gap: '8px' }}>
+                  <span style={{ color: '#94a3b8', fontSize: '9px' }}>Cloud Opacity:</span>
+                  <input
+                    type="range"
+                    min="0.1"
+                    max="1.0"
+                    step="0.05"
+                    value={cloudIROpacity}
+                    onChange={(e) => setCloudIROpacity(parseFloat(e.target.value))}
+                    style={{ cursor: 'pointer', accentColor: '#a855f7', width: '90px' }}
+                  />
+                  <span style={{ color: '#c084fc', fontSize: '9px', width: '28px', textAlign: 'right' }}>
+                    {Math.round(cloudIROpacity * 100)}%
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {isCurrentsActive && (
+              <div style={{ borderTop: (layers.temperature !== false || Boolean(layers.wind) || Boolean(layers.insat_clouds)) ? '1px solid rgba(255,255,255,0.08)' : 'none', paddingTop: (layers.temperature !== false || Boolean(layers.wind) || Boolean(layers.insat_clouds)) ? '6px' : '0' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, color: '#38bdf8', marginBottom: '6px' }}>
                   <span>OCEAN CURRENT DIRECTION</span>
                   <span style={{ fontSize: '9px', color: '#94a3b8' }}>Static Flow Lines</span>
@@ -590,8 +723,8 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
               </div>
             )}
 
-            {layers.temperature === false && !layers.wind && !isCurrentsActive && (
-              <span style={{ color: '#64748b', fontStyle: 'italic' }}>Select Temperature, Wind, or Ocean Current Direction layer below to activate spatial overlays.</span>
+            {layers.temperature === false && !layers.wind && !isCurrentsActive && !layers.insat_clouds && (
+              <span style={{ color: '#64748b', fontStyle: 'italic' }}>Select Temperature, Wind, Ocean Current, or INSAT Clouds below to activate spatial overlays.</span>
             )}
           </div>
         </div>

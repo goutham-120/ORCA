@@ -8,22 +8,78 @@ import {
 } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 
-const DEFAULT_STYLE = import.meta.env.VITE_MAP_STYLE_URL || {
+export const ESRI_SATELLITE_TILES = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+export const ESRI_BOUNDARIES_TILES = 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'
+export const OSM_TILES = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
+export const INSAT_CLOUD_IR_TILES = 'https://tilecache.rainviewer.com/v2/satellite/latest/256/{z}/{x}/{y}/1/1_1.png'
+
+const DEFAULT_STYLE = {
   version: 8,
   sources: {
-    openstreetmap: {
+    'base-tiles-osm': {
       type: 'raster',
-      tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+      tiles: [OSM_TILES],
       tileSize: 256,
       maxzoom: 19,
       attribution: '© OpenStreetMap contributors',
     },
+    'esri-satellite-source': {
+      type: 'raster',
+      tiles: [ESRI_SATELLITE_TILES],
+      tileSize: 256,
+      maxzoom: 19,
+      attribution: 'Tiles &copy; Esri, Maxar, Earthstar Geographics, CNES/Airbus DS, Landsat',
+    },
+    'esri-boundaries-source': {
+      type: 'raster',
+      tiles: [ESRI_BOUNDARIES_TILES],
+      tileSize: 256,
+      maxzoom: 19,
+      attribution: 'Esri Boundaries & Places',
+    },
+    'insat-cloud-ir-source': {
+      type: 'raster',
+      tiles: [INSAT_CLOUD_IR_TILES],
+      tileSize: 256,
+      maxzoom: 8,
+      attribution: 'ISRO MOSDAC / INSAT-3D/3DR TIR1 Cloud-Top Brightness Temperature',
+    },
   },
   layers: [
     {
-      id: 'openstreetmap',
+      id: 'base-tiles-osm-layer',
       type: 'raster',
-      source: 'openstreetmap',
+      source: 'base-tiles-osm',
+      layout: {
+        visibility: 'visible',
+      },
+    },
+    {
+      id: 'esri-satellite-layer',
+      type: 'raster',
+      source: 'esri-satellite-source',
+      layout: {
+        visibility: 'none',
+      },
+    },
+    {
+      id: 'esri-boundaries-layer',
+      type: 'raster',
+      source: 'esri-boundaries-source',
+      layout: {
+        visibility: 'none',
+      },
+    },
+    {
+      id: 'insat-cloud-ir-layer',
+      type: 'raster',
+      source: 'insat-cloud-ir-source',
+      layout: {
+        visibility: 'none',
+      },
+      paint: {
+        'raster-opacity': 0.75,
+      },
     },
   ],
 }
@@ -243,6 +299,9 @@ export default function MapCanvas({
   navigationWaypoints = [],
   isTracking = false,
   landTransit = null,
+  baseMapMode = 'standard',
+  isCloudIRVisible = false,
+  cloudIROpacity = 0.75,
 }) {
   const containerRef = useRef(null)
   const mapRef = useRef(null)
@@ -261,6 +320,34 @@ export default function MapCanvas({
   useEffect(() => {
     locationHandlerRef.current = onMapLocation
   }, [onMapLocation])
+
+  /*
+   * Reactive Basemap & Meteorological Cloud IR Layer Switching
+   */
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || mapStatus !== 'ready') return
+
+    const isSatellite = baseMapMode === 'satellite'
+
+    try {
+      if (map.getLayer('base-tiles-osm-layer')) {
+        map.setLayoutProperty('base-tiles-osm-layer', 'visibility', isSatellite ? 'none' : 'visible')
+      }
+      if (map.getLayer('esri-satellite-layer')) {
+        map.setLayoutProperty('esri-satellite-layer', 'visibility', isSatellite ? 'visible' : 'none')
+      }
+      if (map.getLayer('esri-boundaries-layer')) {
+        map.setLayoutProperty('esri-boundaries-layer', 'visibility', isSatellite ? 'visible' : 'none')
+      }
+      if (map.getLayer('insat-cloud-ir-layer')) {
+        map.setLayoutProperty('insat-cloud-ir-layer', 'visibility', isCloudIRVisible ? 'visible' : 'none')
+        map.setPaintProperty('insat-cloud-ir-layer', 'raster-opacity', Math.max(0.1, Math.min(1.0, Number(cloudIROpacity) || 0.75)))
+      }
+    } catch (err) {
+      console.warn('Basemap/IR layer update warning:', err)
+    }
+  }, [baseMapMode, isCloudIRVisible, cloudIROpacity, mapStatus])
 
   /*
    * Create the MapLibre map.
