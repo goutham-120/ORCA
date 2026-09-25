@@ -56,11 +56,17 @@ class RouteAnalysisService:
         weather: WeatherTool | None = None,
         ocean: OceanTool | None = None,
         gis: GISTool | None = None,
+        satellite_overpass: Any | None = None,
     ) -> None:
         self.repository = repository or spatial_features
         self.weather = weather or WeatherTool()
         self.ocean = ocean or OceanTool()
         self.gis = gis or GISTool()
+        if satellite_overpass is not None:
+            self.satellite_overpass = satellite_overpass
+        else:
+            from app.services.satellite_overpass_service import satellite_overpass_service
+            self.satellite_overpass = satellite_overpass_service
 
     async def analyze_route(
         self,
@@ -80,12 +86,20 @@ class RouteAnalysisService:
         orig_pt = [origin_validated["longitude"], origin_validated["latitude"]]
         dest_pt = [dest_validated["longitude"], dest_validated["latitude"]]
 
-        # 1. Fetch active hazard and restricted features
+        # 1. Fetch active hazard and restricted features (including satellite-derived hazards)
         hazard_and_restricted = [
             r for r in self.repository.list()
-            if (getattr(r, "layer", "") or "").lower() in ("hazards", "restricted_zones", "ibtracs", "cyclone")
-               or (getattr(r, "dataset", "") or "").lower() in ("hazards", "restricted_zones", "ibtracs", "cyclone")
+            if self._is_obstacle_feature(r)
         ]
+
+        if hasattr(self.satellite_overpass, "get_satellite_hazard_features"):
+            try:
+                sat_hazards = self.satellite_overpass.get_satellite_hazard_features()
+                for sat_h in sat_hazards:
+                    if self._is_obstacle_feature(sat_h) and sat_h not in hazard_and_restricted:
+                        hazard_and_restricted.append(sat_h)
+            except Exception:
+                pass
 
         # 2. Check Direct Line
         direct_line = {
@@ -114,8 +128,8 @@ class RouteAnalysisService:
         final_route_geom = direct_line
 
         if intersected_hazards:
-            # Run maritime graph A* pathfinder
-            optimized_geom = self._find_optimal_maritime_route(orig_pt, dest_pt, conflicting_features)
+            # Run maritime graph A* pathfinder evaluated against ALL active hazard_and_restricted features
+            optimized_geom = self._find_optimal_maritime_route(orig_pt, dest_pt, hazard_and_restricted)
             if optimized_geom:
                 final_route_geom = optimized_geom
                 alternative_used = True
@@ -128,7 +142,10 @@ class RouteAnalysisService:
             else:
                 gis_status = "unsuitable"
                 gis_label = "Hazard Zone Blocked"
-                gis_summary = f"Route passes directly through impenetrable hazard/restricted zone(s): {', '.join(intersected_hazards)}."
+                gis_summary = (
+                    f"Route passes directly through impenetrable hazard/restricted zone(s): {', '.join(intersected_hazards)}. "
+                    f"No safe alternate route could be found."
+                )
         else:
             gis_status = "suitable"
             gis_label = "Safe Passage"
@@ -303,6 +320,33 @@ class RouteAnalysisService:
             "detected_risks": detected_risks,
         }
 
+    def _is_obstacle_feature(self, record: Any) -> bool:
+        if not record:
+            return False
+        layer_str = (getattr(record, "layer", "") or "").lower()
+        dataset_str = (getattr(record, "dataset", "") or "").lower()
+        source_str = (getattr(record, "source", "") or "").lower()
+        props = getattr(record, "properties", {}) or {}
+        h_type = str(props.get("hazard_type", "")).lower()
+        z_type = str(props.get("zone_type", "")).lower()
+        sat_name = str(props.get("satellite", "")).lower()
+
+        keywords = (
+            "hazard", "restricted", "exclusion", "danger",
+            "cyclone", "ibtracs", "storm", "no_go", "obstacle",
+            "satellite_hazard", "swath_hazard"
+        )
+        return (
+            any(kw in layer_str for kw in keywords)
+            or any(kw in dataset_str for kw in keywords)
+            or any(kw in h_type for kw in keywords)
+            or any(kw in z_type for kw in keywords)
+            or (
+                ("satellite" in source_str or "isro" in source_str or sat_name != "")
+                and any(kw in layer_str or kw in dataset_str or kw in h_type for kw in ("hazard", "danger", "storm", "cyclone", "obstacle", "exclusion"))
+            )
+        )
+
     def _find_optimal_maritime_route(
         self,
         orig_pt: list[float],
@@ -311,6 +355,8 @@ class RouteAnalysisService:
     ) -> dict[str, Any] | None:
         """
         Fine-grained maritime A* detour pathfinding around conflict polygons.
+        Evaluates candidate routes against all active obstacle features.
+        Selects the shortest safe route clear of all obstacles.
         """
         mid_lon = (orig_pt[0] + dest_pt[0]) / 2.0
         mid_lat = (orig_pt[1] + dest_pt[1]) / 2.0
@@ -323,31 +369,54 @@ class RouteAnalysisService:
         px = -dy / length
         py = dx / length
 
-        candidates = []
-        # Multi-scale detour offsets (from fine 1.5km to wide 50km)
-        detour_offsets = [0.015, -0.015, 0.03, -0.03, 0.06, -0.06, 0.10, -0.10, 0.18, -0.18, 0.30, -0.30, 0.50, -0.50]
+        candidates: list[tuple[float, dict[str, Any]]] = []
+        # Multi-scale detour offsets (from fine ~1.5km to wide ~110km)
+        detour_offsets = [
+            0.015, -0.015, 0.03, -0.03, 0.06, -0.06, 0.10, -0.10,
+            0.18, -0.18, 0.30, -0.30, 0.50, -0.50, 0.75, -0.75, 1.0, -1.0
+        ]
         for mult in detour_offsets:
-            wp = [round(mid_lon + px * mult, 4), round(mid_lat + py * mult, 4)]
+            wp = [round(mid_lon + px * mult, 5), round(mid_lat + py * mult, 5)]
             geom = {
                 "type": "LineString",
                 "coordinates": [orig_pt, wp, dest_pt],
             }
             if self._is_path_clear(geom, conflicts):
-                cost = math.sqrt((wp[0]-orig_pt[0])**2 + (wp[1]-orig_pt[1])**2) + math.sqrt((dest_pt[0]-wp[0])**2 + (dest_pt[1]-wp[1])**2)
+                cost = (
+                    math.sqrt((wp[0] - orig_pt[0])**2 + (wp[1] - orig_pt[1])**2) +
+                    math.sqrt((dest_pt[0] - wp[0])**2 + (dest_pt[1] - wp[1])**2)
+                )
                 candidates.append((cost, geom))
 
         # Multi-point box detours around wide polygons
-        if not candidates:
-            detour_box_offsets = [0.025, -0.025, 0.05, -0.05, 0.10, -0.10, 0.20, -0.20, 0.35, -0.35, 0.50, -0.50]
-            for mult in detour_box_offsets:
-                wp1 = [round(orig_pt[0] + 0.33 * dx + px * mult, 4), round(orig_pt[1] + 0.33 * dy + py * mult, 4)]
-                wp2 = [round(orig_pt[0] + 0.67 * dx + px * mult, 4), round(orig_pt[1] + 0.67 * dy + py * mult, 4)]
+        detour_box_offsets = [
+            0.025, -0.025, 0.05, -0.05, 0.10, -0.10, 0.20, -0.20,
+            0.35, -0.35, 0.50, -0.50, 0.75, -0.75, 1.0, -1.0
+        ]
+        for mult in detour_box_offsets:
+            wp1 = [round(orig_pt[0] + 0.33 * dx + px * mult, 5), round(orig_pt[1] + 0.33 * dy + py * mult, 5)]
+            wp2 = [round(orig_pt[0] + 0.67 * dx + px * mult, 5), round(orig_pt[1] + 0.67 * dy + py * mult, 5)]
+            geom = {
+                "type": "LineString",
+                "coordinates": [orig_pt, wp1, wp2, dest_pt],
+            }
+            if self._is_path_clear(geom, conflicts):
+                cost = math.sqrt(dx*dx + dy*dy) + abs(mult) * 2.2
+                candidates.append((cost, geom))
+
+        # Asymmetric waypoint detours (for irregular or angled obstacles)
+        for frac in [0.25, 0.75]:
+            for mult in detour_offsets:
+                wp = [round(orig_pt[0] + frac * dx + px * mult, 5), round(orig_pt[1] + frac * dy + py * mult, 5)]
                 geom = {
                     "type": "LineString",
-                    "coordinates": [orig_pt, wp1, wp2, dest_pt],
+                    "coordinates": [orig_pt, wp, dest_pt],
                 }
                 if self._is_path_clear(geom, conflicts):
-                    cost = math.sqrt(dx*dx + dy*dy) + abs(mult) * 2
+                    cost = (
+                        math.sqrt((wp[0] - orig_pt[0])**2 + (wp[1] - orig_pt[1])**2) +
+                        math.sqrt((dest_pt[0] - wp[0])**2 + (dest_pt[1] - wp[1])**2)
+                    )
                     candidates.append((cost, geom))
 
         if candidates:

@@ -563,7 +563,7 @@ async def navigate_nearest_pfz(
     selected_geom = discovery.get("selected_geometry")
     all_candidates = discovery.get("all_pfzs") or discovery.get("candidate_pfzs") or []
 
-    if not selected or not selected_geom:
+    if not selected or not selected_geom or discovery.get("status") == "no_pfz_found" or discovery.get("overall_suitability") == "no_pfz_in_radius":
         closest_cand = None
         closest_dist = None
         if all_candidates:
@@ -583,7 +583,7 @@ async def navigate_nearest_pfz(
             has_pfz=False,
             status="no_pfz_found",
             message=msg,
-            selected_pfz=closest_cand,
+            selected_pfz=None,
             distance_km=closest_dist,
             distance_nm=round(closest_dist * 0.539957, 1) if closest_dist else None,
             candidate_count=len(all_candidates),
@@ -652,15 +652,29 @@ async def navigate_nearest_pfz(
         "has_land_transit": land_transit.get("land_transit_needed", False),
     }
 
-    status_msg = (
-        f"Multi-modal route: {land_transit.get('summary_text', '')} Ocean passage: {sea_dist_nm} NM, Course {bearing:g}° {cardinal}."
-        if land_transit.get("land_transit_needed")
-        else f"Safe navigation route generated to {nav_summary['pfz_name']} ({sea_dist_nm} NM, Course {bearing:g}° {cardinal})."
-    )
+    if detailed_route.gis_analysis.get("status") == "unsuitable":
+        status_code = "route_blocked"
+        status_msg = (
+            f"No safe navigation route to {nav_summary['pfz_name']} could be found. "
+            f"Direct passage and alternate detours are blocked by hazard/restricted zones."
+        )
+    elif detailed_route.alternative_used:
+        status_code = "ready_to_navigate"
+        status_msg = (
+            f"Safer alternate route automatically calculated around hazards to {nav_summary['pfz_name']} "
+            f"({detailed_route.route_distance_nm} NM, Course {bearing:g}° {cardinal})."
+        )
+    else:
+        status_code = "ready_to_navigate"
+        status_msg = (
+            f"Multi-modal route: {land_transit.get('summary_text', '')} Ocean passage: {sea_dist_nm} NM, Course {bearing:g}° {cardinal}."
+            if land_transit.get("land_transit_needed")
+            else f"Safe navigation route generated to {nav_summary['pfz_name']} ({sea_dist_nm} NM, Course {bearing:g}° {cardinal})."
+        )
 
     return NavigateNearestPFZResponse(
         has_pfz=True,
-        status="ready_to_navigate",
+        status=status_code,
         message=status_msg,
         selected_pfz=selected,
         distance_km=round(sea_dist_km, 2),
