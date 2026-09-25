@@ -8,7 +8,7 @@ import {
 } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 
-import { registerOmProtocol, OM_CLOUDS_URL } from '../../utils/omProtocolHelper'
+import { registerOmProtocol, getSatelliteCloudTileUrl } from '../../utils/omProtocolHelper'
 
 registerOmProtocol()
 
@@ -42,8 +42,10 @@ const DEFAULT_STYLE = {
     },
     'insat-cloud-ir-source': {
       type: 'raster',
-      url: 'om://' + OM_CLOUDS_URL,
-      maxzoom: 12,
+      tiles: [getSatelliteCloudTileUrl()],
+      tileSize: 256,
+      maxzoom: 8,
+      attribution: 'ISRO MOSDAC / Satellite Thermal Infrared Cloud Canopy (10.4µm TIR1)',
     },
   },
   layers: [
