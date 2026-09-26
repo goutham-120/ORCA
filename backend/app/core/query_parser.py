@@ -23,7 +23,7 @@ class QueryParser:
         "route": ("route", "navigate", "voyage", "path", "safest route", "waypoint"),
         "safety": ("safe", "safety", "risk", "safe to venture"),
         "weather": ("weather", "wind", "rain", "storm", "temperature", "forecast", "lightning"),
-        "ocean": ("ocean", "marine", "wave", "current", "sea", "swell", "tide", "high tide", "low tide", "currents"),
+        "ocean": ("ocean", "marine", "wave", "current", "sea", "swell", "tide", "high tide", "low tide", "currents", "mackerel", "sardine", "tuna", "pomfret", "hilsa", "species", "environmental parameters", "environmental conditions"),
         "map": ("map", "layer", "area", "zone", "location", "distance", "coordinates", "boundary", "coastal"),
         "gis": ("restricted", "hazard zone", "spatial", "geofence", "mpa", "protected area"),
         "pfz": ("pfz", "fishing zone", "potential fishing zone", "chlorophyll"),

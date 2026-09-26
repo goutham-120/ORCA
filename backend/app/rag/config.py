@@ -47,9 +47,12 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
-# Repo root is two levels above this file:  backend/app/rag/config.py
-_REPO_ROOT = Path(__file__).resolve().parents[4]
-_BACKEND_ROOT = Path(__file__).resolve().parents[3]
+# File: backend/app/rag/config.py
+# parents[0] = app/rag, parents[1] = app, parents[2] = backend, parents[3] = ORCA repo root
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+_BACKEND_ROOT = Path(__file__).resolve().parents[2]
+
+DEFAULT_EMBEDDING_MODEL = "intfloat/multilingual-e5-small"
 
 
 @dataclass(frozen=True)
@@ -57,13 +60,17 @@ class RAGSettings:
     enabled: bool = False
     vector_db: str = "chroma"
     collection: str = "orca_knowledge"
-    embedding_model: str = ""
+    embedding_model: str = DEFAULT_EMBEDDING_MODEL
     top_k: int = 5
     min_relevance_score: float = 0.35
     knowledge_path: Path = field(default_factory=lambda: _REPO_ROOT / "orca-knowledge")
     persist_directory: Path = field(
         default_factory=lambda: _BACKEND_ROOT / "data" / "rag" / "chroma"
     )
+
+    @property
+    def collection_name(self) -> str:
+        return self.collection
 
 
 def get_rag_settings() -> RAGSettings:
@@ -103,7 +110,10 @@ def get_rag_settings() -> RAGSettings:
         enabled=enabled,
         vector_db=os.getenv("RAG_VECTOR_DB", "chroma").strip().lower(),
         collection=os.getenv("RAG_COLLECTION", "orca_knowledge").strip(),
-        embedding_model=os.getenv("RAG_EMBEDDING_MODEL", "").strip(),
+        embedding_model=(
+            os.getenv("RAG_EMBEDDING_MODEL", DEFAULT_EMBEDDING_MODEL).strip()
+            or DEFAULT_EMBEDDING_MODEL
+        ),
         top_k=top_k,
         min_relevance_score=min_score,
         knowledge_path=knowledge_path,

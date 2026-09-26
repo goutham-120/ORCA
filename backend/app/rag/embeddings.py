@@ -1,64 +1,100 @@
 """Embedding provider for the ORCA RAG pipeline.
 
-Phase 1: Skeleton only — interfaces defined, implementation deferred to Phase 2.
-
-Responsibilities (Phase 2):
-- Load a Sentence-Transformers model (default: all-MiniLM-L6-v2)
-- Encode a list of strings into dense float vectors
-- Cache the model in memory between calls
-- Support configurable model name via RAG_EMBEDDING_MODEL
+Supports multilingual Sentence-Transformers models with special handling for
+asymmetric retrieval models (such as intfloat/multilingual-e5-small) that require
+"query: " and "passage: " prefixes.
 """
 from __future__ import annotations
 
 import logging
+import os
 from typing import Protocol
 
-logger = logging.getLogger(__name__)
+from app.rag.config import DEFAULT_EMBEDDING_MODEL
 
-# Default model — lightweight, 384-dim, runs on CPU without GPU.
-DEFAULT_EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
+logger = logging.getLogger(__name__)
 
 
 class EmbeddingProvider(Protocol):
     """Minimal interface that any embedding backend must satisfy."""
 
-    def encode(self, texts: list[str]) -> list[list[float]]:
-        """Encode texts to dense float vectors.
+    def encode_documents(self, texts: list[str], batch_size: int = 32) -> list[list[float]]:
+        ...
 
-        Parameters
-        ----------
-        texts:
-            Batch of strings to encode.
-
-        Returns
-        -------
-        list[list[float]]
-            One embedding vector per input string.
-        """
+    def encode_query(self, query: str) -> list[float]:
         ...
 
 
 class SentenceTransformerEmbeddings:
     """Sentence-Transformers backed embedding provider.
 
-    Phase 1: Constructor and interface only. ``encode()`` raises NotImplementedError.
-    ``sentence-transformers`` is NOT imported at module level so it is safe to
-    import this file even when the package is not installed.
+    Configured by default to use `intfloat/multilingual-e5-small` or the model
+    specified by the RAG_EMBEDDING_MODEL environment variable.
     """
 
-    def __init__(self, model_name: str = DEFAULT_EMBEDDING_MODEL) -> None:
-        self.model_name = model_name
-        self._model = None  # Lazy-loaded in Phase 2
-
-    def encode(self, texts: list[str]) -> list[list[float]]:
-        """Encode texts using the configured Sentence-Transformers model.
-
-        Raises
-        ------
-        NotImplementedError
-            Phase 1 stub — full implementation deferred to Phase 2.
-        """
-        raise NotImplementedError(
-            "SentenceTransformerEmbeddings.encode() is not yet implemented. "
-            "This will be implemented in RAG Phase 2."
+    def __init__(self, model_name: str | None = None) -> None:
+        self.model_name = (
+            model_name
+            or os.getenv("RAG_EMBEDDING_MODEL", DEFAULT_EMBEDDING_MODEL).strip()
+            or DEFAULT_EMBEDDING_MODEL
         )
+        self._model = None
+        self.is_e5 = "e5" in self.model_name.lower()
+
+    @property
+    def model(self):
+        """Lazy load the SentenceTransformer model on first use."""
+        if self._model is None:
+            logger.info("Loading embedding model: %s", self.model_name)
+            from sentence_transformers import SentenceTransformer
+
+            self._model = SentenceTransformer(self.model_name)
+        return self._model
+
+    def encode_documents(
+        self, texts: list[str], batch_size: int = 32, show_progress: bool = False
+    ) -> list[list[float]]:
+        """Encode documents/passages for indexing.
+
+        For E5 models, each passage is prefixed with 'passage: ' as required by
+        the E5 training objective.
+        """
+        if not texts:
+            return []
+
+        formatted = (
+            [f"passage: {t}" for t in texts]
+            if self.is_e5
+            else texts
+        )
+
+        embeddings = self.model.encode(
+            formatted,
+            batch_size=batch_size,
+            normalize_embeddings=True,
+            show_progress_bar=show_progress,
+        )
+        return embeddings.tolist()
+
+    def encode_query(self, query: str) -> list[float]:
+        """Encode a single query string for vector search.
+
+        For E5 models, the query is prefixed with 'query: ' as required by
+        the E5 training objective.
+        """
+        formatted = f"query: {query}" if self.is_e5 else query
+        emb = self.model.encode([formatted], normalize_embeddings=True)[0]
+        return emb.tolist()
+
+    def embed_documents(
+        self,
+        texts: list[str],
+        batch_size: int = 32,
+        show_progress: bool = False,
+    ) -> list[list[float]]:
+        """Alias for encode_documents."""
+        return self.encode_documents(texts, batch_size=batch_size, show_progress=show_progress)
+
+    def embed_query(self, query: str) -> list[float]:
+        """Alias for encode_query."""
+        return self.encode_query(query)

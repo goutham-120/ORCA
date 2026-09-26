@@ -9,9 +9,11 @@ from app.core.conversation import synthesize_answer
 from app.core.conversation_store import ConversationStore
 from app.core.query_parser import QueryParser
 from app.schemas.common import Location
-from app.schemas.orca import OrcaQueryRequest, OrcaQueryResponse
+from app.schemas.orca import OrcaQueryRequest, OrcaQueryResponse, RAGResponsePayload
 from app.providers.open_meteo import geocoder
+from app.rag.config import get_rag_settings
 from app.workflows.orca_graph import OrcaWorkflow
+
 
  
 class OrcaOrchestrator:
@@ -59,7 +61,14 @@ class OrcaOrchestrator:
                     answer = "General conversation is unavailable because the configured LLM provider denied access. Check the API key, account permissions, and provider endpoint."
                 else:
                     answer = "General conversation is temporarily unavailable because the configured LLM provider request failed. Check the server log and your API key, model access, and account billing."
-            return OrcaQueryResponse(query_id=str(uuid4()), answer=answer, intent="general_chat", agents_used=[], selected_agents=[], assessment=None, recommendations=[], evidence=[], created_at=datetime.now(timezone.utc), conversation_id=request.conversation_id or str(uuid4()), language=resp_lang, context={"response_language": resp_lang, "llm_mode": "llm" if llm_answer else "deterministic_fallback", "llm_synthesis_attempted": False}, pending_domains=[], unavailable_domains=[], response_kind="general")
+            rag_info = RAGResponsePayload(
+                used=False,
+                status="disabled" if not get_rag_settings().enabled else "skipped",
+                query=request.query,
+                retrieved_chunks=[],
+                sources=[],
+            )
+            return OrcaQueryResponse(query_id=str(uuid4()), answer=answer, intent="general_chat", agents_used=[], selected_agents=[], assessment=None, recommendations=[], evidence=[], created_at=datetime.now(timezone.utc), conversation_id=request.conversation_id or str(uuid4()), language=resp_lang, context={"response_language": resp_lang, "llm_mode": "llm" if llm_answer else "deterministic_fallback", "llm_synthesis_attempted": False}, pending_domains=[], unavailable_domains=[], response_kind="general", rag=rag_info)
         metadata = dict(request.context)
         # Server state is authoritative; client context is only a backwards-compatible fallback.
         prior = self.conversations.get(request.conversation_id)
@@ -155,7 +164,18 @@ class OrcaOrchestrator:
                 "longitude": location["longitude"],
                 "label": location.get("label") or metadata.get("requested_location") or "Selected map coordinate",
             }
-        answer = result.get("answer") if result.get("llm_synthesis") else None
+        rag_raw = result.get("rag_payload") or {}
+        rag_info = RAGResponsePayload(
+            used=bool(rag_raw.get("used", False)),
+            status=str(rag_raw.get("status", "disabled")),
+            query=str(rag_raw.get("query", request.query)),
+            retrieved_chunks=rag_raw.get("retrieved_chunks", []),
+            sources=rag_raw.get("sources", []),
+        )
+        if rag_info.used and rag_info.sources:
+            response_context["rag_sources"] = rag_info.sources
+
+        answer = result.get("answer") if (result.get("llm_synthesis") or result.get("rag_used")) else None
         answer = answer or synthesize_answer(request.query, assessment, result.get("analysis_results", {}), pending_domains, response_context, resp_lang, decision)
         conversation_id = request.conversation_id or str(uuid4())
         self.conversations.put(conversation_id, response_context)
@@ -189,6 +209,7 @@ class OrcaOrchestrator:
             execution_steps=execution_steps,
             trace=trace,
             spatial_data=spatial_data,
+            rag=rag_info,
         )
 
 
