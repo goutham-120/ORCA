@@ -126,6 +126,8 @@ class OpenAICompatibleLLM:
             "6. If evidence is missing or partial, explain that plainly and do not give an unverified safety clearance.\n"
             "7. Do not mention internal agents, LangGraph nodes, pending capabilities, or software implementation details.\n"
             "8. Keep all responses strictly marine-domain restricted.\n"
-            "9. If retrieved knowledge sources were provided, cite them concisely at the end (e.g. Sources: CMFRI — ...)."
+            "9. If retrieved knowledge sources were provided, cite them concisely at the end (e.g. Sources: CMFRI — ...).\n"
+            "10. Temporal Grounding: Do not present static documents or future regulatory orders as currently active today without qualification; explicitly identify the relevant year or date mentioned in the document.\n"
+            "11. Insufficient Evidence: If a query asks for specific statutory penalties, exact fish prices, coordinates, or measurements not contained in the supplied context, explicitly state that official records in the knowledge base do not specify that detail. Never invent fines, phone numbers, or coordinates."
         )
         return self._response_text(prompt, instructions)

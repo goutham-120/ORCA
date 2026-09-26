@@ -457,11 +457,25 @@ class OrcaWorkflow:
             else None
         )
 
+        was_llm = bool(answer)
         if not answer:
+            live_assessment = None
+            decision = state.get("decision")
+            if decision and decision.get("assessment"):
+                live_assessment = f"Current Operational Assessment:\n{decision['assessment']}"
+
             if state.get("rag_used") and knowledge_context:
-                answer = f"Based on official marine knowledge records:\n\n{knowledge_context}"
+                knowledge_part = f"Documented Marine Knowledge:\n{knowledge_context}"
                 if sources:
-                    answer += f"\n\nSources:\n" + "\n".join(f"- {s}" for s in sources)
+                    knowledge_part += f"\n\nSources:\n" + "\n".join(f"- {s}" for s in sources)
+                if live_assessment:
+                    answer = f"{live_assessment}\n\n{knowledge_part}"
+                else:
+                    answer = f"Based on official marine knowledge records:\n\n{knowledge_context}"
+                    if sources:
+                        answer += f"\n\nSources:\n" + "\n".join(f"- {s}" for s in sources)
+            elif live_assessment:
+                answer = live_assessment
             else:
                 fallback = "ORCA could not complete a full evidence-based response."
                 if unavailable:
@@ -478,7 +492,7 @@ class OrcaWorkflow:
             "timestamp": datetime.now(timezone.utc).isoformat(),
         })
 
-        return {"answer": answer, "llm_synthesis": bool(answer and not answer.startswith("ORCA could not") and not answer.startswith("Based on official")), "execution_steps": steps}
+        return {"answer": answer, "llm_synthesis": was_llm, "execution_steps": steps}
     async def _final(self, state: OrcaState) -> dict[str, Any]: return {}
     @staticmethod
     def _persona_focus(persona:str)->str: return {"fisher_marine_operator":"practical fishing suitability and safety","researcher_scientist":"measurements, timestamps, and provenance","coastal_authority":"risk severity and monitoring implications"}.get(persona,"clear, understandable conditions")

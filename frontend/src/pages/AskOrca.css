@@ -1555,6 +1555,7 @@
 .evidence-badge.live { color: #065f46; background: #d1fae5; border: 1px solid #a7f3d0; }
 .evidence-badge.cached { color: #92400e; background: #fef3c7; border: 1px solid #fde68a; }
 .evidence-badge.unavailable { color: #991b1b; background: #fee2e2; border: 1px solid #fca5a5; }
+.evidence-badge.knowledge { color: #1e40af; background: #dbeafe; border: 1px solid #bfdbfe; }
 
 .item-summary {
   color: #1e293b;

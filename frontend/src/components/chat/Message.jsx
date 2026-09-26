@@ -772,7 +772,9 @@ export default function Message({ message }) {
         )}
 
         {/* 5. SOURCES & EVIDENCE */}
-        {evidenceList.length > 0 && <EvidencePanel evidence={evidenceList} />}
+        {(evidenceList.length > 0 || (response?.rag?.used && response?.rag?.sources?.length > 0)) && (
+          <EvidencePanel evidence={evidenceList} rag={response?.rag} />
+        )}
 
         {/* 6. BOTTOM ACTION TOOLBAR */}
         <div className="message-actions">

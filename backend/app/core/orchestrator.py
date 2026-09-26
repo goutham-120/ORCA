@@ -107,7 +107,7 @@ class OrcaOrchestrator:
         if decision and parsed.decision_type == "pfz":
             pending_domains = [domain for domain in pending_domains if domain != "pfz"]
 
-        if parsed.decision_type == "simulation" or (isinstance(decision, dict) and decision.get("scenario_simulation")):
+        if isinstance(decision, dict) and (parsed.decision_type == "simulation" or decision.get("scenario_simulation")):
             sim_res = decision.get("scenario_simulation") or {}
             simulated = sim_res.get("simulated") or {}
             sim_msi = simulated.get("msi") or {}
