@@ -89,6 +89,23 @@ class RAGRetriever:
                 retrieval_status="skipped",
             )
 
+        k = top_k if top_k is not None else self._settings.top_k
+
+        # In cloud / memory-constrained environments (e.g. Render 512MB RAM):
+        # Use SQLite FTS directly for instant zero-RAM retrieval to prevent OOM kills
+        import os
+        is_cloud_render = bool(os.getenv("RENDER") or os.getenv("LOW_MEMORY_RAG", "true").lower() in ("1", "true", "yes"))
+
+        if is_cloud_render:
+            fts_chunks = self._retrieve_sqlite_fts(clean_query, top_k=k)
+            if fts_chunks:
+                return RAGResult(
+                    used=True,
+                    query=query,
+                    retrieved_chunks=fts_chunks,
+                    retrieval_status="success",
+                )
+
         try:
             self._ensure_initialized()
             assert self._embeddings is not None
@@ -97,6 +114,14 @@ class RAGRetriever:
             # Check if vector store has any indexed data
             if self._vector_store.count() == 0:
                 logger.warning("RAG retriever called but vector store collection is empty")
+                fts_chunks = self._retrieve_sqlite_fts(clean_query, top_k=k)
+                if fts_chunks:
+                    return RAGResult(
+                        used=True,
+                        query=query,
+                        retrieved_chunks=fts_chunks,
+                        retrieval_status="success",
+                    )
                 return RAGResult(
                     used=False,
                     query=query,
@@ -107,8 +132,6 @@ class RAGRetriever:
             # Generate query embedding
             query_vector = self._embeddings.embed_query(clean_query)
 
-            # Determine query parameters
-            k = top_k if top_k is not None else self._settings.top_k
             threshold = (
                 min_relevance
                 if min_relevance is not None
@@ -138,6 +161,15 @@ class RAGRetriever:
                     )
 
             if not retrieved_chunks:
+                # Fallback to SQLite FTS before giving up
+                fts_chunks = self._retrieve_sqlite_fts(clean_query, top_k=k)
+                if fts_chunks:
+                    return RAGResult(
+                        used=True,
+                        query=query,
+                        retrieved_chunks=fts_chunks,
+                        retrieval_status="success",
+                    )
                 logger.debug("No chunks matched min_relevance threshold (%.2f) for query: %s", threshold, clean_query)
                 return RAGResult(
                     used=False,
@@ -154,7 +186,15 @@ class RAGRetriever:
             )
 
         except Exception as exc:  # noqa: BLE001
-            logger.error("RAG retrieval failed: %s", exc, exc_info=True)
+            logger.warning("Vector RAG retrieval failed (%s), falling back to SQLite FTS", exc)
+            fts_chunks = self._retrieve_sqlite_fts(clean_query, top_k=k)
+            if fts_chunks:
+                return RAGResult(
+                    used=True,
+                    query=query,
+                    retrieved_chunks=fts_chunks,
+                    retrieval_status="success",
+                )
             return RAGResult(
                 used=False,
                 query=query,
@@ -162,6 +202,70 @@ class RAGRetriever:
                 retrieval_status="error",
                 error=str(exc),
             )
+
+    def _retrieve_sqlite_fts(self, query: str, top_k: int = 5) -> list[RetrievedChunk]:
+        """Ultra-fast, zero-RAM full-text search directly against ChromaDB SQLite database.
+
+        Guarantees instant retrieval without loading PyTorch or SentenceTransformers into RAM,
+        preventing OOM crashes on free-tier cloud containers (e.g. Render 512MB).
+        """
+        import re
+        import sqlite3
+
+        db_path = self._settings.persist_directory / "chroma.sqlite3"
+        if not db_path.exists():
+            return []
+
+        words = re.findall(r"\w{2,}", query, flags=re.UNICODE)
+        stop = {
+            "what", "are", "the", "for", "and", "under", "with", "this", "that",
+            "from", "when", "does", "about", "tell", "show", "give", "can", "you",
+            "please", "near", "today", "tomorrow", "now", "where",
+        }
+        keywords = [w for w in words if w.lower() not in stop]
+        if not keywords:
+            keywords = words
+        if not keywords:
+            return []
+
+        fts_query = " OR ".join([f'"{k}"' if " " in k else k for k in keywords[:10]])
+
+        try:
+            conn = sqlite3.connect(str(db_path), timeout=5)
+            cur = conn.cursor()
+            sql = """
+                SELECT fts.rowid, fts.string_value, bm25(embedding_fulltext_search) as rank
+                FROM embedding_fulltext_search fts
+                WHERE embedding_fulltext_search MATCH ?
+                ORDER BY rank
+                LIMIT ?;
+            """
+            cur.execute(sql, (fts_query, top_k))
+            rows = cur.fetchall()
+            chunks: list[RetrievedChunk] = []
+            for row in rows:
+                row_id, text, rank = row
+                cur.execute(
+                    "SELECT key, string_value, int_value FROM embedding_metadata WHERE id = ?;",
+                    (row_id,),
+                )
+                meta = {k: (s if s is not None else i) for k, s, i in cur.fetchall()}
+                score = round(abs(1.0 / (1.0 + abs(rank))), 4)
+                chunks.append(
+                    RetrievedChunk(
+                        id=str(row_id),
+                        content=text,
+                        source=str(meta.get("source", "Government Advisory")),
+                        document=str(meta.get("document", "Document")),
+                        metadata=meta,
+                        relevance_score=score,
+                    )
+                )
+            conn.close()
+            return chunks
+        except Exception as e:
+            logger.warning("SQLite FTS retrieval failed: %s", e)
+            return []
 
 
 # Module-level singleton

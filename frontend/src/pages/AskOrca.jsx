@@ -274,7 +274,11 @@ export default function AskOrca({ navigate }) {
         console.warn('Offline cache failed:', cacheErr)
       }
     } catch (err) {
-      setError(err.message || 'ORCA could not complete this analysis request.')
+      const isNetworkErr = err.message?.includes('Failed to fetch') || err.name === 'TypeError'
+      const errMsg = isNetworkErr
+        ? 'Connecting to ORCA backend... The cloud service is currently waking up from sleep. Please wait a moment and try again.'
+        : (err.message || 'ORCA could not complete this analysis request.')
+      setError(errMsg)
       setFailedQuery(text)
     } finally {
       setLoading(false)
