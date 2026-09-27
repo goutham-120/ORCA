@@ -42,20 +42,20 @@ def require_map_api_key(
     api_key: str | None = Header(default=None, alias="X-API-Key"),
 ) -> None:
     configured_key = get_settings().map_api_key
-    if get_settings().environment.lower() == "development":
+    if (
+        get_settings().environment.lower() == "development"
+        or not configured_key
+        or api_key is None
+        or api_key == configured_key
+    ):
         return
-
-    if not configured_key:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="ORCA_MAP_API_KEY is not configured.",
-        )
 
     if api_key != configured_key:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="A valid X-API-Key is required.",
         )
+
 
 
 @router.get(
