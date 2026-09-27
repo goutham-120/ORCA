@@ -329,6 +329,34 @@ class OrcaWorkflow:
                 },
             }
 
+        query_mode = getattr(ctx.parsed_query, "query_mode", None)
+        if query_mode == "live_operational":
+            steps.append({
+                "step": len(steps) + 1,
+                "agent": "RAGRetriever",
+                "action": "knowledge_retrieval",
+                "status": "skipped",
+                "description": "Live operational query routed directly to marine telemetry agents.",
+                "details": {"rag_used": False, "status": "skipped", "reason": "live_operational"},
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            })
+            return {
+                "knowledge_context": "",
+                "rag_used": False,
+                "rag_query": query,
+                "rag_retrieved_chunks": [],
+                "rag_status": "skipped",
+                "rag_sources": [],
+                "rag_payload": {
+                    "used": False,
+                    "status": "skipped",
+                    "query": query,
+                    "retrieved_chunks": [],
+                    "sources": [],
+                },
+                "execution_steps": steps,
+            }
+
         if not is_marine_domain(query, ctx.parsed_query):
             steps.append({
                 "step": len(steps) + 1,
