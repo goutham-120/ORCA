@@ -301,7 +301,7 @@ const DEMO_PRESETS = {
       restricted_zones: true,
     },
     baseMapMode: 'satellite',
-    isCloudIRVisible: true,
+    isCloudIRVisible: false,
     cloudMode: 'thermal_ir',
     isRouteVisible: true,
     navigationData: {
@@ -500,7 +500,7 @@ const DEMO_PRESETS = {
       hazards: false,
       restricted_zones: false,
     },
-    baseMapMode: 'standard',
+    baseMapMode: 'satellite',
     isCloudIRVisible: false,
     cloudMode: 'natural',
     isRouteVisible: true,
