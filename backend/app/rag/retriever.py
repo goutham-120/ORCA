@@ -15,6 +15,7 @@ Design contract
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 from typing import Any
 
 from app.models.rag import RAGResult, RetrievedChunk
@@ -105,6 +106,15 @@ class RAGRetriever:
                     retrieved_chunks=fts_chunks,
                     retrieval_status="success",
                 )
+            # CRITICAL: In cloud/Render, NEVER fall through to PyTorch SentenceTransformer
+            # PyTorch consumes 600MB+ RAM and triggers Render's 512MB Linux cgroup SIGKILL (502 Bad Gateway)
+            logger.info("SQLite FTS returned no chunks for query: %s", clean_query)
+            return RAGResult(
+                used=False,
+                query=query,
+                retrieved_chunks=[],
+                retrieval_status="skipped",
+            )
 
         try:
             self._ensure_initialized()
@@ -203,6 +213,36 @@ class RAGRetriever:
                 error=str(exc),
             )
 
+    def _find_chroma_db(self) -> Path | None:
+        """Find the chroma.sqlite3 database file across various deployment environments."""
+        from app.rag.config import _BACKEND_ROOT, _REPO_ROOT
+
+        candidates: list[Path] = []
+        if self._settings.persist_directory:
+            p = self._settings.persist_directory
+            candidates.append(p / "chroma.sqlite3")
+            clean_p = Path(str(p).lstrip("/\\"))
+            candidates.append(clean_p / "chroma.sqlite3")
+            candidates.append(_BACKEND_ROOT / clean_p / "chroma.sqlite3")
+            candidates.append(_REPO_ROOT / clean_p / "chroma.sqlite3")
+
+        candidates.extend([
+            _BACKEND_ROOT / "data" / "rag" / "chroma" / "chroma.sqlite3",
+            _REPO_ROOT / "backend" / "data" / "rag" / "chroma" / "chroma.sqlite3",
+            Path.cwd() / "backend" / "data" / "rag" / "chroma" / "chroma.sqlite3",
+            Path.cwd() / "data" / "rag" / "chroma" / "chroma.sqlite3",
+            Path("/opt/render/project/src/backend/data/rag/chroma/chroma.sqlite3"),
+            Path("/opt/render/project/src/data/rag/chroma/chroma.sqlite3"),
+        ])
+
+        for c in candidates:
+            try:
+                if c.exists() and c.is_file():
+                    return c
+            except Exception:
+                pass
+        return None
+
     def _retrieve_sqlite_fts(self, query: str, top_k: int = 5) -> list[RetrievedChunk]:
         """Ultra-fast, zero-RAM full-text search directly against ChromaDB SQLite database.
 
@@ -212,23 +252,29 @@ class RAGRetriever:
         import re
         import sqlite3
 
-        db_path = self._settings.persist_directory / "chroma.sqlite3"
-        if not db_path.exists():
+        db_path = self._find_chroma_db()
+        if not db_path:
+            logger.warning("chroma.sqlite3 not found in any candidate path")
             return []
 
         words = re.findall(r"\w{2,}", query, flags=re.UNICODE)
         stop = {
             "what", "are", "the", "for", "and", "under", "with", "this", "that",
             "from", "when", "does", "about", "tell", "show", "give", "can", "you",
-            "please", "near", "today", "tomorrow", "now", "where",
+            "please", "near", "today", "tomorrow", "now", "where", "how", "who",
         }
-        keywords = [w for w in words if w.lower() not in stop]
+        fts_reserved = {"and", "or", "not", "near"}
+        keywords = [
+            w for w in words
+            if w.lower() not in stop and w.lower() not in fts_reserved
+        ]
         if not keywords:
-            keywords = words
+            keywords = [w for w in words if w.lower() not in fts_reserved]
         if not keywords:
             return []
 
-        fts_query = " OR ".join([f'"{k}"' if " " in k else k for k in keywords[:10]])
+        # Double-quote each word so FTS5 treats it as a literal token without syntax error
+        fts_query = " OR ".join([f'"{k}"' for k in keywords[:10]])
 
         try:
             conn = sqlite3.connect(str(db_path), timeout=5)
@@ -291,6 +337,13 @@ def warmup_rag() -> bool:
         if not settings.enabled:
             logger.debug("RAG is disabled; skipping warmup.")
             return False
+
+        import os
+        is_cloud_render = bool(os.getenv("RENDER") or os.getenv("LOW_MEMORY_RAG", "true").lower() in ("1", "true", "yes"))
+        if is_cloud_render:
+            logger.info("Cloud zero-RAM environment detected; skipping PyTorch neural model load to conserve memory.")
+            return True
+
         retriever = get_retriever()
         retriever._ensure_initialized()
         if retriever._embeddings:
