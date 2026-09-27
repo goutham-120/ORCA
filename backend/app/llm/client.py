@@ -41,7 +41,11 @@ class OpenAICompatibleLLM:
                 ],
             }
         url = self.base_url.rstrip("/") + endpoint
-        headers = {"Authorization": "Bearer " + self.api_key, "Content-Type": "application/json"}
+        headers = {
+            "Authorization": "Bearer " + self.api_key,
+            "Content-Type": "application/json",
+            "User-Agent": "ORCA-FastAPI/1.0",
+        }
         try:
             if is_openai_responses:
                 req = request.Request(url, data=json.dumps(payload).encode(), headers=headers)

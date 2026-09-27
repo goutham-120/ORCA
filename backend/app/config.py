@@ -27,7 +27,7 @@ class Settings:
     map_api_key: str | None = None
     llm_api_key: str | None = None
     llm_base_url: str = "https://api.groq.com/openai/v1"
-    llm_model: str = "llama-3.3-70b-versatile"
+    llm_model: str = "openai/gpt-oss-20b"
     admin_email: str = "admin@orca.gov"
     admin_password: str = "AdminPassword123!"
 
@@ -47,7 +47,7 @@ def get_settings() -> Settings:
         map_api_key=os.getenv("ORCA_MAP_API_KEY"),
         llm_api_key=os.getenv("GROQ_API_KEY") or os.getenv("ORCA_LLM_API_KEY"),
         llm_base_url=os.getenv("ORCA_LLM_BASE_URL", "https://api.groq.com/openai/v1"),
-        llm_model=os.getenv("ORCA_LLM_MODEL", "llama-3.3-70b-versatile"),
+        llm_model=os.getenv("ORCA_LLM_MODEL", "openai/gpt-oss-20b"),
         admin_email=os.getenv("ORCA_ADMIN_EMAIL", "admin@orca.gov"),
         admin_password=os.getenv("ORCA_ADMIN_PASSWORD", "AdminPassword123!"),
     )
