@@ -33,6 +33,14 @@ class RecommendationResponse(BaseModel):
     next_steps: list[str] = Field(default_factory=list)
 
 
+class RAGResponsePayload(BaseModel):
+    used: bool = False
+    status: str = "disabled"
+    query: str = ""
+    retrieved_chunks: list[dict[str, Any]] = Field(default_factory=list)
+    sources: list[str] = Field(default_factory=list)
+
+
 class OrcaQueryResponse(BaseModel):
     query_id: str
     answer: str
@@ -53,6 +61,9 @@ class OrcaQueryResponse(BaseModel):
     execution_steps: list[dict[str, Any]] = Field(default_factory=list)
     trace: dict[str, Any] | None = None
     spatial_data: dict[str, Any] | None = None
+    rag: RAGResponsePayload | None = None
+    query_mode: Literal["knowledge_only", "live_operational", "hybrid"] = "live_operational"
+
 
 
 

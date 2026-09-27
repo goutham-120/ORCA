@@ -1869,7 +1869,7 @@ export default function MapExplorer({ navigate }) {
                 border: '1px solid #e2e8f0',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px', marginBottom: '14px' }}>
+              <div className="telemetry-banner-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px', marginBottom: '14px' }}>
                 <div>
                   <div style={{ fontSize: '11px', fontWeight: 700, color: '#0284c7', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '2px' }}>
                     COASTAL CONDITIONS
@@ -1918,7 +1918,7 @@ export default function MapExplorer({ navigate }) {
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <div className="telemetry-actions-row" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                   <button
                     type="button"
                     onClick={ecosystemState.isOpen ? () => setEcosystemState((prev) => ({ ...prev, isOpen: false })) : runEcosystemDiagnosis}
@@ -1993,7 +1993,7 @@ export default function MapExplorer({ navigate }) {
               </div>
 
               {/* 4 INFORMATION CARDS (RESPONSIVE GRID WITH STANDARDIZED TYPOGRAPHY) */}
-              <div className="coastal-conditions-grid">
+              <div className="coastal-conditions-grid telemetry-chips-grid">
                 {/* CARD 1: Tidal Hydrodynamics */}
                 <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '135px' }}>
                   <div>
@@ -2265,7 +2265,7 @@ export default function MapExplorer({ navigate }) {
           </ComponentErrorBoundary>
 
           <ComponentErrorBoundary name="Map Canvas">
-            <div style={{ position: 'relative' }}>
+            <div className="map-canvas-wrapper" style={{ position: 'relative' }}>
               {isSimulatedCycloneActive && (
                 <div
                   className="simulated-cyclone-banner"
@@ -2678,7 +2678,7 @@ export default function MapExplorer({ navigate }) {
                 {/* 3 EVIDENCE SOURCES STATUS BAR */}
                 <div style={{ background: '#ffffff', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '14px' }}>
                   <h4 style={{ margin: '0 0 10px 0', fontSize: '13px', color: '#475569' }}>Multi-Source Evidence Breakdown</h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
+                  <div className="pfz-evidence-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
                     <div style={{ padding: '8px', borderRadius: '6px', background: '#f8fafc', borderLeft: '3px solid #0ea5e9' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                         <span style={{ fontSize: '12px', fontWeight: 600 }}>🌤️ Weather</span>
@@ -3028,7 +3028,7 @@ export default function MapExplorer({ navigate }) {
                 </div>
 
                 {/* ROUTE METRICS GRID */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px', marginBottom: '16px' }}>
+                <div className="route-metrics-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px', marginBottom: '16px' }}>
                   <div style={{ background: '#f8fafc', padding: '10px 14px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
                     <small style={{ color: '#64748b', fontSize: '11px', display: 'block', fontWeight: 600 }}>ROUTE DISTANCE</small>
                     <strong style={{ fontSize: '14px', color: '#0f172a' }}>
@@ -3087,7 +3087,7 @@ export default function MapExplorer({ navigate }) {
 
                 {/* 4 CORE CHECKS BREAKDOWN */}
                 <h4 style={{ margin: '0 0 10px 0', fontSize: '13px', color: '#334155' }}>Detailed Environmental & GIS Checks</h4>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '12px' }}>
+                <div className="route-checks-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '12px' }}>
                   {/* GIS CHECK */}
                   <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', borderLeft: `4px solid ${detailedRoute.data.gis_analysis.status === 'suitable' ? '#10b981' : detailedRoute.data.gis_analysis.status === 'caution' ? '#f59e0b' : detailedRoute.data.gis_analysis.status === 'unsuitable' ? '#ef4444' : '#64748b'}` }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>

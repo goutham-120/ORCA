@@ -1,8 +1,10 @@
 """Small, deterministic query normalization used before agent planning."""
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal
 import re
+
+QueryMode = Literal["knowledge_only", "live_operational", "hybrid"]
 
 
 @dataclass(frozen=True)
@@ -15,6 +17,7 @@ class ParsedQuery:
     time_expression: str | None = None
     decision_type: str | None = None
     perturbations: dict[str, Any] | None = None
+    query_mode: QueryMode = "live_operational"
 
 
 class QueryParser:
@@ -23,18 +26,19 @@ class QueryParser:
         "route": ("route", "navigate", "voyage", "path", "safest route", "waypoint"),
         "safety": ("safe", "safety", "risk", "safe to venture"),
         "weather": ("weather", "wind", "rain", "storm", "temperature", "forecast", "lightning"),
-        "ocean": ("ocean", "marine", "wave", "current", "sea", "swell", "tide", "high tide", "low tide", "currents"),
+        "ocean": ("ocean", "marine", "wave", "current", "sea", "swell", "tide", "high tide", "low tide", "currents", "mackerel", "sardine", "tuna", "pomfret", "hilsa", "species", "environmental parameters", "environmental conditions"),
         "map": ("map", "layer", "area", "zone", "location", "distance", "coordinates", "boundary", "coastal"),
         "gis": ("restricted", "hazard zone", "spatial", "geofence", "mpa", "protected area"),
         "pfz": ("pfz", "fishing zone", "potential fishing zone", "chlorophyll"),
         "hazard": ("cyclone", "hurricane", "typhoon"),
         "anomaly": ("decline", "declined", "productivity", "catch drop", "low catch", "why has fish", "why fish", "heatwave", "hypoxia", "algal bloom", "upwelling"),
+        "regulations": ("fishing ban", "ban dates", "seasonal ban", "uniform ban", "monsoon ban", "pmmsy", "subsidy", "mpeda", "export", "guidelines"),
     }
 
     _hindi_terms = {
         "simulation": ("क्या होगा अगर", "यदि", "तापमान बढ़े", "हवा तेज", "सिमुलेशन"),
         "weather": ("मौसम", "हवा", "बारिश", "तूफान", "बिजली"),
-        "ocean": ("समुद्र", "समुद्री", "लहर", "लहरें", "ज्वार", "भाटा"),
+        "ocean": ("समुद्र", "समुद्री", "लहर", "लहरें", "ज्वार", "भाटा", "मैकेरल", "सारडीन", "पर्यावरण", "पर्यावरणीय"),
         "safety": ("सुरक्षित", "सुरक्षा", "जोखिम", "खतरा"),
         "gis": ("प्रतिबंधित", "क्षेत्र", "निकट", "पास"),
         "pfz": ("मछली", "मछली पकड़", "मत्स्य क्षेत्र"),
@@ -43,11 +47,11 @@ class QueryParser:
 
     _telugu_terms = {
         "simulation": ("ఒకవేళ", "ఏమి జరుగుతుంది", "ఉష్ణోగ్రత పెరిగితే", "గాలి పెరిగితే", "సిమ్యులేషన్"),
-        "weather": ("వాతావరణం", "గాలి", "వర్షం", "తుఫాను", "ఉష్ణోగ్రత", "మెరుపులు"),
-        "ocean": ("సముద్రం", "సముద్ర", "సముద్రపు", "అలలు", "అలల", "కెరటాలు", "కెరటం", "తరంగాలు", "పోటు", "పాటు", "టైడ్"),
-        "safety": ("సురక్షితం", "సురక్షితమేనా", "సురక్షితమైన", "భద్రత", "రక్షణ", "ప్రమాదం", "హాని"),
+        "weather": ("వాతావరణం", "వాతావరణ", "గాలి", "వర్షం", "తుఫాను", "ఉష్ణోగ్రత", "మెరుపు"),
+        "ocean": ("సముద్రం", "సముద్ర", "సముద్రపు", "అలలు", "అలల", "కెరటాలు", "కెరటం", "తరంగాలు", "పోటు", "పాటు", "టైడ్", "మాకెరెల్", "సార్డిన్", "చేపలు", "చేపల", "పర్యావరణం", "పర్యావరణ"),
+        "safety": ("సురక్షితం", "సురక్షితమేనా", "సురక్షితమైన", "భద్రత", "రక్షణ", "ప్రమాదం", "హాని", "ఆపద", "అత్యవసర"),
         "gis": ("నిషిద్ధ", "ప్రాంతం", "సమీపంలో", "చేరువలో", "దగ్గర", "పరిధి"),
-        "pfz": ("చేపలు", "చేపల", "చేపల వేట", "మత్స్య", "వేట"),
+        "pfz": ("చేపల వేట", "మత్స్య క్షేత్రం", "మత్స్య జోన్", "పీఎఫ్జెడ్", "పిఎఫ్జెడ్", "ఫిషింగ్ జోన్"),
         "anomaly": ("తగ్గింది", "క్షీణించింది", "ఉత్పత్తి తగ్గడం", "కారణం"),
     }
 
@@ -168,6 +172,32 @@ class QueryParser:
         ):
             matches.extend(name for name, terms in lang_terms.items() if any(term in normalized for term in terms) and name not in matches)
 
+        query_mode = self._determine_query_mode(lowered, normalized)
+
+        if query_mode == "knowledge_only":
+            intent = "general"
+            if any(term in lowered or term in normalized for term in ("distress", "emergency", "sar", "rescue", "safety", "అత్యవసర", "ఆపద", "సహాయం", "రక్షణ", "భద్రత", "संकट", "खतरा", "सुरक्षा", "ஆபத்து", "அவசர", "பாதுகாப்பு")):
+                intent = "safety"
+            elif any(term in lowered or term in normalized for term in ("ban", "regulation", "pmmsy", "प्रतिबंध", "నిషేధ", "தடை")):
+                intent = "regulations"
+            elif any(term in lowered or term in normalized for term in ("pfz", "potential fishing zone", "chlorophyll", "పీఎఫ్జెడ్", "పిఎఫ్జెడ్", "సలహా", "फिशिंग ज़ोन", "ஆலோசனை")):
+                intent = "pfz"
+            elif any(term in lowered or term in normalized for term in ("mackerel", "sardine", "species", "biology", "ocean", "మాకెరెల్", "సార్డిన్", "చేపలు", "చేపలను", "పర్యావరణ", "పరిస్థితులు", "మత్స్య", "मैकेरल", "सारडीन", "कானாங்கெளுத்தி", "சுற்றுச்சூழல்")):
+                intent = "ocean"
+            elif matches:
+                intent = matches[0]
+            return ParsedQuery(
+                original=query,
+                normalized=normalized,
+                intent=intent,
+                requested_domains=[],
+                requested_location=None,
+                time_expression=None,
+                decision_type=None,
+                perturbations=None,
+                query_mode="knowledge_only",
+            )
+
         is_simulation = "simulation" in matches or any(term in lowered for term in ("what if", "what happens if", "simulate", "simulation", "scenario"))
         explicit_pfz = "pfz" in matches or any(term in lowered for term in ("fishing zone", "potential fishing zone", "potential fishing zones"))
         is_anomaly = "anomaly" in matches or any(term in lowered for term in ("productivity declined", "why has fish", "catch drop", "productivity drop", "fish decline"))
@@ -209,7 +239,7 @@ class QueryParser:
         intent = matches[0] if matches else "general"
         valid_agent_domains = {"ocean", "weather", "gis", "pfz"}
         domains = sorted({("gis" if match in {"route", "map", "gis", "hazard"} else match) for match in matches if ("gis" if match in {"route", "map", "gis", "hazard"} else match) in valid_agent_domains})
-        location = self._location_mention(normalized)
+        location = None if query_mode == "knowledge_only" else self._location_mention(normalized)
         return ParsedQuery(
             original=query,
             normalized=normalized,
@@ -219,7 +249,106 @@ class QueryParser:
             time_expression=self._time_expression(lowered, normalized),
             decision_type=decision_type,
             perturbations=perturbations,
+            query_mode=query_mode,
         )
+
+    @classmethod
+    def _determine_query_mode(cls, lowered: str, normalized: str) -> QueryMode:
+        has_knowledge = cls._is_knowledge_query(lowered, normalized)
+        has_live = cls._is_live_query(lowered, normalized)
+
+        if has_knowledge and has_live:
+            return "hybrid"
+        if has_knowledge and not has_live:
+            return "knowledge_only"
+        return "live_operational"
+
+    @classmethod
+    def _is_knowledge_query(cls, lowered: str, normalized: str) -> bool:
+        regulatory_patterns = (
+            r"\b(?:fishing\s+ban|ban\s+dates?|seasonal\s+ban|uniform\s+ban|monsoon\s+ban|ban\s+period|ban\s+order|ban\s+rules)\b",
+            r"\b2026\b.*\bban\b|\bban\b.*\b2026\b",
+            r"\b(?:caa\s+rules|coastal\s+aquaculture|crz|coastal\s+regulation\s+zone|exclusive\s+economic\s+zone|eez\s+guidelines|mesh\s+size|minimum\s+legal\s+size)\b",
+            r"\b(?:marine\s+rules?|fishing\s+rules?|maritime\s+rules?|fisheries\s+regulations?|marine\s+regulations?|coastal\s+regulations?|maritime\s+regulations?|statutory\s+rules?|trawler\s+regulations?)\b",
+            r"\b(?:tell\s+me\s+about|what\s+are|explain)\b.*\b(?:marine\s+rules|fishing\s+rules|regulations|guidelines|policies|acts?)\b",
+            r"\b(?:pmmsy|pradhan\s+mantri\s+matsya\s+sampada|fidf|kcc|fisheries\s+subsidy|fisheries\s+scheme|subsidies|mpeda|cmfri|incois\s+manual|nmsar)\b",
+            r"\b(?:export\s+trends?|marine\s+products?\s+exports?|seafood\s+exports?)\b",
+        )
+        if any(re.search(pat, lowered) for pat in regulatory_patterns):
+            return True
+
+        safety_patterns = (
+            r"\b(?:maritime\s+distress|distress\s+situation|distress\s+procedure|distress\s+procedures|distress\s+protocol|distress\s+alerting|distress\s+call)\b",
+            r"\b(?:nmsar|search\s+and\s+rescue\s+manual|sar\s+procedures?|channel\s+16\s+protocol|epirb\s+procedure)\b",
+            r"\bwhat\s+should\s+(?:fishermen|fishers|mariners|sailors)\s+(?:do|know|follow|be\s+aware\s+of)\b",
+            r"\bhow\s+should\s+(?:fishermen|fishers|mariners|sailors)\s+respond\b",
+            r"\b(?:procedure|protocol|guideline|action)\s+during\s+(?:a\s+)?(?:distress|emergency)\b",
+            r"\b(?:safe\s+fishing\s+conditions?|safe\s+sea\s+conditions?|safe\s+navigation\s+conditions?|safety\s+measures?|safety\s+guidelines?)\b",
+        )
+        if any(re.search(pat, lowered) for pat in safety_patterns):
+            return True
+
+        species_patterns = (
+            r"\b(?:environmental\s+conditions?\s+affect|environmental\s+parameters?|parameters?\s+affecting|factors?\s+affecting)\b",
+            r"\b(?:temperature\s+range|salinity\s+range|spawning\s+season|feeding\s+habits?|habitat\s+of|biology\s+of)\b",
+            r"\b(?:what\s+(?:are|is)|tell\s+me\s+about|explain|describe)\b.*\b(?:mackerels?|sardines?|oil\s+sardines?|tunas?|pomfrets?|hilsa|species)\b",
+            r"\b(?:indian\s+mackerel|oil\s+sardine|sardines?|mackerels?)\b",
+        )
+        if any(re.search(pat, lowered) for pat in species_patterns):
+            return True
+
+        concept_patterns = (
+            r"\b(?:pfz|potential\s+fishing\s+zones?)\b.*\b(?:advisory|advisories|methodology|generation|technique|science|concept|what\s+is|how\s+does|meaning|definition)\b",
+            r"\b(?:methodology|science|concept|meaning|definition|explanation|background)\b.*\b(?:pfz|potential\s+fishing\s+zones?)\b",
+            r"\b(?:what\s+is|what\s+are|how\s+does|how\s+do|explain|describe|meaning\s+of|definition\s+of)\b.*\b(?:pfz|potential\s+fishing\s+zones?)\b",
+            r"\b(?:pfz\s+advisory|potential\s+fishing\s+zone\s+advisory)\b",
+            r"\b(?:what\s+is\s+(?:a\s+)?marine\s+heatwave|causes\s+of\s+marine\s+heatwaves?|causes\s+of\s+upwelling|what\s+is\s+upwelling|what\s+is\s+hypoxia|what\s+is\s+algal\s+bloom)\b",
+            r"\b(?:what\s+is\s+pmmsy|pmmsy\s+scheme|pmmsy\s+guidelines?)\b",
+        )
+        if any(re.search(pat, lowered) for pat in concept_patterns):
+            return True
+
+        indic_knowledge_terms = (
+            "प्रतिबंध की तारीखें", "मछली पकड़ने पर प्रतिबंध", "मत्स्य पालन प्रतिबंध", "मत्स्य पालन", "प्रतिबंध कब", "प्रतिबंध", "पर्यावरणीय स्थितियां", "पर्यावरणीय परिस्थितियाँ", "संकट की स्थिति", "क्या करना चाहिए", "मत्स्य संपदा", "पीएमएमएसवाई", "मैकेरल", "तारीखें क्या हैं", "नियम", "पोटेंशियल फिशिंग ज़ोन", "फिशिंग ज़ोन", "एडवाइजरी", "संभावित मत्स्य पालन क्षेत्र", "संभावित",
+            "నిషేధ తేదీలు", "చేపల వేట నిషేధం", "ఆపద సమయంలో", "మత్స్యకారులు ఏమి చేయాలి", "అత్యవసర పరిస్థితి", "అత్యవసర", "పీఎంఎంఎస్వై", "పరిస్థితులు", "పర్యావరణ పరిస్థితులు", "పర్యావరణం", "పర్యావరణ", "మాకెరెల్", "చేపలను ప్రభావితం చేసే", "సార్డిన్", "తేదీలు ఏమిటి", "నిబంధనలు", "పొటెన్షియల్ ఫిషింగ్ జోన్", "ఫిషింగ్ జోన్", "అడ్వైజరీ", "PFZ సలహా", "సలహా అంటే ఏమిటి", "సలహా", "పీఎఫ్జెడ్", "పిఎఫ్జెడ్",
+            "மீன்பிடி தடை", "ஆபத்து காலத்தில்", "மீனவர்கள் என்ன செய்ய வேண்டும்", "அவசர நிலை", "சுற்றுச்சூழல் காரணிகள்", "கானாங்கெளுத்தி", "பாதிக்கும் சுற்றுச்சூழல் காரணிகள்", "சாத்தியமான மீன்பிடி மண்டலம்", "மீன்பிடி மண்டலம்", "ஆலோசனை என்றால் என்ன", "ஆலோசனை", "PFZ ஆலோசனை",
+            "ନିଷେଧ ତାରିଖ", "ବିପଦ ସମୟରେ", "କ'ଣ କରିବା ଉଚିତ",
+            "নিষেধাজ্ঞার তারিখ", "বিপদের সময়", "কী করা উচিত",
+            "നിരോധന തീയതികൾ", "അപകടസമയത്ത് എന്തുചെയ്യണം",
+            "ನಿಷೇಧ ದಿನಾಂಕಗಳು", "ತುರ್ತು ಪರಿಸ್ಥಿತಿಯಲ್ಲಿ ಏನು ಮಾಡಬೇಕು",
+            "बंदीच्या तारखा", "संकटाच्या वेळी काय करावे",
+            "પ્રતિબંધની તારીખો", "મુશ્કેલીના સમયે શું કરવું",
+        )
+        if any(term in normalized for term in indic_knowledge_terms):
+            return True
+
+        return False
+
+    @classmethod
+    def _is_live_query(cls, lowered: str, normalized: str) -> bool:
+        live_patterns = (
+            r"\b(?:today|today'?s|now|right\s+now|currently|current|latest|presently|at\s+present|tonight|tomorrow|this\s+weekend|live)\b",
+            r"\b(?:near\s+me|near\s+my\s+location|my\s+location|current\s+location|around\s+here|near\s+here)\b",
+            r"\b(?:can\s+i\s+go|is\s+it\s+safe|is\s+the\s+sea\s+safe|safe\s+to\s+venture|safe\s+to\s+fish|should\s+(?:i|we)\s+sail)\b",
+            r"\b(?:is\s+fishing\s+allowed\s+today|is\s+fishing\s+permitted\s+today|is\s+fishing\s+allowed\s+here|allowed\s+currently)\b",
+            r"\b(?:where\s+are\s+today|where\s+are\s+the\s+current|where\s+are\s+today'?s|show\s+today'?s)\b",
+            r"\b(?:current\s+wave|current\s+wind|current\s+sst|current\s+weather|current\s+conditions?)\b",
+            r"\b(?:wave\s+height|wind\s+speed|sea\s+conditions?|weather\s+forecast)\b",
+            r"\b(?:what\s+if|simulate|simulation|scenario)\b",
+            r"\b(?:route|safest\s+route|navigate|voyage)\b",
+        )
+        if any(re.search(pat, lowered) for pat in live_patterns):
+            return True
+
+        indic_live_terms = (
+            "आज", "कल", "उद्या", "आज रात्री", "ఈ రోజు", "ఈరోజు", "నేడు", "రేపు", "ఈ రాత్రి",
+            "இன்று", "நாளை", "இன்று இரவு", "ଆଜି", "କାଲି", "আজ", "কাল", "आयज", "ಇನಿ", "ಆજે",
+            "काले", "सुरक्षित है क्या", "सुरक्षितमेना", "సురక్షితమేనా",
+        )
+        if any(term in normalized for term in indic_live_terms):
+            return True
+
+        return False
 
     @classmethod
     def _extract_perturbations(cls, lowered: str) -> dict[str, Any]:

@@ -1,0 +1,760 @@
+{
+  "generated_at": "2026-09-26T18:32:37.312455+00:00",
+  "knowledge_root": "C:\\Users\\saiku\\OneDrive\\Desktop\\Coding\\ORCA\\orca-knowledge",
+  "included": [
+    {
+      "source": "CMFRI / Department of Fisheries",
+      "document": "5th National Marine Fisheries Census 2025 Overview",
+      "document_type": "report",
+      "domain": "statistics",
+      "topic": "marine_fisheries_census_2025",
+      "language": "en",
+      "year": 2025,
+      "region": "Coastal States & UTs of India",
+      "audience": "policy_makers, researchers",
+      "file_path": "CMFRI/5th Marine Fisheries Census_2025.pdf",
+      "ingestion_date": "2026-09-26T18:25:00.197199+00:00",
+      "chunk_count": 5
+    },
+    {
+      "source": "MPEDA",
+      "document": "Better Management Practices (BMP) for Shrimp Aquaculture",
+      "document_type": "guidelines",
+      "domain": "aquaculture",
+      "topic": "better_management_practices_shrimp",
+      "language": "en",
+      "year": "unknown",
+      "region": "India",
+      "audience": "shrimp farmers, hatchery operators",
+      "file_path": "CMFRI/BETTER MANAGEMENT PRACTICES – MPEDA.pdf",
+      "ingestion_date": "2026-09-26T18:25:00.480235+00:00",
+      "chunk_count": 46
+    },
+    {
+      "source": "CMFRI",
+      "document": "The Indian Mackerel (Rastrelliger kanagurta) Bulletin No. 24",
+      "document_type": "scientific_bulletin",
+      "domain": "species",
+      "topic": "indian_mackerel",
+      "language": "en",
+      "year": "unknown",
+      "region": "Indian EEZ (East & West Coasts)",
+      "audience": "fishermen, marine scientists",
+      "file_path": "CMFRI/CMFRI_Indian_Mackerel.pdf",
+      "ingestion_date": "2026-09-26T18:25:01.595948+00:00",
+      "chunk_count": 194
+    },
+    {
+      "source": "CMFRI",
+      "document": "The Indian Oil Sardine (Sardinella longiceps) Biology and Fishery",
+      "document_type": "scientific_bulletin",
+      "domain": "species",
+      "topic": "indian_oil_sardine",
+      "language": "en",
+      "year": "unknown",
+      "region": "Indian EEZ (Southwest & Southeast Coasts)",
+      "audience": "fishermen, marine scientists",
+      "file_path": "CMFRI/CMFRI_Indian_Oil_Sardine.pdf",
+      "ingestion_date": "2026-09-26T18:25:01.866751+00:00",
+      "chunk_count": 38
+    },
+    {
+      "source": "CMFRI",
+      "document": "Impact of Environmental Parameters on Sardine and Mackerel Fisheries",
+      "document_type": "scientific_bulletin",
+      "domain": "oceanography",
+      "topic": "pelagic_environmental_parameters",
+      "language": "en",
+      "year": 2008,
+      "region": "Indian Coastal Waters",
+      "audience": "fishermen, marine scientists",
+      "file_path": "CMFRI/environmental_parameters_sardine_mackerel.pdf",
+      "ingestion_date": "2026-09-26T18:25:01.905149+00:00",
+      "chunk_count": 12
+    },
+    {
+      "source": "MPEDA",
+      "document": "Marine Products Item-Wise Export Statistics (10 Years)",
+      "document_type": "csv_table",
+      "domain": "export",
+      "topic": "marine_products_export_trends",
+      "language": "en",
+      "year": "1995-2025",
+      "region": "All India",
+      "audience": "exporters, economists, researchers",
+      "file_path": "CMFRI/preprocessed/clean_csv/item_wise_export_clean.csv",
+      "ingestion_date": "2026-09-26T18:25:01.907894+00:00",
+      "chunk_count": 9
+    },
+    {
+      "source": "MPEDA",
+      "document": "Marine Products Market-Wise Export Statistics (10 Years)",
+      "document_type": "csv_table",
+      "domain": "export",
+      "topic": "marine_products_export_markets",
+      "language": "en",
+      "year": "1995-2025",
+      "region": "Global / India",
+      "audience": "exporters, economists, researchers",
+      "file_path": "CMFRI/preprocessed/clean_csv/market_wise_export_clean.csv",
+      "ingestion_date": "2026-09-26T18:25:01.909655+00:00",
+      "chunk_count": 8
+    },
+    {
+      "source": "MPEDA",
+      "document": "Marine Products Port-Wise Export Statistics (10 Years)",
+      "document_type": "csv_table",
+      "domain": "export",
+      "topic": "marine_products_export_ports",
+      "language": "en",
+      "year": "1995-2025",
+      "region": "All India Ports",
+      "audience": "exporters, port authorities",
+      "file_path": "CMFRI/preprocessed/clean_csv/port_wise_export_clean.csv",
+      "ingestion_date": "2026-09-26T18:25:01.923354+00:00",
+      "chunk_count": 85
+    },
+    {
+      "source": "Coastal Aquaculture Authority / CMFRI",
+      "document": "Coastal Aquaculture Guidelines and Development 2024",
+      "document_type": "guidelines",
+      "domain": "aquaculture",
+      "topic": "coastal_aquaculture_development",
+      "language": "en",
+      "year": 2024,
+      "region": "Coastal States of India",
+      "audience": "aquaculturists, farmers",
+      "file_path": "CMFRI/preprocessed/final_english/Aquaculture_2024_english.txt",
+      "ingestion_date": "2026-09-26T18:25:01.924006+00:00",
+      "chunk_count": 65
+    },
+    {
+      "source": "Coastal Aquaculture Authority",
+      "document": "Coastal Aquaculture Registration and Compliance Orders (Part 1)",
+      "document_type": "regulatory_order",
+      "domain": "regulations",
+      "topic": "aquaculture_compliance",
+      "language": "en",
+      "year": 2023,
+      "region": "India",
+      "audience": "aquaculture operators",
+      "file_path": "CMFRI/preprocessed/final_english/bilingual_1_english.txt",
+      "ingestion_date": "2026-09-26T18:25:01.924222+00:00",
+      "chunk_count": 15
+    },
+    {
+      "source": "Coastal Aquaculture Authority",
+      "document": "Coastal Aquaculture Registration and Compliance Orders (Part 2)",
+      "document_type": "regulatory_order",
+      "domain": "regulations",
+      "topic": "aquaculture_compliance",
+      "language": "en",
+      "year": 2023,
+      "region": "India",
+      "audience": "aquaculture operators",
+      "file_path": "CMFRI/preprocessed/final_english/bilingual_2_english.txt",
+      "ingestion_date": "2026-09-26T18:25:01.924366+00:00",
+      "chunk_count": 11
+    },
+    {
+      "source": "CMFRI",
+      "document": "CMFRI Annual Report 2025",
+      "document_type": "report",
+      "domain": "fisheries",
+      "topic": "cmfri_marine_fisheries_research_annual_report",
+      "language": "en",
+      "year": 2025,
+      "region": "Indian EEZ",
+      "audience": "scientists, fisheries department",
+      "file_path": "CMFRI/preprocessed/final_english/CMFRI_Annual_Report_2025_english_clean.txt",
+      "ingestion_date": "2026-09-26T18:25:01.927066+00:00",
+      "chunk_count": 582
+    },
+    {
+      "source": "Department of Fisheries, MoFAHD",
+      "document": "Uniform Seasonal Fishing Ban Orders 2026",
+      "document_type": "regulatory_order",
+      "domain": "regulations",
+      "topic": "seasonal_fishing_ban",
+      "language": "en",
+      "year": 2026,
+      "region": "East Coast & West Coast EEZ",
+      "audience": "fishermen, coastal authorities",
+      "file_path": "CMFRI/preprocessed/final_english/FishingBan_english.txt",
+      "ingestion_date": "2026-09-26T18:25:01.927354+00:00",
+      "chunk_count": 2
+    },
+    {
+      "source": "Ministry of Fisheries, Animal Husbandry & Dairying",
+      "document": "Gazette Notification CAA Rule 3 Amendment",
+      "document_type": "regulatory_order",
+      "domain": "regulations",
+      "topic": "coastal_aquaculture_rule_amendment",
+      "language": "en",
+      "year": 2023,
+      "region": "India",
+      "audience": "coastal farmers",
+      "file_path": "CMFRI/preprocessed/final_english/Gazette_Notification_CAA_Rule_3_Amend_english.txt",
+      "ingestion_date": "2026-09-26T18:25:01.927503+00:00",
+      "chunk_count": 2
+    },
+    {
+      "source": "Department of Fisheries / CMFRI",
+      "document": "Operational Guidelines for Seaweed Cultivation",
+      "document_type": "guidelines",
+      "domain": "aquaculture",
+      "topic": "seaweed_cultivation",
+      "language": "en",
+      "year": 2023,
+      "region": "Coastal Waters of India",
+      "audience": "coastal communities, fishers",
+      "file_path": "CMFRI/preprocessed/final_english/Guideline_l_(Seaweed)_english.txt",
+      "ingestion_date": "2026-09-26T18:25:01.927705+00:00",
+      "chunk_count": 20
+    },
+    {
+      "source": "Department of Fisheries / CMFRI",
+      "document": "Guidelines for Open Sea Cage and Pen Culture",
+      "document_type": "guidelines",
+      "domain": "aquaculture",
+      "topic": "open_sea_cage_culture",
+      "language": "en",
+      "year": 2023,
+      "region": "Coastal Waters of India",
+      "audience": "fishers, mariculturists",
+      "file_path": "CMFRI/preprocessed/final_english/Guideline_m_(cage_and_pen_culture)_english.txt",
+      "ingestion_date": "2026-09-26T18:25:01.927865+00:00",
+      "chunk_count": 11
+    },
+    {
+      "source": "Coastal Aquaculture Authority",
+      "document": "Guidelines for Regulating Coastal Aquaculture",
+      "document_type": "regulations",
+      "domain": "regulations",
+      "topic": "coastal_aquaculture_regulations",
+      "language": "en",
+      "year": 2023,
+      "region": "Coastal Areas of India",
+      "audience": "shrimp hatcheries, farmers",
+      "file_path": "CMFRI/preprocessed/final_english/Guidelines_for_Regulating_Coastal_Aquaculture_english.txt",
+      "ingestion_date": "2026-09-26T18:25:01.928088+00:00",
+      "chunk_count": 28
+    },
+    {
+      "source": "MPEDA",
+      "document": "MPEDA Annual Report 2025-26",
+      "document_type": "report",
+      "domain": "export",
+      "topic": "mpeda_annual_report",
+      "language": "en",
+      "year": 2026,
+      "region": "All India",
+      "audience": "exporters, fisheries sector",
+      "file_path": "CMFRI/preprocessed/final_english/MPEDA_Annual_Report_25-26_clean.txt",
+      "ingestion_date": "2026-09-26T18:25:01.931191+00:00",
+      "chunk_count": 412
+    },
+    {
+      "source": "MPEDA",
+      "document": "MPEDA Regulations on Aquaculture Export Facilities",
+      "document_type": "regulations",
+      "domain": "regulations",
+      "topic": "mpeda_aquaculture_regulations",
+      "language": "en",
+      "year": "unknown",
+      "region": "India",
+      "audience": "exporters, farmers",
+      "file_path": "CMFRI/REGULATION ON AQUACULTURE – MPEDA.pdf",
+      "ingestion_date": "2026-09-26T18:25:01.959331+00:00",
+      "chunk_count": 3
+    },
+    {
+      "source": "Indian Coast Guard",
+      "document": "Indian Coast Guard MRCC & MRSC Search and Rescue Directory",
+      "document_type": "contact_directory",
+      "domain": "marine_safety",
+      "topic": "coast_guard_sar_directory",
+      "language": "en",
+      "year": 2026,
+      "region": "All India Coastal Regions",
+      "audience": "fishermen in distress, port authorities",
+      "file_path": "contacts/coast_guard_sar_contacts.json",
+      "ingestion_date": "2026-09-26T18:25:01.960111+00:00",
+      "chunk_count": 9
+    },
+    {
+      "source": "Department of Fisheries, MoFAHD",
+      "document": "PMMSY Scheme Implementation Orders and Amendments",
+      "document_type": "regulatory_order",
+      "domain": "policy",
+      "topic": "pmmsy_amendments",
+      "language": "en",
+      "year": 2020,
+      "region": "All India",
+      "audience": "state departments, fishers",
+      "file_path": "Guidelines/52d7d3eb0bb1c9c4edc98f4bb1831ffd.pdf",
+      "ingestion_date": "2026-09-26T18:25:02.032192+00:00",
+      "chunk_count": 8
+    },
+    {
+      "source": "Department of Fisheries, MoFAHD",
+      "document": "Pradhan Mantri Matsya Sampada Yojana (PMMSY) Operational Guidelines",
+      "document_type": "guidelines",
+      "domain": "policy",
+      "topic": "pmmsy_operational_guidelines",
+      "language": "en",
+      "year": 2020,
+      "region": "All India",
+      "audience": "fishermen, fish farmers, cooperatives, state departments",
+      "file_path": "Guidelines/89f0158000ddb527f339428aef82a676.pdf",
+      "ingestion_date": "2026-09-26T18:25:05.868910+00:00",
+      "chunk_count": 302
+    },
+    {
+      "source": "Indian Coast Guard",
+      "document": "National Maritime Search and Rescue (NMSAR) Manual (2020 Edition)",
+      "document_type": "manual",
+      "domain": "marine_safety",
+      "topic": "maritime_search_and_rescue_safety",
+      "language": "en",
+      "year": 2020,
+      "region": "Indian Search and Rescue Region (ISRR)",
+      "audience": "fishermen, mariners, rescue agencies",
+      "file_path": "Guidelines/MANUAL final 2020 - PRINT.pmd.pdf",
+      "ingestion_date": "2026-09-26T18:25:08.741414+00:00",
+      "chunk_count": 621
+    },
+    {
+      "source": "Department of Fisheries, MoFAHD",
+      "document": "PMMSY Sanctioned Proposals and Financial Overview",
+      "document_type": "guidelines",
+      "domain": "policy",
+      "topic": "pmmsy_financial_overview",
+      "language": "en",
+      "year": 2024,
+      "region": "All India",
+      "audience": "policy_makers, fishermen",
+      "file_path": "Guidelines/Pradhan Mantri Matsya Sampada Yojana _ Department of Fisheries, MoCIT, GoI.pdf",
+      "ingestion_date": "2026-09-26T18:25:08.829933+00:00",
+      "chunk_count": 6
+    },
+    {
+      "source": "Indian Coast Guard",
+      "document": "Safe Waters 2026 - National Maritime Search and Rescue Board Review",
+      "document_type": "report",
+      "domain": "marine_safety",
+      "topic": "safe_waters_maritime_safety_icg",
+      "language": "en",
+      "year": 2026,
+      "region": "Indian Search and Rescue Region (ISRR)",
+      "audience": "mariners, fishermen, coastal security",
+      "file_path": "Guidelines/SAFE WATERS   2026.cdr.pdf",
+      "ingestion_date": "2026-09-26T18:25:18.888209+00:00",
+      "chunk_count": 7
+    },
+    {
+      "source": "INCOIS",
+      "document": "High Resolution Ocean Forecasting and Fishing Advisory (HiFA)",
+      "document_type": "report",
+      "domain": "PFZ",
+      "topic": "ocean_forecasting_hifa",
+      "language": "en",
+      "year": 2024,
+      "region": "Indian Coastal Waters",
+      "audience": "fishermen, scientists",
+      "file_path": "incois/HiFA Technical Document.pdf",
+      "ingestion_date": "2026-09-26T18:25:19.213019+00:00",
+      "chunk_count": 22
+    },
+    {
+      "source": "INCOIS",
+      "document": "Operational Marine Meteorology and Storm Surge Services",
+      "document_type": "report",
+      "domain": "marine_safety",
+      "topic": "marine_meteorology_services",
+      "language": "en",
+      "year": "unknown",
+      "region": "North Indian Ocean",
+      "audience": "mariners, coastal emergency managers",
+      "file_path": "incois/INCOIS - Regional Specialized Meteorological Centre (RSMC).pdf",
+      "ingestion_date": "2026-09-26T18:25:19.226163+00:00",
+      "chunk_count": 1
+    },
+    {
+      "source": "INCOIS",
+      "document": "INCOIS Ocean Information and Early Warning Services Overview",
+      "document_type": "report",
+      "domain": "oceanography",
+      "topic": "incois_ocean_services",
+      "language": "en",
+      "year": "unknown",
+      "region": "Indian Ocean",
+      "audience": "general, coastal stakeholders",
+      "file_path": "incois/INCOIS _ Indian National Centre for Ocean Information Services.pdf",
+      "ingestion_date": "2026-09-26T18:25:19.254552+00:00",
+      "chunk_count": 2
+    },
+    {
+      "source": "INCOIS",
+      "document": "Satellite Oceanography Applications in Marine Fisheries",
+      "document_type": "report",
+      "domain": "fisheries",
+      "topic": "satellite_oceanography_fisheries",
+      "language": "en",
+      "year": "unknown",
+      "region": "Indian Coastal Waters",
+      "audience": "researchers, fisheries managers",
+      "file_path": "incois/Marine Fisheries.pdf",
+      "ingestion_date": "2026-09-26T18:25:19.304618+00:00",
+      "chunk_count": 2
+    },
+    {
+      "source": "INCOIS",
+      "document": "Potential Fishing Zone (PFZ) Advisory Services",
+      "document_type": "advisory",
+      "domain": "PFZ",
+      "topic": "potential_fishing_zone_advisory",
+      "language": "en",
+      "year": "unknown",
+      "region": "Indian Ocean / Coastal India",
+      "audience": "fishermen, coastal operators",
+      "file_path": "incois/Potential Fishing Zone Advisory.pdf",
+      "ingestion_date": "2026-09-26T18:25:19.383867+00:00",
+      "chunk_count": 5
+    },
+    {
+      "source": "INCOIS",
+      "document": "Systematic Operational Procedure for Marine Heat Wave Advisory Services",
+      "document_type": "advisory",
+      "domain": "marine_hazards",
+      "topic": "marine_heatwave_advisory",
+      "language": "en",
+      "year": "unknown",
+      "region": "Tropical Indian Ocean / Arabian Sea / Bay of Bengal",
+      "audience": "fishermen, coastal management, researchers",
+      "file_path": "incois/SOP_DOCUMENTATION_MHW_ADVISORY.pdf",
+      "ingestion_date": "2026-09-26T18:25:19.441177+00:00",
+      "chunk_count": 6
+    },
+    {
+      "source": "INCOIS",
+      "document": "Tuna Fishery Advisory and Operational Forecasting",
+      "document_type": "advisory",
+      "domain": "species",
+      "topic": "tuna_fishery_advisory",
+      "language": "en",
+      "year": "unknown",
+      "region": "Indian Ocean Deep Sea",
+      "audience": "tuna longliners, commercial fishermen",
+      "file_path": "incois/Tuna Fishery Advisory.pdf",
+      "ingestion_date": "2026-09-26T18:25:19.501979+00:00",
+      "chunk_count": 2
+    }
+  ],
+  "excluded": [
+    {
+      "file_path": "CMFRI/Aquaculture_2024.pdf",
+      "reason": "Raw bilingual PDF superseded by clean English extraction in final_english/Aquaculture_2024_english.txt"
+    },
+    {
+      "file_path": "CMFRI/bilingual_1.pdf",
+      "reason": "Raw bilingual PDF superseded by clean English extraction in final_english/bilingual_1_english.txt"
+    },
+    {
+      "file_path": "CMFRI/bilingual_2.pdf",
+      "reason": "Raw bilingual PDF superseded by clean English extraction in final_english/bilingual_2_english.txt"
+    },
+    {
+      "file_path": "CMFRI/clean_cmfri_annual_report.py",
+      "reason": "Preprocessing script, not a knowledge document"
+    },
+    {
+      "file_path": "CMFRI/clean_export_csv.py",
+      "reason": "Preprocessing script, not a knowledge document"
+    },
+    {
+      "file_path": "CMFRI/CMFRI_Annual_Report_2025.pdf",
+      "reason": "Raw 40MB PDF superseded by clean English extraction in final_english/CMFRI_Annual_Report_2025_english_clean.txt"
+    },
+    {
+      "file_path": "CMFRI/convert_excel_to_csv.py",
+      "reason": "Preprocessing script, not a knowledge document"
+    },
+    {
+      "file_path": "CMFRI/detect_encoding_garbage.py",
+      "reason": "Preprocessing script, not a knowledge document"
+    },
+    {
+      "file_path": "CMFRI/extract_english_from_bilingual.py",
+      "reason": "Preprocessing script, not a knowledge document"
+    },
+    {
+      "file_path": "CMFRI/extract_mpeda_clean.py",
+      "reason": "Preprocessing script, not a knowledge document"
+    },
+    {
+      "file_path": "CMFRI/FishingBan.pdf",
+      "reason": "Raw bilingual PDF superseded by clean English extraction in final_english/FishingBan_english.txt"
+    },
+    {
+      "file_path": "CMFRI/fix_port_years.py",
+      "reason": "Preprocessing script, not a knowledge document"
+    },
+    {
+      "file_path": "CMFRI/Gazette_Notification_CAA_Rule_3_Amend.pdf",
+      "reason": "Raw bilingual PDF superseded by clean English extraction in final_english/Gazette_Notification_CAA_Rule_3_Amend_english.txt"
+    },
+    {
+      "file_path": "CMFRI/Guideline_l_(Seaweed).pdf",
+      "reason": "Raw bilingual PDF superseded by clean English extraction in final_english/Guideline_l_(Seaweed)_english.txt"
+    },
+    {
+      "file_path": "CMFRI/Guideline_m_(cage_and_pen_culture).pdf",
+      "reason": "Raw bilingual PDF superseded by clean English extraction in final_english/Guideline_m_(cage_and_pen_culture)_english.txt"
+    },
+    {
+      "file_path": "CMFRI/Guidelines_for_Regulating_Coastal_Aquaculture.pdf",
+      "reason": "Raw bilingual PDF superseded by clean English extraction in final_english/Guidelines_for_Regulating_Coastal_Aquaculture_english.txt"
+    },
+    {
+      "file_path": "CMFRI/ITEM_WISE_EXPORT_DATA_10_YEARS-24-25.xlsx",
+      "reason": "Raw Excel workbook superseded by clean CSV in clean_csv/item_wise_export_clean.csv"
+    },
+    {
+      "file_path": "CMFRI/MARKET_WISE_EXPORT_DATA_10_YEARS-24-25.xlsx",
+      "reason": "Raw Excel workbook superseded by clean CSV in clean_csv/market_wise_export_clean.csv"
+    },
+    {
+      "file_path": "CMFRI/MPEDA_Annual_Report_25-26.pdf",
+      "reason": "Raw 22MB PDF superseded by clean English extraction in final_english/MPEDA_Annual_Report_25-26_clean.txt"
+    },
+    {
+      "file_path": "CMFRI/PORT_WISE_EXPORT_DATA_10_YEARS-24-25.xlsx",
+      "reason": "Raw Excel workbook superseded by clean CSV in clean_csv/port_wise_export_clean.csv"
+    },
+    {
+      "file_path": "CMFRI/preprocessed/bilingual_english/Aquaculture_2024_english.txt",
+      "reason": "Intermediate bilingual extraction superseded by final_english/Aquaculture_2024_english.txt"
+    },
+    {
+      "file_path": "CMFRI/preprocessed/bilingual_english/bilingual_1_english.txt",
+      "reason": "Intermediate bilingual extraction superseded by final_english"
+    },
+    {
+      "file_path": "CMFRI/preprocessed/bilingual_english/bilingual_2_english.txt",
+      "reason": "Intermediate bilingual extraction superseded by final_english"
+    },
+    {
+      "file_path": "CMFRI/preprocessed/bilingual_english/CMFRI_Annual_Report_2025_english.txt",
+      "reason": "Intermediate bilingual extraction superseded by final_english/CMFRI_Annual_Report_2025_english_clean.txt"
+    },
+    {
+      "file_path": "CMFRI/preprocessed/bilingual_english/FishingBan_english.txt",
+      "reason": "Intermediate bilingual extraction superseded by final_english/FishingBan_english.txt"
+    },
+    {
+      "file_path": "CMFRI/preprocessed/bilingual_english/Gazette14-09-12_english.txt",
+      "reason": "Corrupted/empty extraction (35 bytes) from scanned image PDF"
+    },
+    {
+      "file_path": "CMFRI/preprocessed/bilingual_english/Gazette_Notification_CAA_Rule_3_Amend_english.txt",
+      "reason": "Intermediate bilingual extraction superseded by final_english"
+    },
+    {
+      "file_path": "CMFRI/preprocessed/bilingual_english/Guideline_l_(Seaweed)_english.txt",
+      "reason": "Intermediate bilingual extraction superseded by final_english"
+    },
+    {
+      "file_path": "CMFRI/preprocessed/bilingual_english/Guideline_m_(cage_and_pen_culture)_english.txt",
+      "reason": "Intermediate bilingual extraction superseded by final_english"
+    },
+    {
+      "file_path": "CMFRI/preprocessed/bilingual_english/Guidelines_for_Regulating_Coastal_Aquaculture_english.txt",
+      "reason": "Intermediate bilingual extraction superseded by final_english"
+    },
+    {
+      "file_path": "CMFRI/preprocessed/bilingual_english/MPEDA_Annual_Report_25-26_english.txt",
+      "reason": "Intermediate bilingual extraction superseded by final_english"
+    },
+    {
+      "file_path": "CMFRI/preprocessed/bilingual_files.txt",
+      "reason": "Internal scratchpad file list"
+    },
+    {
+      "file_path": "CMFRI/preprocessed/clean_csv/port_wise_export_clean_backup.csv",
+      "reason": "Duplicate backup file of port-wise export data"
+    },
+    {
+      "file_path": "CMFRI/preprocessed/clean_csv/port_wise_export_metadata.json",
+      "reason": "Intermediate script metadata artifact"
+    },
+    {
+      "file_path": "CMFRI/preprocessed/excel_to_csv/ITEM_WISE_EXPORT_DATA_10_YEARS-24-25_ITEM.csv",
+      "reason": "Intermediate raw CSV dump superseded by normalized item_wise_export_clean.csv"
+    },
+    {
+      "file_path": "CMFRI/preprocessed/excel_to_csv/MARKET_WISE_EXPORT_DATA_10_YEARS-24-25_MARKET.csv",
+      "reason": "Intermediate raw CSV dump superseded by normalized market_wise_export_clean.csv"
+    },
+    {
+      "file_path": "CMFRI/preprocessed/excel_to_csv/PORT_WISE_EXPORT_DATA_10_YEARS-24-25_PORT.csv",
+      "reason": "Intermediate raw CSV dump superseded by normalized port_wise_export_clean.csv"
+    },
+    {
+      "file_path": "CMFRI/preprocessed/mpeda_clean/MPEDA_Annual_Report_25-26_clean.txt",
+      "reason": "Duplicate of final_english/MPEDA_Annual_Report_25-26_clean.txt"
+    },
+    {
+      "file_path": "CMFRI/validate_preprocessed_files.py",
+      "reason": "Preprocessing script, not a knowledge document"
+    },
+    {
+      "file_path": "Guidelines/Fishermen-Marine-Forecast (1).pdf",
+      "reason": "Ephemeral daily forecast bulletin; live marine telemetry APIs handle real-time conditions"
+    },
+    {
+      "file_path": "Guidelines/Fishermen-Marine-Forecast (2).pdf",
+      "reason": "Ephemeral daily forecast bulletin; live marine telemetry APIs handle real-time conditions"
+    },
+    {
+      "file_path": "Guidelines/Fishermen-Marine-Forecast (3).pdf",
+      "reason": "Ephemeral daily forecast bulletin; live marine telemetry APIs handle real-time conditions"
+    },
+    {
+      "file_path": "Guidelines/Fishermen-Marine-Forecast (4).pdf",
+      "reason": "Ephemeral daily forecast bulletin; live marine telemetry APIs handle real-time conditions"
+    },
+    {
+      "file_path": "Guidelines/Fishermen-Marine-Forecast (6).pdf",
+      "reason": "Ephemeral daily forecast bulletin; live marine telemetry APIs handle real-time conditions"
+    },
+    {
+      "file_path": "Guidelines/Fishermen-Marine-Forecast (7).pdf",
+      "reason": "Ephemeral daily forecast bulletin; live marine telemetry APIs handle real-time conditions"
+    },
+    {
+      "file_path": "Guidelines/Fishermen-Marine-Forecast.pdf",
+      "reason": "Ephemeral daily forecast bulletin; live marine telemetry APIs handle real-time conditions"
+    },
+    {
+      "file_path": "incois/Highcharts Stacked Bar Chart.pdf",
+      "reason": "Visual chart artifact without extractable textual knowledge"
+    },
+    {
+      "file_path": "incois/MPEDA_Annual_Report_25-26.pdf",
+      "reason": "Duplicate 22MB raw PDF in incois folder superseded by final_english/MPEDA_Annual_Report_25-26_clean.txt"
+    }
+  ],
+  "deferred": [
+    {
+      "file_path": "CMFRI/2026AHF_RT88_E.pdf",
+      "reason": "Unregistered knowledge candidate — deferred for manual evaluation"
+    },
+    {
+      "file_path": "CMFRI/CMFRI Annual Report 2024.pdf",
+      "reason": "Large 108MB legacy annual report superseded by clean CMFRI Annual Report 2025"
+    },
+    {
+      "file_path": "CMFRI/Export-performance-2023-24-V5.pdf",
+      "reason": "Unregistered knowledge candidate — deferred for manual evaluation"
+    },
+    {
+      "file_path": "CMFRI/FISHERIES _ West Godavari District, Government of Andhra Pradesh _ India.pdf",
+      "reason": "Unregistered knowledge candidate — deferred for manual evaluation"
+    },
+    {
+      "file_path": "CMFRI/Gazette14-09-12.pdf",
+      "reason": "Scanned image PDF containing no machine-readable extractable text (35 bytes raw text)"
+    },
+    {
+      "file_path": "CMFRI/Guidelines-Englishnew.pdf",
+      "reason": "Unregistered knowledge candidate — deferred for manual evaluation"
+    },
+    {
+      "file_path": "CMFRI/Guidelines_SPF_Certification_DoF_MoFAHD_GoI_Dated_23rd_May_2023.pdf",
+      "reason": "Unregistered knowledge candidate — deferred for manual evaluation"
+    },
+    {
+      "file_path": "CMFRI/Marine Fisheries Census_2016_India.pdf",
+      "reason": "15MB legacy 2016 census superseded by 5th Marine Fisheries Census 2025"
+    },
+    {
+      "file_path": "CMFRI/Marine_Fisheries_Information_Service_Vol_79.pdf",
+      "reason": "Unregistered knowledge candidate — deferred for manual evaluation"
+    },
+    {
+      "file_path": "CMFRI/Marine_Fisheries_Information_Service_Vol_80.pdf",
+      "reason": "Unregistered knowledge candidate — deferred for manual evaluation"
+    },
+    {
+      "file_path": "CMFRI/preprocessed/landing_centres/Handbook Fisheries Statistics 19.01.2023 (Final File).cdr.pdf",
+      "reason": "41MB CorelDraw graphic export PDF with complex vector layouts"
+    },
+    {
+      "file_path": "Guidelines/FREE RATION.pdf",
+      "reason": "Unregistered knowledge candidate — deferred for manual evaluation"
+    },
+    {
+      "file_path": "Guidelines/Handbook Fisheries Statistics 19.01.2023 (Final File).cdr.pdf",
+      "reason": "41MB CorelDraw graphic export PDF with complex vector layouts"
+    },
+    {
+      "file_path": "Guidelines/openIssuedGOList (1)_0.pdf",
+      "reason": "Unregistered knowledge candidate — deferred for manual evaluation"
+    },
+    {
+      "file_path": "Guidelines/openIssuedGOList (8) (1).pdf",
+      "reason": "Unregistered knowledge candidate — deferred for manual evaluation"
+    },
+    {
+      "file_path": "Guidelines/openIssuedGOList - 2023-06-21T170255.326.pdf",
+      "reason": "Unregistered knowledge candidate — deferred for manual evaluation"
+    },
+    {
+      "file_path": "incois/AR_2023-24_20250813165305.pdf",
+      "reason": "Unregistered knowledge candidate — deferred for manual evaluation"
+    },
+    {
+      "file_path": "incois/Azista_report_12_Aug_2025.pdf",
+      "reason": "Unregistered knowledge candidate — deferred for manual evaluation"
+    },
+    {
+      "file_path": "incois/ESSO-INCOIS-OMARS-TR-02-2024.pdf",
+      "reason": "Unregistered knowledge candidate — deferred for manual evaluation"
+    },
+    {
+      "file_path": "incois/ESSO-INCOIS-OMARS-TR-06(2024).pdf",
+      "reason": "Unregistered knowledge candidate — deferred for manual evaluation"
+    },
+    {
+      "file_path": "incois/Marlin_repot_12_Aug_2025.pdf",
+      "reason": "Unregistered knowledge candidate — deferred for manual evaluation"
+    },
+    {
+      "file_path": "incois/TR_ESSO-INCOIS-ODICT-TR-02(2025)_20250722172014.pdf",
+      "reason": "Unregistered knowledge candidate — deferred for manual evaluation"
+    },
+    {
+      "file_path": "incois/TR_ESSO-INCOIS-ODM-TR-01(2024)_20260107124227.pdf",
+      "reason": "Unregistered knowledge candidate — deferred for manual evaluation"
+    },
+    {
+      "file_path": "incois/TR_ESSO-INCOIS-OMARS-TR-07(2024)_20250701122038.pdf",
+      "reason": "Unregistered knowledge candidate — deferred for manual evaluation"
+    },
+    {
+      "file_path": "incois/TR_ESSO-INCOIS-OMDA-TR-04(2025)_20250725114934.pdf",
+      "reason": "Unregistered knowledge candidate — deferred for manual evaluation"
+    }
+  ],
+  "statistics": {
+    "documents": 32,
+    "chunks": 2541,
+    "documents_discovered": 105,
+    "documents_included": 32,
+    "documents_excluded": 48,
+    "documents_deferred": 25,
+    "chunks_created": 2541,
+    "chunks_indexed": 2541
+  }
+}

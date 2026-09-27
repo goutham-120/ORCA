@@ -6,7 +6,9 @@
  * - Open-Meteo Marine API ocean_current_direction vector features
  */
 
-const API_BASE = '/api'
+import { API_BASE_URL } from './api'
+
+const API_BASE = `${API_BASE_URL}/api`
 
 export async function fetchSpatialGrid(latitude = 17.6868, longitude = 83.2185, radiusKm = 50) {
   try {

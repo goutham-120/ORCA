@@ -30,20 +30,52 @@ class OrcaState(TypedDict, total=False):
     decision: dict[str, Any]
     execution_steps: list[dict[str, Any]]
     spatial_data: dict[str, Any]
+    # RAG state fields (Phase 3)
+    knowledge_context: str
+    rag_used: bool
+    rag_query: str
+    rag_retrieved_chunks: list[dict[str, Any]]
+    rag_status: str
+    rag_sources: list[str]
+    rag_payload: dict[str, Any]
 
 class OrcaWorkflow:
-    stages=("context_preparation","query_understanding","planning","agent_selection","agent_execution","evidence_collection","evidence_validation","grounded_synthesis","final_response")
+    stages = ("context_preparation", "query_understanding", "planning", "agent_selection", "agent_execution", "evidence_collection", "rag_retrieval", "evidence_validation", "grounded_synthesis", "final_response")
     def __init__(self, coordinator: DataCoordinator | None=None, llm: LLMClient | None=None, decision_service: DecisionService | None=None, auto_sync_pfz: bool = False) -> None:
         self.coordinator=coordinator or DataCoordinator()
         if "weather" not in self.coordinator._sources: self.coordinator.register("weather", WeatherTool())
         if "ocean" not in self.coordinator._sources: self.coordinator.register("ocean", OceanTool())
         self._agents={"weather":WeatherAgent(),"ocean":OceanAgent(),"gis":GISAgent()}; self.llm=llm or OpenAICompatibleLLM(); self.decision_service=decision_service or DecisionService(weather=self.coordinator._sources["weather"], ocean=self.coordinator._sources["ocean"]); self.auto_sync_pfz=auto_sync_pfz; self.graph=self.build_langgraph()
     def build_langgraph(self) -> Any:
-        graph=StateGraph(OrcaState)
-        for name, node in (("context_preparation",self._prepare),("query_understanding",self._understand),("planning",self._plan),("agent_execution",self._execute),("evidence_collection",self._evidence),("evidence_validation",self._validate),("decision",self._decision),("grounded_synthesis",self._synthesize),("final_response",self._final)): graph.add_node(name,node)
-        graph.add_edge(START,"context_preparation"); graph.add_edge("context_preparation","query_understanding"); graph.add_edge("query_understanding","planning")
-        graph.add_conditional_edges("planning",self._route,{"agents":"agent_execution","no_agents":"evidence_collection"})
-        graph.add_edge("agent_execution","evidence_collection"); graph.add_edge("evidence_collection","evidence_validation"); graph.add_edge("evidence_validation","decision"); graph.add_edge("decision","grounded_synthesis"); graph.add_edge("grounded_synthesis","final_response"); graph.add_edge("final_response",END)
+        graph = StateGraph(OrcaState)
+        for name, node in (
+            ("context_preparation", self._prepare),
+            ("query_understanding", self._understand),
+            ("planning", self._plan),
+            ("agent_execution", self._execute),
+            ("evidence_collection", self._evidence),
+            ("rag_retrieval", self._rag_retrieve),
+            ("evidence_validation", self._validate),
+            ("decision", self._decision),
+            ("grounded_synthesis", self._synthesize),
+            ("final_response", self._final),
+        ):
+            graph.add_node(name, node)
+        graph.add_edge(START, "context_preparation")
+        graph.add_edge("context_preparation", "query_understanding")
+        graph.add_edge("query_understanding", "planning")
+        graph.add_conditional_edges(
+            "planning",
+            self._route,
+            {"agents": "agent_execution", "no_agents": "rag_retrieval"},
+        )
+        graph.add_edge("agent_execution", "evidence_collection")
+        graph.add_edge("evidence_collection", "rag_retrieval")
+        graph.add_edge("rag_retrieval", "evidence_validation")
+        graph.add_edge("evidence_validation", "decision")
+        graph.add_edge("decision", "grounded_synthesis")
+        graph.add_edge("grounded_synthesis", "final_response")
+        graph.add_edge("final_response", END)
         return graph.compile()
     async def run(self, context: QueryContext) -> dict[str, Any]: return await self.graph.ainvoke({"context":context, "execution_steps": []})
     async def _prepare(self,state: OrcaState)->dict[str,Any]:
@@ -61,21 +93,28 @@ class OrcaWorkflow:
         return {"pending_domains":[], "execution_steps": steps}
     async def _understand(self,state: OrcaState)->dict[str,Any]: return {}
     async def _plan(self,state: OrcaState)->dict[str,Any]:
-        ctx=state["context"]; p=ctx.parsed_query; domains=[d for d in p.requested_domains if d in {"ocean","weather","gis","pfz"}]
-        fallback=QueryPlan(intent=p.intent,requested_domains=domains,location_required=bool(domains),time_expression=p.time_expression,decision_type=p.decision_type if p.decision_type in {"safety", "fishing", "pfz", "hazard", "route", "anomaly", "simulation"} else None,subtasks=[Subtask(id=f"{d}-evidence",domain=d,purpose=f"retrieve {d} evidence",evidence_required=[f"{d} evidence"]) for d in domains if d in self._agents],response_focus=self._persona_focus(str(ctx.metadata.get("persona","general_user"))))
-        llm_plan=await self.llm.plan(p.normalized,fallback,str(ctx.metadata.get("persona","general_user")))
-        plan=fallback
-        if llm_plan and set(llm_plan.requested_domains) == set(domains):
-            plan=llm_plan
-        if p.decision_type and plan.decision_type != p.decision_type:
-            plan=plan.model_copy(update={"decision_type": p.decision_type})
-        selected=[]
-        for domain in plan.requested_domains:
-            if domain == "pfz" and p.decision_type != "pfz":
-                continue
-            agent_domain = "gis" if domain == "pfz" else domain
-            if agent_domain in self._agents and (agent_domain != "gis" or ctx.location is not None) and agent_domain not in selected:
-                selected.append(agent_domain)
+        ctx=state["context"]; p=ctx.parsed_query;
+        is_knowledge_only = getattr(p, "query_mode", "live_operational") == "knowledge_only"
+        domains=[] if is_knowledge_only else [d for d in p.requested_domains if d in {"ocean","weather","gis","pfz"}]
+        fallback=QueryPlan(intent=p.intent,requested_domains=domains,location_required=bool(domains),time_expression=p.time_expression,decision_type=None if is_knowledge_only else (p.decision_type if p.decision_type in {"safety", "fishing", "pfz", "hazard", "route", "anomaly", "simulation"} else None),subtasks=[] if is_knowledge_only else [Subtask(id=f"{d}-evidence",domain=d,purpose=f"retrieve {d} evidence",evidence_required=[f"{d} evidence"]) for d in domains if d in self._agents],response_focus=self._persona_focus(str(ctx.metadata.get("persona","general_user"))))
+        if is_knowledge_only:
+            llm_plan = None
+            plan = fallback
+            selected = []
+        else:
+            llm_plan=await self.llm.plan(p.normalized,fallback,str(ctx.metadata.get("persona","general_user")))
+            plan=fallback
+            if llm_plan and set(llm_plan.requested_domains) == set(domains):
+                plan=llm_plan
+            if p.decision_type and plan.decision_type != p.decision_type:
+                plan=plan.model_copy(update={"decision_type": p.decision_type})
+            selected=[]
+            for domain in plan.requested_domains:
+                if domain == "pfz" and p.decision_type != "pfz":
+                    continue
+                agent_domain = "gis" if domain == "pfz" else domain
+                if agent_domain in self._agents and (agent_domain != "gis" or ctx.location is not None) and agent_domain not in selected:
+                    selected.append(agent_domain)
         pending=[d for d in p.requested_domains if d in {"ocean", "weather", "gis", "pfz"} and ("gis" if d == "pfz" else d) not in selected]
         ctx.metadata["plan"]=plan.model_dump(); ctx.metadata["pending_domains"]=pending
 
@@ -171,6 +210,9 @@ class OrcaWorkflow:
         return {"evidence": out}
     async def _validate(self,state: OrcaState)->dict[str,Any]: return {}
     async def _decision(self,state: OrcaState)->dict[str,Any]:
+        ctx = state["context"]
+        if getattr(ctx.parsed_query, "query_mode", "live_operational") == "knowledge_only":
+            return {"decision": None, "spatial_data": None}
         decision_type=state.get("plan").decision_type if state.get("plan") else None
         location=state["context"].location
         spatial_data = None
@@ -259,17 +301,227 @@ class OrcaWorkflow:
 
         return {"decision": decision, "spatial_data": spatial_data, "execution_steps": steps}
 
-    async def _synthesize(self,state: OrcaState)->dict[str,Any]:
-        unavailable=[d for d,r in state.get("analysis_results",{}).items() if r.get("data_status") not in {"live","cached","demo","static"}]
-        ctx=state["context"]
-        payload={"query":ctx.parsed_query.original,"context":ctx.as_dict(),"selected_agents":state.get("selected",[]),"analysis_results":state.get("analysis_results",{}),"evidence":state.get("evidence",[]),"decision":state.get("decision"),"unavailable_domains":unavailable}
-        synthesize=getattr(self.llm,"synthesize",None)
-        answer=await synthesize(payload,str(ctx.metadata.get("response_language","en"))) if synthesize and getattr(self.llm,"api_key",True) else None
-        fallback="ORCA could not complete a full evidence-based response."
-        if unavailable:
-            fallback += " Unavailable evidence: " + ", ".join(unavailable) + "."
-
+    async def _rag_retrieve(self, state: OrcaState) -> dict[str, Any]:
+        ctx = state["context"]
+        query = ctx.parsed_query.normalized or ctx.parsed_query.original
         steps = list(state.get("execution_steps", []))
+
+        from app.rag.config import get_rag_settings
+        from app.rag.domain_router import is_marine_domain
+        from app.rag.context_fusion import ContextFusion
+
+        settings = get_rag_settings()
+
+        if not settings.enabled:
+            return {
+                "knowledge_context": "",
+                "rag_used": False,
+                "rag_query": query,
+                "rag_retrieved_chunks": [],
+                "rag_status": "disabled",
+                "rag_sources": [],
+                "rag_payload": {
+                    "used": False,
+                    "status": "disabled",
+                    "query": query,
+                    "retrieved_chunks": [],
+                    "sources": [],
+                },
+            }
+
+        if not is_marine_domain(query, ctx.parsed_query):
+            steps.append({
+                "step": len(steps) + 1,
+                "agent": "RAGRetriever",
+                "action": "knowledge_retrieval",
+                "status": "skipped",
+                "description": "Query is outside ORCA's marine knowledge domain.",
+                "details": {"rag_used": False, "status": "skipped", "reason": "out_of_domain"},
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            })
+            return {
+                "knowledge_context": "",
+                "rag_used": False,
+                "rag_query": query,
+                "rag_retrieved_chunks": [],
+                "rag_status": "skipped",
+                "rag_sources": [],
+                "rag_payload": {
+                    "used": False,
+                    "status": "skipped",
+                    "query": query,
+                    "retrieved_chunks": [],
+                    "sources": [],
+                },
+                "execution_steps": steps,
+            }
+
+        try:
+            from app.rag.retriever import get_retriever
+            retriever = get_retriever()
+            rag_res = retriever.retrieve(query)
+
+            fusion = ContextFusion()
+            fused = fusion.fuse(
+                rag_result=rag_res,
+                analysis_results=state.get("analysis_results"),
+                evidence=state.get("evidence"),
+            )
+
+            rag_used = rag_res.used
+            rag_status = rag_res.retrieval_status
+            retrieved_chunks = fused["knowledge_evidence"]
+            sources = fused["knowledge_sources"]
+            knowledge_text = fused["knowledge_context_text"]
+
+            desc = (
+                f"Retrieved {len(retrieved_chunks)} knowledge chunks from ChromaDB ({', '.join(sources[:2])})."
+                if rag_used
+                else f"RAG retrieval {rag_status} for query."
+            )
+            steps.append({
+                "step": len(steps) + 1,
+                "agent": "RAGRetriever",
+                "action": "knowledge_retrieval",
+                "status": "completed" if rag_used else "skipped",
+                "description": desc,
+                "details": {
+                    "rag_used": rag_used,
+                    "status": rag_status,
+                    "chunk_count": len(retrieved_chunks),
+                    "sources": sources,
+                },
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            })
+
+            rag_payload = {
+                "used": rag_used,
+                "status": rag_status,
+                "query": query,
+                "retrieved_chunks": retrieved_chunks,
+                "sources": sources,
+            }
+
+            return {
+                "knowledge_context": knowledge_text,
+                "rag_used": rag_used,
+                "rag_query": query,
+                "rag_retrieved_chunks": retrieved_chunks,
+                "rag_status": rag_status,
+                "rag_sources": sources,
+                "rag_payload": rag_payload,
+                "execution_steps": steps,
+            }
+
+        except Exception as exc:
+            steps.append({
+                "step": len(steps) + 1,
+                "agent": "RAGRetriever",
+                "action": "knowledge_retrieval",
+                "status": "failed",
+                "description": f"RAG retrieval encountered an error: {exc}",
+                "details": {"rag_used": False, "status": "error", "error": str(exc)},
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            })
+            return {
+                "knowledge_context": "",
+                "rag_used": False,
+                "rag_query": query,
+                "rag_retrieved_chunks": [],
+                "rag_status": "error",
+                "rag_sources": [],
+                "rag_payload": {
+                    "used": False,
+                    "status": "error",
+                    "query": query,
+                    "retrieved_chunks": [],
+                    "sources": [],
+                },
+                "execution_steps": steps,
+            }
+
+    async def _synthesize(self, state: OrcaState) -> dict[str, Any]:
+        unavailable = [
+            d for d, r in state.get("analysis_results", {}).items()
+            if r.get("data_status") not in {"live", "cached", "demo", "static"}
+        ]
+        ctx = state["context"]
+        knowledge_context = state.get("knowledge_context", "")
+        sources = state.get("rag_sources", [])
+        query_mode = getattr(ctx.parsed_query, "query_mode", "live_operational")
+        steps = list(state.get("execution_steps", []))
+
+        payload = {
+            "query": ctx.parsed_query.original,
+            "query_mode": query_mode,
+            "context": ctx.as_dict(),
+            "selected_agents": state.get("selected", []),
+            "analysis_results": state.get("analysis_results", {}),
+            "evidence": state.get("evidence", []),
+            "decision": state.get("decision"),
+            "unavailable_domains": unavailable,
+            "knowledge_context": knowledge_context,
+            "knowledge_sources": sources,
+        }
+        synthesize = getattr(self.llm, "synthesize", None)
+        answer = (
+            await synthesize(payload, str(ctx.metadata.get("response_language", "en")))
+            if synthesize and getattr(self.llm, "api_key", True)
+            else None
+        )
+
+        was_llm = bool(answer)
+        if not answer:
+            resp_lang = str(ctx.metadata.get("response_language", "en")).lower()
+            if resp_lang in {"te", "te-in", "telugu"}:
+                live_hdr = "ప్రస్తుత కార్యాచరణ అంచనా:"
+                doc_hdr = "అధికారిక సముద్ర విజ్ఞానం:"
+            elif resp_lang in {"hi", "hi-in", "hindi"}:
+                live_hdr = "वर्तमान परिचालन मूल्यांकन:"
+                doc_hdr = "दस्तावेजी समुद्री ज्ञान:"
+            elif resp_lang in {"ta", "ta-in", "tamil"}:
+                live_hdr = "தற்போதைய செயல்பாட்டு மதிப்பீடு:"
+                doc_hdr = "ஆவணப்படுத்தப்பட்ட கடல்சார் அறிவு:"
+            else:
+                live_hdr = "Current Operational Assessment:"
+                doc_hdr = "Documented Marine Knowledge:"
+
+            live_assessment = None
+            decision = state.get("decision")
+            if decision and decision.get("assessment") and query_mode != "knowledge_only":
+                live_assessment = f"{live_hdr}\n{decision['assessment']}"
+
+            if state.get("rag_used") and knowledge_context:
+                from app.rag.knowledge_synthesizer import synthesize_knowledge_answer
+                retrieved_chunks = state.get("rag_retrieved_chunks") or []
+                synthesized_knowledge = synthesize_knowledge_answer(
+                    query=ctx.parsed_query.original,
+                    query_mode=query_mode,
+                    intent=ctx.parsed_query.intent,
+                    chunks=retrieved_chunks,
+                    language=resp_lang,
+                )
+                if live_assessment and query_mode != "knowledge_only":
+                    answer = f"{live_assessment}\n\n{doc_hdr}\n{synthesized_knowledge}"
+                elif unavailable and query_mode != "knowledge_only":
+                    answer = f"ORCA could not complete a full evidence-based response. Unavailable evidence: {', '.join(unavailable)}.\n\n{doc_hdr}\n{synthesized_knowledge}"
+                else:
+                    answer = synthesized_knowledge
+            elif live_assessment and query_mode != "knowledge_only":
+                answer = live_assessment
+            else:
+                is_out_of_domain = any(step.get("details", {}).get("reason") == "out_of_domain" for step in steps)
+                if state.get("rag_status") == "skipped" and is_out_of_domain:
+                    answer = (
+                        "ORCA is a specialized marine intelligence platform dedicated to oceanography, "
+                        "fisheries, maritime safety, and coastal regulations. This query is outside the marine domain."
+                    )
+                else:
+                    fallback = "ORCA could not complete a full evidence-based response."
+                    if unavailable:
+                        fallback += " Unavailable evidence: " + ", ".join(unavailable) + "."
+                    answer = fallback
+
         steps.append({
             "step": len(steps) + 1,
             "agent": "SynthesizerAgent",
@@ -279,8 +531,8 @@ class OrcaWorkflow:
             "timestamp": datetime.now(timezone.utc).isoformat(),
         })
 
-        return {"answer":answer or fallback,"llm_synthesis":bool(answer), "execution_steps": steps}
-    async def _final(self,state: OrcaState)->dict[str,Any]: return {}
+        return {"answer": answer, "llm_synthesis": was_llm, "execution_steps": steps}
+    async def _final(self, state: OrcaState) -> dict[str, Any]: return {}
     @staticmethod
     def _persona_focus(persona:str)->str: return {"fisher_marine_operator":"practical fishing suitability and safety","researcher_scientist":"measurements, timestamps, and provenance","coastal_authority":"risk severity and monitoring implications"}.get(persona,"clear, understandable conditions")
 

@@ -38,3 +38,10 @@ Thumbs.db
 
 backend/orca-session-backend*.log
 backend/orca-session-backend*.log
+
+# ORCA knowledge source files
+orca-knowledge/
+
+# ChromaDB vector store data
+backend/data/rag/chroma/*
+!backend/data/rag/chroma/README.md
