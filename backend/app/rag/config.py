@@ -103,7 +103,7 @@ def get_rag_settings() -> RAGSettings:
         Path(knowledge_path_raw) if knowledge_path_raw else _REPO_ROOT / "orca-knowledge"
     )
 
-    persist_dir_raw = os.getenv("RAG_PERSIST_DIRECTORY", "")
+    persist_dir_raw = os.getenv("RAG_PERSIST_DIRECTORY", "") or os.getenv("RAG_CHROMA_PERSIST_DIR", "")
     persist_directory = (
         Path(persist_dir_raw)
         if persist_dir_raw
