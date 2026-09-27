@@ -166,6 +166,14 @@ const DEMO_PRESETS = {
         name: 'High-Density Tuna PFZ #04',
         distance_km: 28.4,
         rep_point: [83.42, 17.58],
+        geometry: {
+          type: 'LineString',
+          coordinates: [
+            [83.38, 17.60],
+            [83.42, 17.58],
+            [83.46, 17.55],
+          ],
+        },
         properties: {
           name: 'High-Density Tuna PFZ #04',
           sst_c: 28.1,
@@ -230,7 +238,14 @@ const DEMO_PRESETS = {
         name: 'High-Density Tuna PFZ #04',
         distance_km: 28.4,
         within_radius: true,
-        geometry: { type: 'Point', coordinates: [83.42, 17.58] },
+        geometry: {
+          type: 'LineString',
+          coordinates: [
+            [83.38, 17.60],
+            [83.42, 17.58],
+            [83.46, 17.55],
+          ],
+        },
         rep_point: [83.42, 17.58],
         properties: { name: 'High-Density Tuna PFZ #04', sst_c: 28.1, chlorophyll_mg_m3: 2.45, depth_m: 55 },
       },
@@ -240,6 +255,36 @@ const DEMO_PRESETS = {
         { id: 'pfz-vizag-04', name: 'High-Density Tuna PFZ #04', distance_km: 28.4, within_radius: true, suitability: 'suitable', rep_point: [83.42, 17.58] },
       ],
     },
+    extraPFZs: [
+      {
+        id: 'pfz-vizag-04',
+        name: 'High-Density Tuna PFZ #04',
+        layer: 'pfz',
+        dataset: 'INCOIS_PFZ',
+        source: 'INCOIS',
+        freshness_status: 'live',
+        properties: {
+          id: 'pfz-vizag-04',
+          name: 'High-Density Tuna PFZ #04',
+          layer: 'pfz',
+          sst_c: 28.1,
+          chlorophyll_mg_m3: 2.45,
+          depth_m: 55,
+          bearing_deg: 122,
+          potential_yield: 'HIGH (Tuna & Pelagic Species)',
+          source: 'INCOIS',
+          freshness_status: 'live',
+        },
+        geometry: {
+          type: 'LineString',
+          coordinates: [
+            [83.38, 17.60],
+            [83.42, 17.58],
+            [83.46, 17.55],
+          ],
+        },
+      },
+    ],
   },
 
   chennai: {
@@ -273,6 +318,14 @@ const DEMO_PRESETS = {
         name: 'Kasimedu Offshore PFZ Zone',
         distance_km: 42.6,
         rep_point: [80.55, 13.12],
+        geometry: {
+          type: 'LineString',
+          coordinates: [
+            [80.52, 13.14],
+            [80.55, 13.12],
+            [80.58, 13.10],
+          ],
+        },
         properties: {
           name: 'Kasimedu Offshore PFZ Zone',
           sst_c: 28.6,
@@ -307,6 +360,13 @@ const DEMO_PRESETS = {
         estimated_fuel_liters: 41.4,
         fuel_delta_liters: 21.8,
         alternative_used: true,
+        blocked_direct_geometry: {
+          type: 'LineString',
+          coordinates: [
+            [80.2707, 13.0827],
+            [80.55, 13.12],
+          ],
+        },
         route_geometry: {
           type: 'LineString',
           coordinates: [
@@ -343,7 +403,14 @@ const DEMO_PRESETS = {
         name: 'Kasimedu Offshore PFZ Zone',
         distance_km: 42.6,
         within_radius: true,
-        geometry: { type: 'Point', coordinates: [80.55, 13.12] },
+        geometry: {
+          type: 'LineString',
+          coordinates: [
+            [80.52, 13.14],
+            [80.55, 13.12],
+            [80.58, 13.10],
+          ],
+        },
         rep_point: [80.55, 13.12],
         properties: { name: 'Kasimedu Offshore PFZ Zone', sst_c: 28.6, chlorophyll_mg_m3: 1.85 },
       },
@@ -353,6 +420,35 @@ const DEMO_PRESETS = {
         { id: 'pfz-chennai-02', name: 'Kasimedu Offshore PFZ Zone', distance_km: 42.6, within_radius: true, suitability: 'suitable', rep_point: [80.55, 13.12] },
       ],
     },
+    extraPFZs: [
+      {
+        id: 'pfz-chennai-02',
+        name: 'Kasimedu Offshore PFZ Zone',
+        layer: 'pfz',
+        dataset: 'INCOIS_PFZ',
+        source: 'INCOIS',
+        freshness_status: 'live',
+        properties: {
+          id: 'pfz-chennai-02',
+          name: 'Kasimedu Offshore PFZ Zone',
+          layer: 'pfz',
+          sst_c: 28.6,
+          chlorophyll_mg_m3: 1.85,
+          depth_m: 42,
+          bearing_deg: 78,
+          source: 'INCOIS',
+          freshness_status: 'live',
+        },
+        geometry: {
+          type: 'LineString',
+          coordinates: [
+            [80.52, 13.14],
+            [80.55, 13.12],
+            [80.58, 13.10],
+          ],
+        },
+      },
+    ],
     extraHazards: [
       {
         id: 'demo-hazard-chennai-sandbar',
@@ -363,11 +459,11 @@ const DEMO_PRESETS = {
         geometry: {
           type: 'Polygon',
           coordinates: [[
-            [80.35, 13.05],
-            [80.42, 13.05],
+            [80.34, 13.06],
+            [80.42, 13.06],
             [80.42, 13.13],
-            [80.35, 13.13],
-            [80.35, 13.05],
+            [80.34, 13.13],
+            [80.34, 13.06],
           ]],
         },
       },
@@ -380,11 +476,11 @@ const DEMO_PRESETS = {
         geometry: {
           type: 'Polygon',
           coordinates: [[
-            [80.38, 13.10],
-            [80.48, 13.10],
-            [80.48, 13.17],
-            [80.38, 13.17],
-            [80.38, 13.10],
+            [80.37, 13.09],
+            [80.48, 13.09],
+            [80.48, 13.16],
+            [80.37, 13.16],
+            [80.37, 13.09],
           ]],
         },
       },
@@ -422,6 +518,14 @@ const DEMO_PRESETS = {
         name: 'Arabian Sea Offshore PFZ Zone #01',
         distance_km: 24.5,
         rep_point: [76.01, 9.88],
+        geometry: {
+          type: 'LineString',
+          coordinates: [
+            [75.98, 9.90],
+            [76.01, 9.88],
+            [76.04, 9.86],
+          ],
+        },
         properties: {
           name: 'Arabian Sea Offshore PFZ Zone #01',
           sst_c: 28.8,
@@ -507,7 +611,14 @@ const DEMO_PRESETS = {
         name: 'Arabian Sea Offshore PFZ Zone #01',
         distance_km: 24.5,
         within_radius: true,
-        geometry: { type: 'Point', coordinates: [76.01, 9.88] },
+        geometry: {
+          type: 'LineString',
+          coordinates: [
+            [75.98, 9.90],
+            [76.01, 9.88],
+            [76.04, 9.86],
+          ],
+        },
         rep_point: [76.01, 9.88],
         properties: { name: 'Arabian Sea Offshore PFZ Zone #01', sst_c: 28.8, chlorophyll_mg_m3: 3.10 },
       },
@@ -517,6 +628,35 @@ const DEMO_PRESETS = {
         { id: 'pfz-kochi-01', name: 'Arabian Sea Offshore PFZ Zone #01', distance_km: 24.5, within_radius: true, suitability: 'suitable', rep_point: [76.01, 9.88] },
       ],
     },
+    extraPFZs: [
+      {
+        id: 'pfz-kochi-01',
+        name: 'Arabian Sea Offshore PFZ Zone #01',
+        layer: 'pfz',
+        dataset: 'INCOIS_PFZ',
+        source: 'INCOIS',
+        freshness_status: 'live',
+        properties: {
+          id: 'pfz-kochi-01',
+          name: 'Arabian Sea Offshore PFZ Zone #01',
+          layer: 'pfz',
+          sst_c: 28.8,
+          chlorophyll_mg_m3: 3.10,
+          depth_m: 48,
+          bearing_deg: 240,
+          source: 'INCOIS',
+          freshness_status: 'live',
+        },
+        geometry: {
+          type: 'LineString',
+          coordinates: [
+            [75.98, 9.90],
+            [76.01, 9.88],
+            [76.04, 9.86],
+          ],
+        },
+      },
+    ],
   },
 }
 
@@ -656,6 +796,43 @@ export default function MapExplorer({ navigate }) {
   const [isDemoMode, setIsDemoMode] = useState(false)
   const [activeDemoPreset, setActiveDemoPreset] = useState(null)
 
+  const fetchLayers = useCallback(async (signal) => {
+    try {
+      const availableLayers = await getMapLayers({ signal })
+      if (!Array.isArray(availableLayers)) return []
+
+      const availableIds = availableLayers
+        .filter((layer) => layer?.available)
+        .map((layer) => layer.id)
+        .filter(Boolean)
+
+      const features = await getMapFeatures(availableIds, { signal }).catch(() => [])
+      const safeFeatures = Array.isArray(features) ? features : []
+
+      return availableLayers.map((layer) => {
+        if (!layer) return null
+        const layerIdStr = String(layer.id || '').toLowerCase()
+        const persistedFeatures = safeFeatures.filter((feature) => {
+          if (!feature) return false
+          const featLayerStr = String(feature.layer || feature.dataset || '').toLowerCase()
+          return featLayerStr === layerIdStr
+        })
+        const allFeatures = persistedFeatures.length > 0 ? persistedFeatures : (Array.isArray(layer.features) ? layer.features : [])
+        const count = allFeatures.length
+        return {
+          ...layer,
+          available: count > 0,
+          feature_count: count,
+          enabled: layer.enabled !== undefined ? Boolean(layer.enabled) : count > 0,
+          features: allFeatures,
+        }
+      }).filter(Boolean)
+    } catch (e) {
+      console.warn('Failed to fetch GIS layers:', e)
+      return []
+    }
+  }, [])
+
   const loadDemoScenario = useCallback((presetKey) => {
     const preset = DEMO_PRESETS[presetKey]
     if (!preset) return
@@ -685,7 +862,7 @@ export default function MapExplorer({ navigate }) {
     setIsHudOpen(preset.isRouteVisible)
 
     setLayers((currentLayers) => {
-      const layerMap = preset.layersState
+      const layerMap = preset.layersState || {}
       let updated = (Array.isArray(currentLayers) ? currentLayers : []).map((layer) => {
         const id = String(layer?.id || '').toLowerCase()
         if (layerMap[id] !== undefined) {
@@ -694,6 +871,35 @@ export default function MapExplorer({ navigate }) {
         return layer
       })
 
+      // Ensure PFZ layer exists, is enabled, and has preset.extraPFZs
+      let pfzLayer = updated.find((l) => String(l.id).toLowerCase() === 'pfz')
+      if (!pfzLayer) {
+        pfzLayer = {
+          id: 'pfz',
+          name: 'Potential Fishing Zones',
+          layer_type: 'vector',
+          available: true,
+          enabled: true,
+          feature_count: 0,
+          features: [],
+        }
+        updated.push(pfzLayer)
+      }
+      pfzLayer.enabled = true
+      pfzLayer.available = true
+      if (preset.extraPFZs && preset.extraPFZs.length > 0) {
+        const currentFeats = Array.isArray(pfzLayer.features) ? pfzLayer.features : []
+        const merged = [...preset.extraPFZs]
+        currentFeats.forEach((f) => {
+          if (!merged.some((m) => m.id === f.id)) {
+            merged.push(f)
+          }
+        })
+        pfzLayer.features = merged
+        pfzLayer.feature_count = merged.length
+      }
+
+      // Add extraHazards
       if (preset.extraHazards && preset.extraHazards.length > 0) {
         preset.extraHazards.forEach((extra) => {
           const targetLayerId = extra.layer
@@ -719,6 +925,16 @@ export default function MapExplorer({ navigate }) {
           }
         })
       }
+
+      // Explicitly enforce layer visibility based on preset
+      updated = updated.map((layer) => {
+        const id = String(layer.id).toLowerCase()
+        if (layerMap[id] !== undefined) {
+          return { ...layer, enabled: Boolean(layerMap[id]) }
+        }
+        return layer
+      })
+
       return updated
     })
 
@@ -739,16 +955,6 @@ export default function MapExplorer({ navigate }) {
       error: '',
       data: preset.pfzEvaluationData,
     })
-
-    window.dispatchEvent(
-      new CustomEvent('orca-select-coord', {
-        detail: {
-          latitude: preset.center.latitude,
-          longitude: preset.center.longitude,
-          label: preset.center.label,
-        },
-      })
-    )
   }, [])
 
   const exitDemoMode = useCallback(() => {
@@ -760,7 +966,8 @@ export default function MapExplorer({ navigate }) {
     setIsHudOpen(false)
     setSelectedCoordinate(null)
     setLocationId('visakhapatnam')
-  }, [])
+    fetchLayers().then((nextLayers) => setLayers(Array.isArray(nextLayers) ? nextLayers : []))
+  }, [fetchLayers])
 
   const pfzEvaluations = useMemo(() => {
     const map = {}
@@ -828,6 +1035,10 @@ export default function MapExplorer({ navigate }) {
       return undefined
     }
 
+    if (isDemoMode) {
+      return undefined
+    }
+
     findNearestSuitablePFZ({
       latitude: lat,
       longitude: lon,
@@ -850,7 +1061,7 @@ export default function MapExplorer({ navigate }) {
       isSubscribed = false
       controller.abort()
     }
-  }, [activeLocation?.latitude, activeLocation?.longitude, searchRadius])
+  }, [activeLocation?.latitude, activeLocation?.longitude, searchRadius, isDemoMode])
 
   useEffect(() => {
     let isSubscribed = true
@@ -885,58 +1096,23 @@ export default function MapExplorer({ navigate }) {
     }
   }
 
-  const fetchLayers = useCallback(async (signal) => {
-    try {
-      const availableLayers = await getMapLayers({ signal })
-      if (!Array.isArray(availableLayers)) return []
-
-      const availableIds = availableLayers
-        .filter((layer) => layer?.available)
-        .map((layer) => layer.id)
-        .filter(Boolean)
-
-      const features = await getMapFeatures(availableIds, { signal }).catch(() => [])
-      const safeFeatures = Array.isArray(features) ? features : []
-
-      return availableLayers.map((layer) => {
-        if (!layer) return null
-        const layerIdStr = String(layer.id || '').toLowerCase()
-        const persistedFeatures = safeFeatures.filter((feature) => {
-          if (!feature) return false
-          const featLayerStr = String(feature.layer || feature.dataset || '').toLowerCase()
-          return featLayerStr === layerIdStr
-        })
-        const allFeatures = persistedFeatures.length > 0 ? persistedFeatures : (Array.isArray(layer.features) ? layer.features : [])
-        const count = allFeatures.length
-        return {
-          ...layer,
-          available: count > 0,
-          feature_count: count,
-          enabled: layer.enabled !== undefined ? Boolean(layer.enabled) : count > 0,
-          features: allFeatures,
-        }
-      }).filter(Boolean)
-    } catch (e) {
-      console.warn('Failed to fetch GIS layers:', e)
-      return []
-    }
-  }, [])
-
   useEffect(() => {
     const controller = new AbortController()
     fetchLayers(controller.signal)
       .then((nextLayers) => {
-        setLayers(Array.isArray(nextLayers) ? nextLayers : [])
-        setLayersState({ loading: false, error: '' })
+        if (!isDemoMode) {
+          setLayers(Array.isArray(nextLayers) ? nextLayers : [])
+          setLayersState({ loading: false, error: '' })
+        }
       })
       .catch((error) => {
-        if (error?.name !== 'AbortError') {
+        if (error?.name !== 'AbortError' && !isDemoMode) {
           setLayers([])
           setLayersState({ loading: false, error: mapErrorMessage(error) })
         }
       })
     return () => controller.abort()
-  }, [fetchLayers])
+  }, [fetchLayers, isDemoMode])
 
   const renderedLayers = useMemo(() => {
     if (!isSimulatedCycloneActive || !Number.isFinite(activeLat) || !Number.isFinite(activeLon)) {
@@ -1046,6 +1222,7 @@ export default function MapExplorer({ navigate }) {
 
   useEffect(() => {
     const handleCustomCoord = (event) => {
+      if (isDemoMode) return
       if (
         event.detail &&
         Number.isFinite(event.detail.latitude) &&
@@ -1076,9 +1253,13 @@ export default function MapExplorer({ navigate }) {
     }
     window.addEventListener('orca-select-coord', handleCustomCoord)
     return () => window.removeEventListener('orca-select-coord', handleCustomCoord)
-  }, [isRouteVisible, startLivePFZNavigation])
+  }, [isRouteVisible, startLivePFZNavigation, isDemoMode])
 
   const handleMapLocation = useCallback((coordinate) => {
+    if (isDemoMode) {
+      setIsDemoMode(false)
+      setActiveDemoPreset(null)
+    }
     setSelectedCoordinate(coordinate)
     setLiveVesselLocation(null)
     if (watchIdRef.current !== null) {
@@ -1095,7 +1276,7 @@ export default function MapExplorer({ navigate }) {
     if (isRouteVisible) {
       startLivePFZNavigation(coordinate)
     }
-  }, [isRouteVisible, startLivePFZNavigation])
+  }, [isRouteVisible, startLivePFZNavigation, isDemoMode])
 
   const handleSelectLocation = useCallback((id) => {
     setLocationId(id)
@@ -2353,6 +2534,7 @@ export default function MapExplorer({ navigate }) {
                 navigationWaypoints={isRouteVisible ? (liveNavigation.data?.route?.waypoints || []) : []}
                 isTracking={isGpsTracking}
                 landTransit={isRouteVisible ? (liveNavigation.data?.land_transit || null) : null}
+                blockedDirectRoute={isRouteVisible ? (liveNavigation.data?.route?.blocked_direct_geometry || null) : null}
                 baseMapMode={baseMapMode}
                 isCloudIRVisible={isCloudIRVisible}
                 cloudMode={cloudMode}

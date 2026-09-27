@@ -320,6 +320,7 @@ export default function MapCanvas({
   navigationWaypoints = [],
   isTracking = false,
   landTransit = null,
+  blockedDirectRoute = null,
   baseMapMode = 'standard',
   isCloudIRVisible = false,
   cloudMode = 'natural',
@@ -747,6 +748,22 @@ export default function MapCanvas({
           })
         }
 
+        // 13.5. Blocked Direct Path (Red Dashed Line showing Straight-line Hazard Collision)
+        if (!map.getLayer('orca-blocked-route-line')) {
+          map.addLayer({
+            id: 'orca-blocked-route-line',
+            type: 'line',
+            source: 'orca-layers',
+            filter: ['==', ['get', 'kind'], 'blocked-direct-route'],
+            paint: {
+              'line-color': '#dc2626',
+              'line-width': 3.5,
+              'line-dasharray': [3, 2],
+              'line-opacity': 0.85,
+            },
+          })
+        }
+
         if (!map.getLayer('orca-point')) {
           map.addLayer({
             id: 'orca-point',
@@ -1105,12 +1122,23 @@ export default function MapCanvas({
       })
     }
 
+    if (blockedDirectRoute) {
+      features.push({
+        type: 'Feature',
+        geometry: blockedDirectRoute,
+        properties: {
+          kind: 'blocked-direct-route',
+        },
+      })
+    }
+
     try {
       if (map.getSource && map.getSource('orca-layers')) {
         map.getSource('orca-layers').setData(featureCollection(features))
       }
       if (map.getLayer && map.getLayer('orca-route-casing')) map.moveLayer('orca-route-casing')
       if (map.getLayer && map.getLayer('orca-route-line')) map.moveLayer('orca-route-line')
+      if (map.getLayer && map.getLayer('orca-blocked-route-line')) map.moveLayer('orca-blocked-route-line')
       if (map.getLayer && map.getLayer('orca-pfz-route-line')) map.moveLayer('orca-pfz-route-line')
       if (map.getLayer && map.getLayer('orca-land-route-casing')) map.moveLayer('orca-land-route-casing')
       if (map.getLayer && map.getLayer('orca-land-route-line')) map.moveLayer('orca-land-route-line')
@@ -1122,6 +1150,25 @@ export default function MapCanvas({
       try { marker.remove() } catch {}
     })
     gisMarkersRef.current = []
+
+    // If a blocked direct route exists, place a warning indicator at its midpoint
+    if (blockedDirectRoute && Array.isArray(blockedDirectRoute.coordinates) && blockedDirectRoute.coordinates.length >= 2) {
+      const p1 = blockedDirectRoute.coordinates[0]
+      const p2 = blockedDirectRoute.coordinates[blockedDirectRoute.coordinates.length - 1]
+      const midLon = (p1[0] + p2[0]) / 2
+      const midLat = (p1[1] + p2[1]) / 2
+      const el = document.createElement('div')
+      el.className = 'gis-interactive-marker blocked-route-marker'
+      el.innerHTML = `
+        <div style="background: rgba(185, 28, 28, 0.95); color: #ffffff; font-weight: 800; font-size: 10px; padding: 3px 8px; border-radius: 14px; border: 2px solid #ffffff; box-shadow: 0 0 10px rgba(220, 38, 38, 0.8); white-space: nowrap; display: flex; align-items: center; gap: 4px; pointer-events: none;">
+          <span>❌</span> <span>DIRECT LINE BLOCKED (A* DETOUR APPLIED)</span>
+        </div>
+      `
+      try {
+        const marker = new Marker({ element: el }).setLngLat([midLon, midLat]).addTo(map)
+        gisMarkersRef.current.push(marker)
+      } catch {}
+    }
 
     visibleLayers.forEach((layer) => {
       if (!layer) return
@@ -1321,6 +1368,7 @@ export default function MapCanvas({
     const allRouteCoords = [
       ...extractCoords(landTransit?.road_geometry),
       ...extractCoords(routeGeometry),
+      ...extractCoords(blockedDirectRoute),
       ...extractCoords(pfzRouteGeometry),
       ...extractCoords(selectedPFZGeometry),
       ...(Number.isFinite(Number(selectedLocation?.longitude)) && Number.isFinite(Number(selectedLocation?.latitude))
@@ -1347,6 +1395,7 @@ export default function MapCanvas({
     layers,
     routeGeometry,
     landTransit,
+    blockedDirectRoute,
     radiusKm,
     selectedPFZGeometry,
     pfzRouteGeometry,
