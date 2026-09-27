@@ -46,11 +46,6 @@ export default function Header({ navigate, onToggleSidebar, isSidebarOpen }) {
 
       <div className="topbar-meta">
         <span>
-          ● Demo marine data
-          <br />
-          <small>Frontend workspace</small>
-        </span>
-        <span>
           {formatted.date}
           <br />
           <small>{formatted.time}</small>

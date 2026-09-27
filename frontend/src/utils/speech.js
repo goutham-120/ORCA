@@ -4,10 +4,24 @@
  */
 
 let speechSynth = typeof window !== 'undefined' ? window.speechSynthesis : null
+let cachedVoices = []
+
+if (speechSynth) {
+  cachedVoices = speechSynth.getVoices()
+  if (typeof speechSynth.addEventListener === 'function') {
+    speechSynth.addEventListener('voiceschanged', () => {
+      cachedVoices = speechSynth.getVoices()
+    })
+  } else {
+    speechSynth.onvoiceschanged = () => {
+      cachedVoices = speechSynth.getVoices()
+    }
+  }
+}
 
 export function getVoiceForLanguage(langCode) {
   if (!speechSynth) return null
-  const voices = speechSynth.getVoices()
+  const voices = (cachedVoices && cachedVoices.length > 0) ? cachedVoices : speechSynth.getVoices()
   if (!voices || voices.length === 0) return null
 
   const targetLang = (langCode || 'en').toLowerCase()

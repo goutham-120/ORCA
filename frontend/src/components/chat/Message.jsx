@@ -4,6 +4,7 @@ import ReasoningTrace from './ReasoningTrace'
 import ChatMiniMap from './ChatMiniMap'
 import { speakResponse, stopSpeech } from '../../utils/speech'
 import { buildSpokenSummary } from '../../utils/speechSummary'
+import { getUILabels, translateFactor } from '../../utils/orcaTranslations'
 
 
 function renderMarkdownInline(text) {
@@ -417,6 +418,9 @@ export default function Message({ message }) {
   const assessment = response?.assessment
   const decision = response?.decision
 
+  const spokenLang = response?.language || response?.context?.response_language || 'en'
+  const ui = getUILabels(spokenLang)
+
   const isPFZDiscovery = response?.context?.decision_type === 'pfz' && decision?.status === 'available' && decision?.features?.length > 0 && decision?.suitability === 'unavailable'
   const isFishingSuitability = Boolean(decision?.suitability && decision?.suitability !== 'unavailable')
   const isSimulation = response?.context?.decision_type === 'simulation' || Boolean(decision?.scenario_simulation)
@@ -574,14 +578,14 @@ export default function Message({ message }) {
               <div className="risk-badge-group">
                 <span className={`risk-level-badge ${isPFZDiscovery ? 'moderate' : levelBadgeClass}`}>
                   {isSimulation
-                    ? `🧪 WHAT-IF: ${level.toUpperCase()} RISK`
+                    ? `${ui.whatIfPrefix} ${(ui[level.toLowerCase()] || level).toUpperCase()} ${ui.riskSuffix}`
                     : isPFZDiscovery
-                    ? '🐟 PFZ ADVISORY FOUND'
+                    ? ui.pfzAdvisoryFound
                     : isFishingSuitability
-                    ? `🎣 FISHING SUITABILITY: ${decision.suitability.toUpperCase()}`
+                    ? `${ui.fishingSuitabilityPrefix} ${(ui[decision.suitability.toLowerCase()] || decision.suitability).toUpperCase()}`
                     : level && level !== 'unknown'
-                    ? `🛡️ ${level.toUpperCase()} RISK`
-                    : '🧭 MARITIME ASSESSMENT'}
+                    ? `🛡️ ${(ui[level.toLowerCase()] || level).toUpperCase()} ${ui.riskSuffix}`
+                    : ui.maritimeAssessment}
                 </span>
                 {decision?.status && decision.status !== 'available' && (
                   <span className="status-sub-chip font-mono">{decision.status.toUpperCase()}</span>
@@ -589,7 +593,7 @@ export default function Message({ message }) {
               </div>
               {scorePercent != null && (
                 <span className="confidence-pill font-mono" title="Calculated Risk Score (0% is optimal/safe)">
-                  {isSimulation ? 'Simulated Risk' : 'Risk Score'} <strong>{scorePercent}%</strong>
+                  {isSimulation ? ui.simulatedRisk : ui.riskScore} <strong>{scorePercent}%</strong>
                 </span>
               )}
             </div>
@@ -614,9 +618,9 @@ export default function Message({ message }) {
               >
                 <span className="reason-btn-label">
                   <span className="reason-btn-icon">🧠</span>
-                  <span>Reason & Breakdown</span>
+                  <span>{ui.reasonAndBreakdown}</span>
                 </span>
-                <span className="reason-btn-chevron">{showReason ? '▲ Hide Details' : '▼ View Sea State & Reasoning'}</span>
+                <span className="reason-btn-chevron">{showReason ? ui.hideDetails : ui.viewReasoning}</span>
               </button>
             </div>
           </section>
@@ -797,16 +801,19 @@ export default function Message({ message }) {
             {/* Key Contributing Observation Factors */}
             {factors.length > 0 && (
               <div className="factors-breakdown-card font-sans">
-                <span className="factors-header-tag font-mono">KEY OBSERVED MARITIME PARAMETERS</span>
+                <span className="factors-header-tag font-mono">{ui.keyObservedParameters}</span>
                 <ul className="factors-list">
-                  {factors.map((factor, index) => (
-                    <li key={index} className="factor-row">
-                      <span className="factor-bullet">▸</span>
-                      <span className="factor-text">
-                        {typeof factor === 'string' ? factor : (factor?.message || JSON.stringify(factor))}
-                      </span>
-                    </li>
-                  ))}
+                  {factors.map((factor, index) => {
+                    const rawText = typeof factor === 'string' ? factor : (factor?.message || JSON.stringify(factor))
+                    return (
+                      <li key={index} className="factor-row">
+                        <span className="factor-bullet">▸</span>
+                        <span className="factor-text">
+                          {translateFactor(rawText, spokenLang)}
+                        </span>
+                      </li>
+                    )
+                  })}
                 </ul>
               </div>
             )}
@@ -890,7 +897,7 @@ export default function Message({ message }) {
                 title="View Sea Surface Temperature (SST) layer on ISRO EOS-06 Satellite Map"
               >
                 <span className="badge-icon">🛰️</span>
-                <span className="badge-label">ISRO EOS-06 SST:</span>
+                <span className="badge-label">{ui.isroSST}</span>
                 <span className="badge-value">{provSST}</span>
               </button>
 
@@ -901,8 +908,8 @@ export default function Message({ message }) {
                 title="Toggle INSAT-3DS Cloud Imager breakdown & weather trace"
               >
                 <span className="badge-icon">📡</span>
-                <span className="badge-label">INSAT-3DS Cloud Imager:</span>
-                <span className="badge-value">{provCloud}</span>
+                <span className="badge-label">{ui.insatCloud}</span>
+                <span className="badge-value">{ui[provCloud.toLowerCase()] || provCloud}</span>
               </button>
 
               <button
@@ -912,8 +919,8 @@ export default function Message({ message }) {
                 title="View INCOIS PFZ Model overlays on Map Explorer"
               >
                 <span className="badge-icon">🌊</span>
-                <span className="badge-label">INCOIS PFZ Model:</span>
-                <span className="badge-value">{provPFZ}</span>
+                <span className="badge-label">{ui.incoisPFZ}</span>
+                <span className="badge-value">{ui[provPFZ.toLowerCase()] || provPFZ}</span>
               </button>
             </div>
           </div>
