@@ -5,6 +5,7 @@
  */
 
 export function buildSpokenSummary(response, rawText = '', language = 'en') {
+  if (rawText) return rawText
   const lang = (language || 'en').toLowerCase()
   const langPrefix = lang.startsWith('ml') ? 'ml' : lang.startsWith('kn') ? 'kn' : lang.startsWith('te') ? 'te' : lang.startsWith('ta') ? 'ta' : lang.startsWith('hi') ? 'hi' : lang.startsWith('or') ? 'or' : lang.startsWith('bn') ? 'bn' : lang.startsWith('kok') ? 'kok' : lang.startsWith('tcy') ? 'tcy' : lang.startsWith('gu') ? 'gu' : lang.startsWith('mr') ? 'mr' : 'en'
 

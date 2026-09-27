@@ -258,8 +258,7 @@ export default function AskOrca({ navigate }) {
 
       // Only auto-play voice output if the user queried via Voice Input (Mic)
       if (isVoiceInput) {
-        const spokenBriefing = buildSpokenSummary(response, response.answer, response.language || language)
-        speakResponse(spokenBriefing, response.language || language, null, null, assistantMessage.id)
+        speakResponse(response.answer, response.language || language, null, null, assistantMessage.id)
       }
 
       // Auto-cache offshore bundle for low-bandwidth / disconnected field use (5.4)
