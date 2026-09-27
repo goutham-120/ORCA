@@ -99,16 +99,28 @@ def get_rag_settings() -> RAGSettings:
         min_score = 0.35
 
     knowledge_path_raw = os.getenv("RAG_KNOWLEDGE_PATH", "")
-    knowledge_path = (
-        Path(knowledge_path_raw) if knowledge_path_raw else _REPO_ROOT / "orca-knowledge"
-    )
+    if knowledge_path_raw:
+        kp = Path(knowledge_path_raw)
+        knowledge_path = kp if kp.is_absolute() else (_REPO_ROOT / kp if (_REPO_ROOT / kp).exists() else _BACKEND_ROOT / kp)
+    else:
+        knowledge_path = _REPO_ROOT / "orca-knowledge"
 
     persist_dir_raw = os.getenv("RAG_PERSIST_DIRECTORY", "") or os.getenv("RAG_CHROMA_PERSIST_DIR", "")
-    persist_directory = (
-        Path(persist_dir_raw)
-        if persist_dir_raw
-        else _BACKEND_ROOT / "data" / "rag" / "chroma"
-    )
+    if persist_dir_raw:
+        p = Path(persist_dir_raw)
+        if p.is_absolute():
+            persist_directory = p
+        else:
+            rel_trimmed = Path(*p.parts[1:]) if (p.parts and p.parts[0] == "backend") else p
+            candidates = [
+                _REPO_ROOT / p,
+                _BACKEND_ROOT / rel_trimmed,
+                _BACKEND_ROOT / p,
+                Path.cwd() / p,
+            ]
+            persist_directory = next((c for c in candidates if c.exists()), _BACKEND_ROOT / rel_trimmed)
+    else:
+        persist_directory = _BACKEND_ROOT / "data" / "rag" / "chroma"
 
     return RAGSettings(
         enabled=enabled,

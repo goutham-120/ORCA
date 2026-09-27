@@ -28,48 +28,67 @@ class OpenAICompatibleLLM:
             self.last_error = "No API key is configured."
             return None
         is_openai_responses = "api.openai.com" in self.base_url.lower()
-        if is_openai_responses:
-            endpoint = "/responses"
-            payload = {"model": self.model, "instructions": instructions, "input": prompt}
-        else:
-            endpoint = "/chat/completions"
-            payload = {
-                "model": self.model,
-                "messages": [
-                    {"role": "system", "content": instructions},
-                    {"role": "user", "content": prompt},
-                ],
-            }
-        url = self.base_url.rstrip("/") + endpoint
+        url = self.base_url.rstrip("/") + ("/responses" if is_openai_responses else "/chat/completions")
         headers = {
             "Authorization": "Bearer " + self.api_key,
             "Content-Type": "application/json",
             "User-Agent": "ORCA-FastAPI/1.0",
         }
-        try:
+
+        candidate_models = [self.model]
+        if "groq.com" in self.base_url.lower() and self.model != "qwen/qwen3.8-27b":
+            candidate_models.append("qwen/qwen3.8-27b")
+
+        for model_idx, target_model in enumerate(candidate_models):
             if is_openai_responses:
-                req = request.Request(url, data=json.dumps(payload).encode(), headers=headers)
-                with request.urlopen(req, timeout=15) as response:
-                    data: dict[str, Any] = json.loads(response.read())  # nosec - deployment-controlled URL
+                payload = {"model": target_model, "instructions": instructions, "input": prompt}
             else:
-                response = requests.post(url, json=payload, headers=headers, timeout=15)
-                response.raise_for_status()
-                data = response.json()
-            if isinstance(data.get("output_text"), str):
-                return data["output_text"]
-            choices = data.get("choices")
-            if isinstance(choices, list) and choices:
-                content = choices[0].get("message", {}).get("content")
-                if isinstance(content, str):
-                    return content
-            for item in data.get("output", []):
-                for content in item.get("content", []):
-                    if content.get("type") == "output_text" and isinstance(content.get("text"), str):
-                        return content["text"]
-            self.last_error = "The provider returned no text output."
-        except Exception as exc:
-            self.last_error = str(exc)
-            logger.warning("LLM provider request failed: %s", exc)
+                payload = {
+                    "model": target_model,
+                    "messages": [
+                        {"role": "system", "content": instructions},
+                        {"role": "user", "content": prompt},
+                    ],
+                }
+            try:
+                if is_openai_responses:
+                    req = request.Request(url, data=json.dumps(payload).encode(), headers=headers)
+                    with request.urlopen(req, timeout=15) as response:
+                        data: dict[str, Any] = json.loads(response.read())  # nosec - deployment-controlled URL
+                else:
+                    response = requests.post(url, json=payload, headers=headers, timeout=15)
+                    if response.status_code == 429 and model_idx < len(candidate_models) - 1:
+                        logger.warning(
+                            "Rate limit reached for model %s; attempting fallback model %s",
+                            target_model,
+                            candidate_models[model_idx + 1],
+                        )
+                        continue
+                    response.raise_for_status()
+                    data = response.json()
+                if isinstance(data.get("output_text"), str):
+                    return data["output_text"]
+                choices = data.get("choices")
+                if isinstance(choices, list) and choices:
+                    content = choices[0].get("message", {}).get("content")
+                    if isinstance(content, str):
+                        return content
+                for item in data.get("output", []):
+                    for content in item.get("content", []):
+                        if content.get("type") == "output_text" and isinstance(content.get("text"), str):
+                            return content["text"]
+                self.last_error = "The provider returned no text output."
+            except Exception as exc:
+                self.last_error = str(exc)
+                if ("429" in str(exc) or "rate" in str(exc).lower()) and model_idx < len(candidate_models) - 1:
+                    logger.warning(
+                        "Model %s failed with %s; switching to fallback model %s",
+                        target_model,
+                        exc,
+                        candidate_models[model_idx + 1],
+                    )
+                    continue
+                logger.warning("LLM provider request failed for model %s: %s", target_model, exc)
         return None
 
     async def plan(self, query: str, fallback: QueryPlan, persona: str) -> QueryPlan | None:

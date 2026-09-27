@@ -14,6 +14,7 @@ app = FastAPI(title=settings.app_name, version="0.1.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -57,3 +58,12 @@ def initialize_database() -> None:
 async def health() -> HealthResponse:
     """Return a dependency-free liveness status."""
     return HealthResponse(status="ok", service=settings.app_name, environment=settings.environment)
+
+
+if __name__ == "__main__":
+    import os
+    import uvicorn
+
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run("app.main:app", host="0.0.0.0", port=port, reload=False)
+
