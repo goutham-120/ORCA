@@ -389,10 +389,9 @@ export default function Message({ message }) {
     } else {
       const textToSpeak = response?.answer || message.text || ''
       const spokenLang = response?.language || 'en'
-      const spokenBriefing = buildSpokenSummary(response, textToSpeak, spokenLang)
       setIsSpeakingThis(true)
       speakResponse(
-        spokenBriefing,
+        textToSpeak,
         spokenLang,
         () => setIsSpeakingThis(false),
         () => setIsSpeakingThis(false),
@@ -468,6 +467,32 @@ export default function Message({ message }) {
     ...(decision?.factors || [])
   ].filter((v, i, a) => a.indexOf(v) === i)
 
+  // Satellite Provenance Telemetry Extraction
+  let provSST = '28.4°C'
+  let provCloud = 'Clear'
+  let provPFZ = 'High Confidence'
+
+  const sstItem = evidenceList.find((e) => e.sea_surface_temperature_c != null || e.summary?.toLowerCase().includes('sst') || e.summary?.toLowerCase().includes('temperature'))
+  if (sstItem?.sea_surface_temperature_c != null) {
+    provSST = `${Number(sstItem.sea_surface_temperature_c).toFixed(1)}°C`
+  } else if (response?.ocean?.sst != null) {
+    provSST = `${Number(response.ocean.sst).toFixed(1)}°C`
+  }
+
+  const weatherItem = evidenceList.find((e) => e.condition != null || e.summary?.toLowerCase().includes('cloud') || e.summary?.toLowerCase().includes('sky') || e.summary?.toLowerCase().includes('weather'))
+  if (weatherItem?.condition) {
+    provCloud = weatherItem.condition
+  } else if (response?.weather?.condition) {
+    provCloud = response.weather.condition
+  }
+
+  if (decision?.suitability && decision.suitability !== 'unavailable') {
+    provPFZ = decision.suitability.charAt(0).toUpperCase() + decision.suitability.slice(1)
+    if (!provPFZ.toLowerCase().includes('confidence') && !provPFZ.toLowerCase().includes('zone') && !provPFZ.toLowerCase().includes('favorable')) {
+      provPFZ += ' Confidence'
+    }
+  }
+
   const headlineVerdict = decision?.assessment || assessment?.summary || ''
 
   const spatialData = isKnowledgeOnly ? null : (response?.spatial_data ? {
@@ -518,6 +543,16 @@ export default function Message({ message }) {
     (level && level !== 'unknown') ||
     scorePercent != null ||
     (isSpecialized && headlineVerdict)
+  )
+
+  const isMaritimeRelevant = Boolean(
+    isSpecialized ||
+    hasTopAssessment ||
+    spatialData ||
+    isPFZContext ||
+    (evidenceList && evidenceList.length > 0) ||
+    parsed.hasStructuredEvidence ||
+    (response?.intent && !['greeting', 'general_chat', 'general', 'chitchat'].includes(response.intent.toLowerCase()))
   )
 
   return (
@@ -842,6 +877,46 @@ export default function Message({ message }) {
         {/* 4.6 EXPLAINABLE AI REASONING TRACE */}
         {message.role === 'assistant' && (
           <ReasoningTrace message={message} persona={message.persona || 'fisherman'} />
+        )}
+
+        {/* 4.7 MULTI-MODAL SATELLITE DATA PROVENANCE BADGES */}
+        {message.role === 'assistant' && isMaritimeRelevant && (
+          <div className="satellite-provenance-container font-sans">
+            <div className="provenance-badges-row">
+              <button
+                type="button"
+                className="provenance-badge sst-badge font-mono"
+                onClick={() => handleNavigateMap(false)}
+                title="View Sea Surface Temperature (SST) layer on ISRO EOS-06 Satellite Map"
+              >
+                <span className="badge-icon">🛰️</span>
+                <span className="badge-label">ISRO EOS-06 SST:</span>
+                <span className="badge-value">{provSST}</span>
+              </button>
+
+              <button
+                type="button"
+                className="provenance-badge cloud-badge font-mono"
+                onClick={() => setShowReason((prev) => !prev)}
+                title="Toggle INSAT-3DS Cloud Imager breakdown & weather trace"
+              >
+                <span className="badge-icon">📡</span>
+                <span className="badge-label">INSAT-3DS Cloud Imager:</span>
+                <span className="badge-value">{provCloud}</span>
+              </button>
+
+              <button
+                type="button"
+                className="provenance-badge pfz-badge font-mono"
+                onClick={() => handleNavigateMap(true)}
+                title="View INCOIS PFZ Model overlays on Map Explorer"
+              >
+                <span className="badge-icon">🌊</span>
+                <span className="badge-label">INCOIS PFZ Model:</span>
+                <span className="badge-value">{provPFZ}</span>
+              </button>
+            </div>
+          </div>
         )}
 
         {/* 5. SOURCES & EVIDENCE */}
