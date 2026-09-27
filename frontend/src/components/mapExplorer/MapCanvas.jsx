@@ -690,9 +690,13 @@ export default function MapCanvas({
             type: 'line',
             source: 'orca-layers',
             filter: ['==', ['get', 'kind'], 'land-road-route'],
+            layout: {
+              'line-join': 'round',
+              'line-cap': 'round',
+            },
             paint: {
               'line-color': '#0f172a',
-              'line-width': 9,
+              'line-width': 7.5,
               'line-opacity': 0.9,
             },
           })
@@ -703,11 +707,14 @@ export default function MapCanvas({
             type: 'line',
             source: 'orca-layers',
             filter: ['==', ['get', 'kind'], 'land-road-route'],
+            layout: {
+              'line-join': 'round',
+              'line-cap': 'round',
+            },
             paint: {
               'line-color': '#38bdf8',
-              'line-width': 5.5,
+              'line-width': 4.5,
               'line-opacity': 1.0,
-              'line-dasharray': [2.5, 1.2],
             },
           })
         }
