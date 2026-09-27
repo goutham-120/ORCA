@@ -33,6 +33,7 @@ Thumbs.db
 *.db
 *.sqlite
 *.sqlite3
+!backend/data/rag/chroma/chroma.sqlite3
 *.db-shm
 *.db-wal
 *.db-journal
@@ -42,6 +43,6 @@ backend/orca-session-backend*.log
 # ORCA knowledge source files
 orca-knowledge/
 
-# ChromaDB vector store data
-backend/data/rag/chroma/*
-!backend/data/rag/chroma/README.md
+# ChromaDB vector store data (tracked for direct production deployment)
+!backend/data/rag/chroma/
+!backend/data/rag/chroma/**
