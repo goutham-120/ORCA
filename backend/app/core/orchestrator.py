@@ -28,7 +28,7 @@ class OrcaOrchestrator:
         resp_lang = self._response_language(request.language, request.query)
         # Ordinary conversation deliberately bypasses marine assessment and stale
         # location context. The LLM has no tool access in this path.
-        if not parsed.requested_domains:
+        if not parsed.requested_domains and getattr(parsed, "query_mode", "live_operational") != "knowledge_only":
             chat = getattr(self.workflow.llm, "chat", None)
             llm_answer = await chat(request.query, resp_lang) if chat else None
             answer = llm_answer
@@ -107,7 +107,12 @@ class OrcaOrchestrator:
         if decision and parsed.decision_type == "pfz":
             pending_domains = [domain for domain in pending_domains if domain != "pfz"]
 
-        if isinstance(decision, dict) and (parsed.decision_type == "simulation" or decision.get("scenario_simulation")):
+        query_mode = getattr(parsed, "query_mode", "live_operational")
+        if query_mode == "knowledge_only":
+            assessment = None
+            recommendations = []
+            decision = None
+        elif isinstance(decision, dict) and (parsed.decision_type == "simulation" or decision.get("scenario_simulation")):
             sim_res = decision.get("scenario_simulation") or {}
             simulated = sim_res.get("simulated") or {}
             sim_msi = simulated.get("msi") or {}
@@ -139,10 +144,10 @@ class OrcaOrchestrator:
                 }
             else:
                 assessment = assess_results(result.get("analysis_results", {}), required_domains=required_domains, pending_domains=pending_domains)
+            recommendations = build_recommendations(assessment, result.get("analysis_results"))
         else:
             assessment = assess_results(result.get("analysis_results", {}), required_domains=required_domains, pending_domains=pending_domains)
-
-        recommendations = build_recommendations(assessment, result.get("analysis_results"))
+            recommendations = build_recommendations(assessment, result.get("analysis_results"))
         response_context = {
             "location": location,
             "time_range": time_range,
@@ -175,14 +180,42 @@ class OrcaOrchestrator:
         if rag_info.used and rag_info.sources:
             response_context["rag_sources"] = rag_info.sources
 
-        answer = result.get("answer") if (result.get("llm_synthesis") or result.get("rag_used")) else None
-        answer = answer or synthesize_answer(request.query, assessment, result.get("analysis_results", {}), pending_domains, response_context, resp_lang, decision)
+        if result.get("llm_synthesis") and result.get("answer"):
+            answer = result["answer"]
+        elif query_mode == "knowledge_only":
+            answer = result.get("answer") or "ORCA could not complete a full evidence-based response."
+        elif query_mode == "hybrid":
+            answer = result.get("answer")
+            if not answer:
+                live_answer = synthesize_answer(request.query, assessment, result.get("analysis_results", {}), pending_domains, response_context, resp_lang, decision)
+                if result.get("rag_used") and result.get("knowledge_context"):
+                    from app.rag.knowledge_synthesizer import synthesize_knowledge_answer
+                    if resp_lang in {"te", "te-in", "telugu"}:
+                        kh = "అధికారిక సముద్ర విజ్ఞానం:"
+                    elif resp_lang in {"hi", "hi-in", "hindi"}:
+                        kh = "दस्तावेजी समुद्री ज्ञान:"
+                    elif resp_lang in {"ta", "ta-in", "tamil"}:
+                        kh = "ஆவணப்படுத்தப்பட்ட கடல்சார் அறிவு:"
+                    else:
+                        kh = "Documented Marine Knowledge:"
+                    synthesized_k = synthesize_knowledge_answer(
+                        query=request.query,
+                        query_mode=query_mode,
+                        intent=parsed.intent,
+                        chunks=rag_info.retrieved_chunks,
+                        language=resp_lang,
+                    )
+                    answer = f"{live_answer}\n\n{kh}\n{synthesized_k}"
+                else:
+                    answer = live_answer
+        else:
+            answer = synthesize_answer(request.query, assessment, result.get("analysis_results", {}), pending_domains, response_context, resp_lang, decision)
         conversation_id = request.conversation_id or str(uuid4())
         self.conversations.put(conversation_id, response_context)
         self.conversations.append_message(conversation_id, "user", request.query)
         self.conversations.append_message(conversation_id, "assistant", answer, {"decision_type": parsed.decision_type})
         execution_steps = result.get("execution_steps", [])
-        spatial_data = result.get("spatial_data")
+        spatial_data = None if query_mode == "knowledge_only" else result.get("spatial_data")
         trace = {
             "plan_intent": parsed.intent,
             "decision_type": parsed.decision_type,
@@ -210,6 +243,7 @@ class OrcaOrchestrator:
             trace=trace,
             spatial_data=spatial_data,
             rag=rag_info,
+            query_mode=query_mode,
         )
 
 

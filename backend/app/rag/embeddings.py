@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Protocol
+from typing import Any, Protocol
 
 from app.rag.config import DEFAULT_EMBEDDING_MODEL
 
@@ -30,7 +30,10 @@ class SentenceTransformerEmbeddings:
 
     Configured by default to use `intfloat/multilingual-e5-small` or the model
     specified by the RAG_EMBEDDING_MODEL environment variable.
+    Caches loaded model instances at class level to avoid repeated cold-start loading.
     """
+
+    _MODEL_CACHE: dict[str, Any] = {}
 
     def __init__(self, model_name: str | None = None) -> None:
         self.model_name = (
@@ -38,18 +41,19 @@ class SentenceTransformerEmbeddings:
             or os.getenv("RAG_EMBEDDING_MODEL", DEFAULT_EMBEDDING_MODEL).strip()
             or DEFAULT_EMBEDDING_MODEL
         )
-        self._model = None
         self.is_e5 = "e5" in self.model_name.lower()
 
     @property
     def model(self):
-        """Lazy load the SentenceTransformer model on first use."""
-        if self._model is None:
-            logger.info("Loading embedding model: %s", self.model_name)
+        """Lazy load the SentenceTransformer model on first use with process-level caching."""
+        if self.model_name not in SentenceTransformerEmbeddings._MODEL_CACHE:
+            logger.info("Loading embedding model into process cache: %s", self.model_name)
             from sentence_transformers import SentenceTransformer
 
-            self._model = SentenceTransformer(self.model_name)
-        return self._model
+            SentenceTransformerEmbeddings._MODEL_CACHE[self.model_name] = SentenceTransformer(
+                self.model_name
+            )
+        return SentenceTransformerEmbeddings._MODEL_CACHE[self.model_name]
 
     def encode_documents(
         self, texts: list[str], batch_size: int = 32, show_progress: bool = False

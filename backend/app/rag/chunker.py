@@ -77,11 +77,13 @@ class Chunker:
         chunks: list[DocumentChunk] = []
         doc_slug = re.sub(r"[^a-zA-Z0-9_]+", "_", doc.file_path).strip("_")
 
+        from app.rag.text_cleaner import clean_pdf_text
+
         # 1. If document has extracted pages (PDFs)
         if doc.pages:
             chunk_idx = 0
             for page_num, page_text in doc.pages:
-                clean_text = page_text.strip()
+                clean_text = clean_pdf_text(page_text)
                 if len(clean_text) < MIN_CHUNK_CHARS:
                     continue
 
@@ -142,7 +144,8 @@ class Chunker:
             return chunks
 
         # 2. Text / CSV / JSON without page boundaries
-        sections = self._split_text(doc.content)
+        cleaned_doc_content = clean_pdf_text(doc.content)
+        sections = self._split_text(cleaned_doc_content)
         for chunk_idx, sec in enumerate(sections):
             if len(sec.strip()) < MIN_CHUNK_CHARS:
                 continue

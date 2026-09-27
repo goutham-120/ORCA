@@ -174,3 +174,25 @@ def get_retriever() -> RAGRetriever:
     if _retriever is None:
         _retriever = RAGRetriever()
     return _retriever
+
+
+def warmup_rag() -> bool:
+    """Pre-warm the embedding model and vector store when RAG is enabled.
+
+    Returns True if warm-up completed, False if RAG is disabled or failed gracefully.
+    Does not raise exceptions.
+    """
+    try:
+        settings = get_rag_settings()
+        if not settings.enabled:
+            logger.debug("RAG is disabled; skipping warmup.")
+            return False
+        retriever = get_retriever()
+        retriever._ensure_initialized()
+        if retriever._embeddings:
+            _ = retriever._embeddings.encode_query("orca warmup")
+        logger.info("RAG embedding model and vector store warmed up successfully.")
+        return True
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("RAG warmup skipped due to non-fatal error: %s", exc)
+        return False

@@ -58,6 +58,9 @@ class ContextFusion:
                     seen_sources.add(citation)
                     sources.append(citation)
 
+                from app.rag.text_cleaner import clean_pdf_text
+                cleaned_content = clean_pdf_text(chunk.content)
+
                 knowledge_evidence.append({
                     "id": chunk.id,
                     "document": chunk.document,
@@ -67,11 +70,11 @@ class ContextFusion:
                     "domain": chunk.metadata.get("domain", ""),
                     "topic": chunk.metadata.get("topic", ""),
                     "relevance_score": chunk.relevance_score,
-                    "content": chunk.content,
+                    "content": cleaned_content,
                 })
 
                 context_blocks.append(
-                    f"[{idx}] {citation} (Relevance: {chunk.relevance_score:.2f}):\n{chunk.content}"
+                    f"[{idx}] {citation}:\n{cleaned_content}"
                 )
 
         knowledge_context_text = "\n\n".join(context_blocks)

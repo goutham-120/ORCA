@@ -233,9 +233,81 @@ function FormattedAnswer({ text }) {
   return (
     <div className="formatted-answer-flow font-sans">
       {paragraphs.map((para, pIdx) => {
-        const lines = para.split(/\n/).map((l) => l.trim()).filter(Boolean)
-        const isBulletList = lines.length > 1 && lines.every((l) => /^[-*•\d+.]\s/.test(l))
+        // Headings (### or ##)
+        if (para.startsWith('### ')) {
+          return (
+            <h3 key={pIdx} className="answer-heading font-sora" style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a', margin: '10px 0 6px' }}>
+              {renderMarkdownInline(para.slice(4))}
+            </h3>
+          )
+        }
+        if (para.startsWith('## ')) {
+          return (
+            <h2 key={pIdx} className="answer-heading font-sora" style={{ fontSize: '17px', fontWeight: 700, color: '#0f172a', margin: '12px 0 8px' }}>
+              {renderMarkdownInline(para.slice(3))}
+            </h2>
+          )
+        }
 
+        const lines = para.split(/\n/).map((l) => l.trim()).filter(Boolean)
+
+        // Markdown Table detection: lines start and end with '|'
+        const isTable = lines.length >= 2 && lines.every((l) => l.startsWith('|') && l.endsWith('|'))
+        if (isTable) {
+          const validRows = lines.filter((l) => !/^\|[\s\-:]+\|$/.test(l))
+          if (validRows.length > 0) {
+            const headerRow = validRows[0].slice(1, -1).split('|').map((c) => c.trim())
+            const bodyRows = validRows.slice(1).map((l) => l.slice(1, -1).split('|').map((c) => c.trim()))
+            return (
+              <div key={pIdx} className="answer-table-wrapper" style={{ overflowX: 'auto', margin: '10px 0' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px', overflow: 'hidden' }}>
+                  <thead>
+                    <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #cbd5e1' }}>
+                      {headerRow.map((h, hIdx) => (
+                        <th key={hIdx} style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 700, color: '#1e293b' }}>
+                          {renderMarkdownInline(h)}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bodyRows.map((row, rIdx) => (
+                      <tr key={rIdx} style={{ borderBottom: '1px solid #e2e8f0', background: rIdx % 2 === 1 ? '#f8fafc' : '#ffffff' }}>
+                        {row.map((cell, cIdx) => (
+                          <td key={cIdx} style={{ padding: '8px 12px', color: '#334155' }}>
+                            {renderMarkdownInline(cell)}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )
+          }
+        }
+
+        // Numbered list detection
+        const isNumberedList = lines.length > 1 && lines.every((l) => /^\d+\.\s/.test(l))
+        if (isNumberedList) {
+          return (
+            <ol key={pIdx} className="answer-numbered-list" style={{ paddingLeft: '20px', margin: '8px 0' }}>
+              {lines.map((line, lIdx) => {
+                const match = line.match(/^(\d+)\.\s*(.*)$/)
+                const num = match ? match[1] : (lIdx + 1)
+                const content = match ? match[2] : line
+                return (
+                  <li key={lIdx} className="numbered-item" style={{ marginBottom: '6px', lineHeight: 1.5, listStyleType: 'decimal' }}>
+                    <span className="numbered-text">{renderMarkdownInline(content)}</span>
+                  </li>
+                )
+              })}
+            </ol>
+          )
+        }
+
+        // Bullet list detection
+        const isBulletList = lines.length > 1 && lines.every((l) => /^[-*•]\s/.test(l))
         if (isBulletList) {
           return (
             <ul key={pIdx} className="answer-bullet-list">
@@ -243,7 +315,7 @@ function FormattedAnswer({ text }) {
                 <li key={lIdx} className="bullet-item">
                   <span className="bullet-dot">▸</span>
                   <span className="bullet-text">
-                    {renderMarkdownInline(line.replace(/^[-*•\d+.]\s*/, ''))}
+                    {renderMarkdownInline(line.replace(/^[-*•]\s*/, ''))}
                   </span>
                 </li>
               ))}
@@ -379,10 +451,11 @@ export default function Message({ message }) {
     ? assessmentLevel
     : decisionLevel
 
+  const isKnowledgeOnly = response?.query_mode === 'knowledge_only'
   const levelBadgeClass = level === 'low' ? 'low' : level === 'moderate' ? 'moderate' : level === 'high' ? 'high' : level === 'critical' ? 'critical' : 'unknown'
   const evidenceList = response?.evidence || []
-  const recommendations = response?.recommendations || []
-  const hasLimitations = Boolean(!isSimulation && (response?.unavailable_domains?.length || response?.pending_domains?.length || decision?.unavailable_data?.length))
+  const recommendations = isKnowledgeOnly ? [] : (response?.recommendations || [])
+  const hasLimitations = Boolean(!isKnowledgeOnly && !isSimulation && (response?.unavailable_domains?.length || response?.pending_domains?.length || decision?.unavailable_data?.length))
   const answer = response?.answer || message.text || ''
   const parsed = parseOrcaAnswer(answer)
   const targetLocation = response?.context?.location || response?.location || evidenceList.find((e) => e.location?.latitude != null)?.location || null
@@ -397,7 +470,7 @@ export default function Message({ message }) {
 
   const headlineVerdict = decision?.assessment || assessment?.summary || ''
 
-  const spatialData = response?.spatial_data ? {
+  const spatialData = isKnowledgeOnly ? null : (response?.spatial_data ? {
     ...response.spatial_data,
     center: response.spatial_data.center || response.spatial_data.coordinates || (hasTargetCoords ? [Number(targetLocation.longitude), Number(targetLocation.latitude)] : [80.2707, 13.0827]),
     location_label: response.spatial_data.label || targetLocation?.label || 'Selected Area',
@@ -408,7 +481,7 @@ export default function Message({ message }) {
     route_geometry: decision?.route_geometry,
     waypoints: decision?.waypoints || [],
     decision_type: response?.context?.decision_type,
-  } : null)
+  } : null))
 
   const handleNavigateMap = (isPFZMode = false) => {
     const lat = hasTargetCoords ? Number(targetLocation.latitude).toFixed(4) : '13.0827'
@@ -439,7 +512,7 @@ export default function Message({ message }) {
     return { label: p.toUpperCase(), class: 'medium' }
   }
 
-  const hasTopAssessment = Boolean(
+  const hasTopAssessment = !isKnowledgeOnly && Boolean(
     isPFZDiscovery ||
     isFishingSuitability ||
     (level && level !== 'unknown') ||
@@ -796,22 +869,26 @@ export default function Message({ message }) {
           >
             {copied ? '✓ Copied' : '📋 Copy Advisory'}
           </button>
-          <button
-            type="button"
-            className="action-btn map-link-btn font-mono"
-            onClick={() => handleNavigateMap(isPFZContext)}
-            title="View this operational area in Map Explorer"
-          >
-            🗺️ View in Map Explorer
-          </button>
-          <button
-            type="button"
-            className="action-btn sim-trigger-btn font-mono"
-            onClick={handleOpenSimulator}
-            title="Launch What-If Scenario Simulator for this location"
-          >
-            🧪 Scenario Simulator
-          </button>
+          {!isKnowledgeOnly && (
+            <>
+              <button
+                type="button"
+                className="action-btn map-link-btn font-mono"
+                onClick={() => handleNavigateMap(isPFZContext)}
+                title="View this operational area in Map Explorer"
+              >
+                🗺️ View in Map Explorer
+              </button>
+              <button
+                type="button"
+                className="action-btn sim-trigger-btn font-mono"
+                onClick={handleOpenSimulator}
+                title="Launch What-If Scenario Simulator for this location"
+              >
+                🧪 Scenario Simulator
+              </button>
+            </>
+          )}
           {isPFZContext && (
             <button
               type="button"

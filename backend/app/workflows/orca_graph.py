@@ -93,21 +93,28 @@ class OrcaWorkflow:
         return {"pending_domains":[], "execution_steps": steps}
     async def _understand(self,state: OrcaState)->dict[str,Any]: return {}
     async def _plan(self,state: OrcaState)->dict[str,Any]:
-        ctx=state["context"]; p=ctx.parsed_query; domains=[d for d in p.requested_domains if d in {"ocean","weather","gis","pfz"}]
-        fallback=QueryPlan(intent=p.intent,requested_domains=domains,location_required=bool(domains),time_expression=p.time_expression,decision_type=p.decision_type if p.decision_type in {"safety", "fishing", "pfz", "hazard", "route", "anomaly", "simulation"} else None,subtasks=[Subtask(id=f"{d}-evidence",domain=d,purpose=f"retrieve {d} evidence",evidence_required=[f"{d} evidence"]) for d in domains if d in self._agents],response_focus=self._persona_focus(str(ctx.metadata.get("persona","general_user"))))
-        llm_plan=await self.llm.plan(p.normalized,fallback,str(ctx.metadata.get("persona","general_user")))
-        plan=fallback
-        if llm_plan and set(llm_plan.requested_domains) == set(domains):
-            plan=llm_plan
-        if p.decision_type and plan.decision_type != p.decision_type:
-            plan=plan.model_copy(update={"decision_type": p.decision_type})
-        selected=[]
-        for domain in plan.requested_domains:
-            if domain == "pfz" and p.decision_type != "pfz":
-                continue
-            agent_domain = "gis" if domain == "pfz" else domain
-            if agent_domain in self._agents and (agent_domain != "gis" or ctx.location is not None) and agent_domain not in selected:
-                selected.append(agent_domain)
+        ctx=state["context"]; p=ctx.parsed_query;
+        is_knowledge_only = getattr(p, "query_mode", "live_operational") == "knowledge_only"
+        domains=[] if is_knowledge_only else [d for d in p.requested_domains if d in {"ocean","weather","gis","pfz"}]
+        fallback=QueryPlan(intent=p.intent,requested_domains=domains,location_required=bool(domains),time_expression=p.time_expression,decision_type=None if is_knowledge_only else (p.decision_type if p.decision_type in {"safety", "fishing", "pfz", "hazard", "route", "anomaly", "simulation"} else None),subtasks=[] if is_knowledge_only else [Subtask(id=f"{d}-evidence",domain=d,purpose=f"retrieve {d} evidence",evidence_required=[f"{d} evidence"]) for d in domains if d in self._agents],response_focus=self._persona_focus(str(ctx.metadata.get("persona","general_user"))))
+        if is_knowledge_only:
+            llm_plan = None
+            plan = fallback
+            selected = []
+        else:
+            llm_plan=await self.llm.plan(p.normalized,fallback,str(ctx.metadata.get("persona","general_user")))
+            plan=fallback
+            if llm_plan and set(llm_plan.requested_domains) == set(domains):
+                plan=llm_plan
+            if p.decision_type and plan.decision_type != p.decision_type:
+                plan=plan.model_copy(update={"decision_type": p.decision_type})
+            selected=[]
+            for domain in plan.requested_domains:
+                if domain == "pfz" and p.decision_type != "pfz":
+                    continue
+                agent_domain = "gis" if domain == "pfz" else domain
+                if agent_domain in self._agents and (agent_domain != "gis" or ctx.location is not None) and agent_domain not in selected:
+                    selected.append(agent_domain)
         pending=[d for d in p.requested_domains if d in {"ocean", "weather", "gis", "pfz"} and ("gis" if d == "pfz" else d) not in selected]
         ctx.metadata["plan"]=plan.model_dump(); ctx.metadata["pending_domains"]=pending
 
@@ -203,6 +210,9 @@ class OrcaWorkflow:
         return {"evidence": out}
     async def _validate(self,state: OrcaState)->dict[str,Any]: return {}
     async def _decision(self,state: OrcaState)->dict[str,Any]:
+        ctx = state["context"]
+        if getattr(ctx.parsed_query, "query_mode", "live_operational") == "knowledge_only":
+            return {"decision": None, "spatial_data": None}
         decision_type=state.get("plan").decision_type if state.get("plan") else None
         location=state["context"].location
         spatial_data = None
@@ -438,9 +448,12 @@ class OrcaWorkflow:
         ctx = state["context"]
         knowledge_context = state.get("knowledge_context", "")
         sources = state.get("rag_sources", [])
+        query_mode = getattr(ctx.parsed_query, "query_mode", "live_operational")
+        steps = list(state.get("execution_steps", []))
 
         payload = {
             "query": ctx.parsed_query.original,
+            "query_mode": query_mode,
             "context": ctx.as_dict(),
             "selected_agents": state.get("selected", []),
             "analysis_results": state.get("analysis_results", {}),
@@ -459,30 +472,56 @@ class OrcaWorkflow:
 
         was_llm = bool(answer)
         if not answer:
+            resp_lang = str(ctx.metadata.get("response_language", "en")).lower()
+            if resp_lang in {"te", "te-in", "telugu"}:
+                live_hdr = "ప్రస్తుత కార్యాచరణ అంచనా:"
+                doc_hdr = "అధికారిక సముద్ర విజ్ఞానం:"
+            elif resp_lang in {"hi", "hi-in", "hindi"}:
+                live_hdr = "वर्तमान परिचालन मूल्यांकन:"
+                doc_hdr = "दस्तावेजी समुद्री ज्ञान:"
+            elif resp_lang in {"ta", "ta-in", "tamil"}:
+                live_hdr = "தற்போதைய செயல்பாட்டு மதிப்பீடு:"
+                doc_hdr = "ஆவணப்படுத்தப்பட்ட கடல்சார் அறிவு:"
+            else:
+                live_hdr = "Current Operational Assessment:"
+                doc_hdr = "Documented Marine Knowledge:"
+
             live_assessment = None
             decision = state.get("decision")
-            if decision and decision.get("assessment"):
-                live_assessment = f"Current Operational Assessment:\n{decision['assessment']}"
+            if decision and decision.get("assessment") and query_mode != "knowledge_only":
+                live_assessment = f"{live_hdr}\n{decision['assessment']}"
 
             if state.get("rag_used") and knowledge_context:
-                knowledge_part = f"Documented Marine Knowledge:\n{knowledge_context}"
-                if sources:
-                    knowledge_part += f"\n\nSources:\n" + "\n".join(f"- {s}" for s in sources)
-                if live_assessment:
-                    answer = f"{live_assessment}\n\n{knowledge_part}"
+                from app.rag.knowledge_synthesizer import synthesize_knowledge_answer
+                retrieved_chunks = state.get("rag_retrieved_chunks") or []
+                synthesized_knowledge = synthesize_knowledge_answer(
+                    query=ctx.parsed_query.original,
+                    query_mode=query_mode,
+                    intent=ctx.parsed_query.intent,
+                    chunks=retrieved_chunks,
+                    language=resp_lang,
+                )
+                if live_assessment and query_mode != "knowledge_only":
+                    answer = f"{live_assessment}\n\n{doc_hdr}\n{synthesized_knowledge}"
+                elif unavailable and query_mode != "knowledge_only":
+                    answer = f"ORCA could not complete a full evidence-based response. Unavailable evidence: {', '.join(unavailable)}.\n\n{doc_hdr}\n{synthesized_knowledge}"
                 else:
-                    answer = f"Based on official marine knowledge records:\n\n{knowledge_context}"
-                    if sources:
-                        answer += f"\n\nSources:\n" + "\n".join(f"- {s}" for s in sources)
-            elif live_assessment:
+                    answer = synthesized_knowledge
+            elif live_assessment and query_mode != "knowledge_only":
                 answer = live_assessment
             else:
-                fallback = "ORCA could not complete a full evidence-based response."
-                if unavailable:
-                    fallback += " Unavailable evidence: " + ", ".join(unavailable) + "."
-                answer = fallback
+                is_out_of_domain = any(step.get("details", {}).get("reason") == "out_of_domain" for step in steps)
+                if state.get("rag_status") == "skipped" and is_out_of_domain:
+                    answer = (
+                        "ORCA is a specialized marine intelligence platform dedicated to oceanography, "
+                        "fisheries, maritime safety, and coastal regulations. This query is outside the marine domain."
+                    )
+                else:
+                    fallback = "ORCA could not complete a full evidence-based response."
+                    if unavailable:
+                        fallback += " Unavailable evidence: " + ", ".join(unavailable) + "."
+                    answer = fallback
 
-        steps = list(state.get("execution_steps", []))
         steps.append({
             "step": len(steps) + 1,
             "agent": "SynthesizerAgent",

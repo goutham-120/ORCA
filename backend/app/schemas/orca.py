@@ -62,6 +62,7 @@ class OrcaQueryResponse(BaseModel):
     trace: dict[str, Any] | None = None
     spatial_data: dict[str, Any] | None = None
     rag: RAGResponsePayload | None = None
+    query_mode: Literal["knowledge_only", "live_operational", "hybrid"] = "live_operational"
 
 
 

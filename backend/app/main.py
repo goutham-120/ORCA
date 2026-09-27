@@ -41,6 +41,16 @@ def initialize_database() -> None:
         except Exception:
             pass
 
+        # Optional RAG warm-up if explicitly enabled and configured for startup pre-loading
+        try:
+            from app.rag.config import get_rag_settings
+            from app.rag.retriever import warmup_rag
+            rag_cfg = get_rag_settings()
+            if rag_cfg.enabled and rag_cfg.warmup_on_startup:
+                warmup_rag()
+        except Exception:
+            pass
+
 
 
 @app.get("/health", response_model=HealthResponse, tags=["system"])

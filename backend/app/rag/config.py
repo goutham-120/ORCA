@@ -63,6 +63,7 @@ class RAGSettings:
     embedding_model: str = DEFAULT_EMBEDDING_MODEL
     top_k: int = 5
     min_relevance_score: float = 0.35
+    warmup_on_startup: bool = False
     knowledge_path: Path = field(default_factory=lambda: _REPO_ROOT / "orca-knowledge")
     persist_directory: Path = field(
         default_factory=lambda: _BACKEND_ROOT / "data" / "rag" / "chroma"
@@ -80,6 +81,9 @@ def get_rag_settings() -> RAGSettings:
     """
     enabled_raw = os.getenv("RAG_ENABLED", "false").strip().lower()
     enabled = enabled_raw in {"1", "true", "yes", "on"}
+
+    warmup_raw = os.getenv("RAG_WARMUP_ON_STARTUP", "false").strip().lower()
+    warmup_on_startup = warmup_raw in {"1", "true", "yes", "on"}
 
     top_k_raw = os.getenv("RAG_TOP_K", "5")
     try:
@@ -116,6 +120,7 @@ def get_rag_settings() -> RAGSettings:
         ),
         top_k=top_k,
         min_relevance_score=min_score,
+        warmup_on_startup=warmup_on_startup,
         knowledge_path=knowledge_path,
         persist_directory=persist_directory,
     )
