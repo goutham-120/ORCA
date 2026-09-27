@@ -64,6 +64,8 @@ class OpenAICompatibleLLM:
                             candidate_models[model_idx + 1],
                         )
                         continue
+                    if response.status_code >= 400:
+                        logger.warning("Groq API %s error: %s", response.status_code, response.text)
                     response.raise_for_status()
                     data = response.json()
                 if isinstance(data.get("output_text"), str):

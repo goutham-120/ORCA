@@ -479,16 +479,47 @@ class OrcaWorkflow:
         query_mode = getattr(ctx.parsed_query, "query_mode", "live_operational")
         steps = list(state.get("execution_steps", []))
 
+        clean_context = {
+            "location": ctx.location,
+            "time_expression": ctx.metadata.get("time_expression"),
+            "persona": ctx.metadata.get("persona", "fisherman"),
+        }
+        clean_decision = None
+        if isinstance(state.get("decision"), dict):
+            d = state["decision"]
+            clean_decision = {
+                "status": d.get("status"),
+                "risk_level": d.get("risk_level"),
+                "assessment": d.get("assessment"),
+                "suitability": d.get("suitability"),
+                "marine_safety_index": d.get("marine_safety_index"),
+                "tide": d.get("tide"),
+                "factors": d.get("factors", [])[:5],
+                "warnings": d.get("warnings", [])[:3],
+            }
+        clean_evidence = []
+        for ev in state.get("evidence", []):
+            if isinstance(ev, dict):
+                clean_evidence.append({
+                    "source": ev.get("source"),
+                    "summary": ev.get("summary"),
+                    "measurements": (ev.get("metadata") or {}).get("measurements", {}),
+                })
+
         payload = {
             "query": ctx.parsed_query.original,
             "query_mode": query_mode,
-            "context": ctx.as_dict(),
+            "context": clean_context,
             "selected_agents": state.get("selected", []),
-            "analysis_results": state.get("analysis_results", {}),
-            "evidence": state.get("evidence", []),
-            "decision": state.get("decision"),
+            "analysis_results": {
+                k: {"summary": v.get("summary"), "risk_score": v.get("risk_score")}
+                for k, v in state.get("analysis_results", {}).items()
+                if isinstance(v, dict)
+            },
+            "evidence": clean_evidence,
+            "decision": clean_decision,
             "unavailable_domains": unavailable,
-            "knowledge_context": knowledge_context,
+            "knowledge_context": knowledge_context[:2500] if knowledge_context else "",
             "knowledge_sources": sources,
         }
         synthesize = getattr(self.llm, "synthesize", None)
