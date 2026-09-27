@@ -160,43 +160,51 @@
   background: rgba(6, 78, 59, 0.25);
 }
 
-.metric-label {
+.live-nav-hud .metric-label {
+  display: block;
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.05em;
-  color: #94a3b8;
+  color: #94a3b8 !important;
   margin-bottom: 3px;
+  text-transform: uppercase;
 }
 
-.metric-value-row {
+.live-nav-hud .metric-value-row {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.metric-icon {
+.live-nav-hud .metric-icon {
   font-size: 14px;
 }
 
-.metric-val {
+.live-nav-hud .metric-val {
+  display: inline-block;
   font-size: 16px;
   font-weight: 800;
-  color: #ffffff;
+  color: #ffffff !important;
 }
 
-.metric-val.highlight {
-  color: #38bdf8;
+.live-nav-hud .metric-val.highlight {
+  color: #38bdf8 !important;
 }
 
-.metric-val small {
+.live-nav-hud .live-nav-metric-card.msi .metric-val {
+  color: #34d399 !important;
+}
+
+.live-nav-hud .metric-val small,
+.live-nav-hud .metric-val .unit {
   font-size: 10px;
   font-weight: 600;
-  color: #94a3b8;
+  color: #94a3b8 !important;
 }
 
-.metric-sub {
+.live-nav-hud .metric-sub {
   font-size: 10px;
-  color: #cbd5e1;
+  color: #cbd5e1 !important;
   margin-top: 2px;
 }
 

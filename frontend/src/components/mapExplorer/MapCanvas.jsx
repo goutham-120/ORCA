@@ -683,7 +683,7 @@ export default function MapCanvas({
           })
         }
 
-        // 11. Multi-Modal Land Road Route (Amber / Gold Real Road Track)
+        // 11. Multi-Modal Land Road Route (Distinct highway styling with dark casing)
         if (!map.getLayer('orca-land-route-casing')) {
           map.addLayer({
             id: 'orca-land-route-casing',
@@ -691,9 +691,9 @@ export default function MapCanvas({
             source: 'orca-layers',
             filter: ['==', ['get', 'kind'], 'land-road-route'],
             paint: {
-              'line-color': '#78350f',
-              'line-width': 10,
-              'line-opacity': 0.85,
+              'line-color': '#0f172a',
+              'line-width': 9,
+              'line-opacity': 0.9,
             },
           })
         }
@@ -704,9 +704,10 @@ export default function MapCanvas({
             source: 'orca-layers',
             filter: ['==', ['get', 'kind'], 'land-road-route'],
             paint: {
-              'line-color': '#f59e0b',
-              'line-width': 6.5,
+              'line-color': '#38bdf8',
+              'line-width': 5.5,
               'line-opacity': 1.0,
+              'line-dasharray': [2.5, 1.2],
             },
           })
         }
@@ -1612,7 +1613,7 @@ export default function MapCanvas({
             <strong style="color: #b45309; font-size: 13px;">⚓ Departure Fishing Harbor</strong><br/>
             <strong>${landTransit.harbor.name}</strong><br/>
             <span style="color: #64748b;">${landTransit.harbor.state || ''} · ${landTransit.harbor.type || 'Fishing Harbor'}</span><br/>
-            <strong>Road Distance:</strong> ${landTransit.distance_km} km (${landTransit.formatted_duration || ''})<br/>
+            <strong>Road Distance:</strong> ${landTransit.distance_km ?? landTransit.drive_distance_km ?? '--'} km (${landTransit.formatted_duration || landTransit.drive_duration_formatted || ''})<br/>
             <strong>Coordinates:</strong> ${hLat.toFixed(4)}°N, ${hLon.toFixed(4)}°E<br/>
             <div style="margin-top: 4px; padding: 3px 6px; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 4px; color: #065f46; font-weight: 600; font-size: 11px;">
               ⛵ Transition point from road transit to marine voyage

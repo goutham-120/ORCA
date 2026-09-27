@@ -73,7 +73,7 @@ export default function LiveNavigationHUD({
         <div className="live-nav-multimodal-banner">
           <div className="multimodal-leg road">
             <span className="leg-badge">🚗 Road Leg</span>
-            <span className="leg-info">{landTransit.distance_km} km ({landTransit.formatted_duration}) to {landTransit.harbor?.name || 'Harbor'}</span>
+            <span className="leg-info">{landTransit.distance_km ?? landTransit.drive_distance_km ?? '--'} km ({landTransit.formatted_duration ?? landTransit.drive_duration_formatted ?? '--'}) to {landTransit.harbor?.name || 'Harbor'}</span>
           </div>
           <span className="multimodal-arrow">➔</span>
           <div className="multimodal-leg harbor">
