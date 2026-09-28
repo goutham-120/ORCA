@@ -9,6 +9,8 @@ import Home from './pages/Home'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Personalization from './pages/Personalization'
+import ScenarioSimulator from './pages/ScenarioSimulator'
+import Settings from './pages/Settings'
 import AdminLogin from './pages/AdminLogin'
 import AdminDashboard from './pages/AdminDashboard'
 import ProtectedRoute from './components/auth/ProtectedRoute'
@@ -82,6 +84,10 @@ export default function App() {
           <Personalization navigate={navigate} />
         ) : currentPath === '/ask-orca' ? (
           <AskOrca key={window.location.search} navigate={navigate} />
+        ) : currentPath === '/scenario-simulator' || currentPath === '/simulator' ? (
+          <ScenarioSimulator navigate={navigate} />
+        ) : currentPath === '/settings' ? (
+          <Settings navigate={navigate} />
         ) : currentPath === '/alerts' ? (
           <Alerts navigate={navigate} />
         ) : currentPath === '/reports' ? (

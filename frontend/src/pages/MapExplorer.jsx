@@ -1740,55 +1740,6 @@ export default function MapExplorer({ navigate }) {
           </button>
           <button
             type="button"
-            className="demo-mode-toggle-btn"
-            onClick={() => {
-              if (isDemoMode) {
-                exitDemoMode()
-              } else {
-                loadDemoScenario('visakhapatnam')
-              }
-            }}
-            title="Toggle 1-Click Interactive Demo Scenarios for Evaluators & Judges"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '8px 14px',
-              background: isDemoMode
-                ? 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)'
-                : 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)',
-              color: '#ffffff',
-              border: `1px solid ${isDemoMode ? '#a855f7' : '#6366f1'}`,
-              borderRadius: '6px',
-              fontWeight: 700,
-              fontSize: '12px',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-              boxShadow: isDemoMode ? '0 0 14px rgba(168, 85, 247, 0.6)' : '0 2px 4px rgba(0,0,0,0.2)',
-              transition: 'all 0.2s ease',
-            }}
-          >
-            <span style={{ fontSize: '13px' }}>✨</span>
-            <span>{isDemoMode ? 'Demo Mode: ON' : '✨ Demo Mode'}</span>
-            {isDemoMode && (
-              <span
-                style={{
-                  background: '#a855f7',
-                  color: '#ffffff',
-                  fontSize: '9px',
-                  fontWeight: 800,
-                  padding: '1px 5px',
-                  borderRadius: '10px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                }}
-              >
-                ACTIVE
-              </span>
-            )}
-          </button>
-          <button
-            type="button"
             className={`expand-toggle-btn ${isExpanded ? 'is-expanded-btn' : ''}`}
             onClick={() => setIsExpanded((value) => !value)}
             title={isExpanded ? 'Exit Fullscreen map (ESC)' : 'Expand map to full screen'}
@@ -2028,29 +1979,6 @@ export default function MapExplorer({ navigate }) {
                   >
                     <span>🔄</span>
                     {pfzSync.loading ? 'Fetching INCOIS…' : 'Refresh PFZ'}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setIsSimulatorOpen(true)}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      padding: '8px 14px',
-                      background: '#ffffff',
-                      color: '#0284c7',
-                      border: '1px solid #bfdbfe',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease',
-                      boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-                    }}
-                  >
-                    <span>🧪</span>
-                    Simulate Scenario
                   </button>
                 </div>
               </div>

@@ -16,34 +16,21 @@ const LANGUAGE_OPTIONS = [
   { value: 'mr', label: 'मराठी (MR)' },
 ]
 
-const PERSONAS = [
-  { id: 'fisherman', label: 'Fisherman', icon: '🎣', badge: 'PFZ & Safety' },
-  { id: 'disaster', label: 'Disaster Authority', icon: '🚨', badge: 'Surge & Alert' },
-  { id: 'scientist', label: 'Marine Scientist', icon: '🔬', badge: 'Telemetry & MHW' },
-  { id: 'navigator', label: 'Vessel Navigator', icon: '🧭', badge: 'Waypoints & TSS' },
-]
-
 export default function ChatHeader({
   language,
   onLanguageChange,
-  persona = 'fisherman',
-  onPersonaChange,
   onClearSession,
   locationLabel,
   onToggleLocation,
   isLocationOpen,
-  onOpenSimulator,
   onOpenSOS,
   onOpenNavIC,
 }) {
   const [systemOnline, setSystemOnline] = useState(true)
   const [isLangOpen, setIsLangOpen] = useState(false)
-  const [isPersonaOpen, setIsPersonaOpen] = useState(false)
   const langRef = useRef(null)
-  const personaRef = useRef(null)
 
   const currentLang = LANGUAGE_OPTIONS.find((l) => l.value === language) || LANGUAGE_OPTIONS[0]
-  const currentPersona = PERSONAS.find((p) => p.id === persona) || PERSONAS[0]
 
   useEffect(() => {
     const checkStatus = () => {
@@ -57,24 +44,20 @@ export default function ChatHeader({
     }
   }, [])
 
-  // Close dropdowns on outside click or Escape
+  // Close dropdown on outside click or Escape
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (langRef.current && !langRef.current.contains(e.target)) {
         setIsLangOpen(false)
       }
-      if (personaRef.current && !personaRef.current.contains(e.target)) {
-        setIsPersonaOpen(false)
-      }
     }
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         setIsLangOpen(false)
-        setIsPersonaOpen(false)
       }
     }
 
-    if (isLangOpen || isPersonaOpen) {
+    if (isLangOpen) {
       document.addEventListener('mousedown', handleClickOutside)
       document.addEventListener('keydown', handleKeyDown)
     }
@@ -82,7 +65,7 @@ export default function ChatHeader({
       document.removeEventListener('mousedown', handleClickOutside)
       document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [isLangOpen, isPersonaOpen])
+  }, [isLangOpen])
 
   return (
     <header className="ask-orca-header-bar font-inter">
@@ -93,10 +76,28 @@ export default function ChatHeader({
         <div className="header-titles">
           <div className="title-row">
             <h1 className="font-sora">ASK ORCA</h1>
-            <span className="system-status-chip font-inter">
-              <span className={`status-dot ${systemOnline ? 'online' : 'offline'}`}></span>
-              {systemOnline ? 'Systems Online' : 'Offline Mode'}
-            </span>
+            {/* Adaptive Systems / NavIC Satellite Connectivity Badge */}
+            <button
+              type="button"
+              className={`system-status-chip font-inter ${systemOnline ? 'is-online' : 'is-offline-navic'}`}
+              onClick={onOpenNavIC}
+              title={
+                systemOnline
+                  ? 'Systems Online (Internet / Terrestrial) • Click for ISRO NavIC Satellite Diagnostics'
+                  : '⚠️ Offline Mode: ISRO NavIC Satellite Transceiver Active • Click to Inspect'
+              }
+            >
+              <span className={`status-dot ${systemOnline ? 'online' : 'offline-navic-pulse'}`}></span>
+              {systemOnline ? (
+                <span className="status-text">
+                  Systems Online <span className="navic-sat-subtext">🛰️ NavIC</span>
+                </span>
+              ) : (
+                <span className="status-text navic-highlight">
+                  🛰️ NavIC Sat Mode (Active)
+                </span>
+              )}
+            </button>
           </div>
           <p className="subtitle font-inter">
             Marine Operations Assistant & Decision Support
@@ -105,63 +106,6 @@ export default function ChatHeader({
       </div>
 
       <div className="header-actions font-inter">
-        {/* Stakeholder Persona Switcher */}
-        <div className="language-dropdown-container font-inter" ref={personaRef}>
-          <button
-            type="button"
-            className={`language-dropdown-trigger font-inter ${isPersonaOpen ? 'is-open' : ''}`}
-            onClick={() => setIsPersonaOpen((prev) => !prev)}
-            aria-haspopup="listbox"
-            aria-expanded={isPersonaOpen}
-            title="Switch Stakeholder Persona"
-            style={{ minWidth: '150px' }}
-          >
-            <span className="lang-icon">{currentPersona.icon}</span>
-            <span className="current-lang-text">{currentPersona.label}</span>
-            <svg
-              className={`dropdown-chevron-svg ${isPersonaOpen ? 'rotated' : ''}`}
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </button>
-
-          {isPersonaOpen && (
-            <ul className="custom-dropdown-menu font-inter" role="listbox">
-              {PERSONAS.map((p) => {
-                const isSelected = p.id === persona
-                return (
-                  <li key={p.id} role="presentation">
-                    <button
-                      type="button"
-                      role="option"
-                      aria-selected={isSelected}
-                      className={`dropdown-item font-inter ${isSelected ? 'is-selected' : ''}`}
-                      onClick={() => {
-                        onPersonaChange?.(p.id)
-                        setIsPersonaOpen(false)
-                      }}
-                    >
-                      <span className="item-label">
-                        {p.icon} {p.label} <small style={{ opacity: 0.65, fontSize: '0.75rem', display: 'block' }}>{p.badge}</small>
-                      </span>
-                      {isSelected && <span className="dropdown-checkmark">✓</span>}
-                    </button>
-                  </li>
-                )
-              })}
-            </ul>
-          )}
-        </div>
-
         {/* Location Context Toggle Button */}
         <button
           type="button"
@@ -235,38 +179,6 @@ export default function ChatHeader({
             </ul>
           )}
         </div>
-
-        {/* NavIC Satellite Dongle Mode Button */}
-        {onOpenNavIC && (
-          <button
-            type="button"
-            className="header-action-btn font-inter"
-            onClick={onOpenNavIC}
-            title="ISRO NavIC Satellite Transceiver (Offline Mode)"
-            style={{
-              background: 'rgba(16, 185, 129, 0.18)',
-              color: '#34d399',
-              border: '1px solid rgba(16, 185, 129, 0.4)',
-              fontWeight: 600,
-            }}
-          >
-            <span className="icon">🛰️</span>
-            <span className="btn-label">NavIC Sat Mode</span>
-          </button>
-        )}
-
-        {/* Scenario Simulator Button */}
-        {onOpenSimulator && (
-          <button
-            type="button"
-            className="header-action-btn simulator-trigger-btn font-inter"
-            onClick={onOpenSimulator}
-            title="Launch What-If Marine Scenario Simulator"
-          >
-            <span className="icon">🧪</span>
-            <span className="btn-label">Scenario Simulator</span>
-          </button>
-        )}
 
         {/* Emergency SOS Button */}
         {onOpenSOS && (

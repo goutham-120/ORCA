@@ -93,7 +93,7 @@ export default function AskOrca({ navigate }) {
   const [error, setError] = useState('')
   const [failedQuery, setFailedQuery] = useState('')
   const [language, setLanguage] = useState('en')
-  const [persona, setPersona] = useState('fisherman')
+  const persona = user?.role === 'researcher' ? 'scientist' : (user?.role === 'coastal_authority' || user?.role === 'marine_disaster_ops') ? 'disaster' : 'fisherman'
 
   // Initialize conversationId from localStorage or generate a fresh one
   const [conversationId, setConversationId] = useState(() => {
@@ -365,13 +365,10 @@ export default function AskOrca({ navigate }) {
       <ChatHeader
         language={language}
         onLanguageChange={setLanguage}
-        persona={persona}
-        onPersonaChange={setPersona}
         onClearSession={handleClearSession}
         locationLabel={location?.label}
         onToggleLocation={() => setIsLocationOpen((prev) => !prev)}
         isLocationOpen={isLocationOpen}
-        onOpenSimulator={() => setIsSimulatorOpen(true)}
         onOpenSOS={() => setIsSOSOpen(true)}
         onOpenNavIC={() => setIsNavICOpen(true)}
       />
