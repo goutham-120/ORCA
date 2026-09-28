@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { api } from '../../services/api'
 import './NavICStatusModal.css'
 
 export default function NavICStatusModal({ isOpen, onClose, location }) {
@@ -7,19 +8,16 @@ export default function NavICStatusModal({ isOpen, onClose, location }) {
   const [sosStatus, setSosStatus] = useState(null)
   const [sosBusy, setSosBusy] = useState(false)
 
-  const lat = location?.latitude ?? 17.6868
-  const lon = location?.longitude ?? 83.2185
+  const lat = location?.latitude ?? location?.lat ?? 17.6868
+  const lon = location?.longitude ?? location?.lng ?? 83.2185
+  const locName = location?.name || location?.label || 'Current Vessel Sector'
 
   useEffect(() => {
     if (!isOpen) return
     let isMounted = true
     setLoading(true)
 
-    fetch(`/api/v1/navic/status?latitude=${lat}&longitude=${lon}`)
-      .then((res) => {
-        if (!res.ok) throw new Error('API unavailable')
-        return res.json()
-      })
+    api(`/map/navic/status?latitude=${lat}&longitude=${lon}`)
       .then((data) => {
         if (isMounted) {
           setNavicData(data)
@@ -64,18 +62,16 @@ export default function NavICStatusModal({ isOpen, onClose, location }) {
   const handleSendNavicSOS = async () => {
     setSosBusy(true)
     try {
-      const res = await fetch('/api/v1/navic/sos', {
+      const data = await api('/map/navic/sos', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: {
           latitude: lat,
           longitude: lon,
           vessel_name: 'MATSYA-SHAKTI-07',
           registration_id: 'IND-COASTAL-8832',
-          nature_of_distress: 'Emergency Distress Broadcast via ISRO NavIC Channel',
-        }),
+          nature_of_distress: `Emergency Distress at ${locName} (${Number(lat).toFixed(3)}N, ${Number(lon).toFixed(3)}E) via ISRO NavIC Link`,
+        },
       })
-      const data = await res.json()
       setSosStatus(data)
     } catch {
       setSosStatus({
@@ -98,10 +94,17 @@ export default function NavICStatusModal({ isOpen, onClose, location }) {
     <div className="navic-modal-backdrop" onClick={onClose} role="dialog" aria-modal="true">
       <div className="navic-modal-container" onClick={(e) => e.stopPropagation()}>
         <div className="navic-modal-header">
-          <h2 className="navic-modal-title">
-            <span>🛰️</span>
-            <span>NavIC / GNSS Location Sync (ISRO NavIC & Web Geolocation)</span>
-          </h2>
+          <div className="navic-modal-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '1.25rem' }}>🛰️</span>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>
+                NavIC / GNSS Location Sync (ISRO NavIC &amp; Web Geolocation)
+              </div>
+              <div style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: 600, marginTop: '2px' }}>
+                📍 Locked Sector: {locName} ({Number(lat).toFixed(3)}°N, {Number(lon).toFixed(3)}°E)
+              </div>
+            </div>
+          </div>
           <button type="button" className="navic-close-btn" onClick={onClose} aria-label="Close">
             ✕
           </button>
@@ -158,16 +161,34 @@ export default function NavICStatusModal({ isOpen, onClose, location }) {
               </div>
 
               {/* ISRO 250-Char Satellite Packet Simulator */}
-              <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#f59e0b', marginTop: '12px', marginBottom: '4px' }}>
-                ISRO 250-CHARACTER S-BAND BROADCAST ADVISORY PACKET:
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '14px', marginBottom: '4px', flexWrap: 'wrap', gap: '4px' }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#f59e0b' }}>
+                  ISRO 250-CHAR S-BAND DOWNLINK ADVISORY PACKET:
+                </span>
+                <span style={{ fontSize: '0.7rem', color: '#38bdf8', fontWeight: 600 }}>
+                  Tailored for LOC: {Number(lat).toFixed(3)}°N, {Number(lon).toFixed(3)}°E
+                </span>
               </div>
               <div className="navic-packet-box">
-                ISRO/INCOIS-NAVIC|TYPE:PFZ_SAFETY|LOC:{lat.toFixed(3)}N,{lon.toFixed(3)}E|WAVE:1.2M|SWELL:SSW|SST:28.4C|CHL:0.88MG|STATUS:SAFE_HARBOR_CLEAR
+                ISRO/INCOIS-NAVIC|TYPE:PFZ_SAFETY|LOC:{Number(lat).toFixed(3)}N,{Number(lon).toFixed(3)}E|WAVE:1.2M|SWELL:SSW|SST:28.4C|CHL:0.88MG|STATUS:SAFE_HARBOR_CLEAR
+              </div>
+              <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '4px' }}>
+                ℹ️ Periodic satellite marine bulletin downlinked to the vessel transceiver beyond cellular range.
+              </div>
+
+              {/* Emergency Distress SOS Section */}
+              <div style={{ marginTop: '14px', marginBottom: '4px' }}>
+                <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#ef4444' }}>
+                  EMERGENCY TWO-WAY DISTRESS BEACON (DAT UPLINK):
+                </div>
+                <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+                  Uplinks vessel registration and this exact GPS fix to Indian Coast Guard MRCC.
+                </div>
               </div>
 
               {/* SOS Broadcast Confirmation or Action */}
               {sosStatus ? (
-                <div style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid #10b981', borderRadius: '8px', padding: '12px', marginTop: '14px' }}>
+                <div style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid #10b981', borderRadius: '8px', padding: '12px', marginTop: '8px' }}>
                   <div style={{ color: '#34d399', fontWeight: 700, marginBottom: '4px' }}>
                     ✅ Distress Beacon Broadcasted via ISRO NavIC S-Band
                   </div>
@@ -175,6 +196,8 @@ export default function NavICStatusModal({ isOpen, onClose, location }) {
                     Packet ID: <code>{sosStatus.packet_id}</code>
                     <br />
                     Dispatched to: {sosStatus.receiving_coordination_centres?.join(', ')}
+                    <br />
+                    Broadcasted Location: {Number(lat).toFixed(3)}°N, {Number(lon).toFixed(3)}°E ({locName})
                   </div>
                 </div>
               ) : (
@@ -183,7 +206,7 @@ export default function NavICStatusModal({ isOpen, onClose, location }) {
                   className="navic-sos-action-btn"
                   onClick={handleSendNavicSOS}
                   disabled={sosBusy}
-                  style={{ marginTop: '14px' }}
+                  style={{ marginTop: '8px' }}
                 >
                   <span>🚨</span>
                   <span>{sosBusy ? 'Broadcasting to ISRO NavIC Spacecraft...' : 'Broadcast Distress via NavIC Satellite Link'}</span>
