@@ -194,6 +194,21 @@ export function distillVoiceResponse(text, language = 'en', response = null) {
     finalVoiceText = cleaned.slice(0, 300)
   }
 
+  // 7. If risk is high or critical, ensure direct safety recommendation is voiced
+  const riskLevel =
+    response?.assessment?.level ||
+    (cleaned.toLowerCase().includes('high risk')
+      ? 'high'
+      : cleaned.toLowerCase().includes('critical risk')
+      ? 'critical'
+      : null)
+  if ((riskLevel === 'high' || riskLevel === 'critical') && response?.recommendations?.[0]?.action) {
+    const recAction = response.recommendations[0].action
+    if (!finalVoiceText.toLowerCase().includes(recAction.toLowerCase().slice(0, 20))) {
+      finalVoiceText += ` Warning: ${recAction}`
+    }
+  }
+
   if (!/[.!?।]$/.test(finalVoiceText)) {
     finalVoiceText += '.'
   }
