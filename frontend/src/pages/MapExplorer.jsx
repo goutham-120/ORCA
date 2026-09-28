@@ -2171,16 +2171,16 @@ export default function MapExplorer({ navigate }) {
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '6px',
-                      padding: '8px 14px',
-                      background: ecosystemState.isOpen ? '#0284c7' : '#ffffff',
+                      padding: '7px 14px',
+                      background: ecosystemState.isOpen ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : '#ffffff',
                       color: ecosystemState.isOpen ? '#ffffff' : '#0284c7',
-                      border: '1px solid #0284c7',
-                      borderRadius: '6px',
+                      border: ecosystemState.isOpen ? '1px solid #0284c7' : '1px solid #bae6fd',
+                      borderRadius: '8px',
                       fontSize: '12px',
-                      fontWeight: 600,
+                      fontWeight: 700,
                       cursor: 'pointer',
-                      transition: 'all 0.15s ease',
-                      boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                      transition: 'all 0.2s ease',
+                      boxShadow: ecosystemState.isOpen ? '0 3px 10px rgba(2, 132, 199, 0.25)' : '0 1px 2px rgba(0,0,0,0.04)',
                     }}
                   >
                     <span>🔬</span>
@@ -2195,15 +2195,15 @@ export default function MapExplorer({ navigate }) {
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '6px',
-                      padding: '8px 14px',
+                      padding: '7px 14px',
                       background: '#ffffff',
                       color: '#334155',
                       border: '1px solid #cbd5e1',
-                      borderRadius: '6px',
+                      borderRadius: '8px',
                       fontSize: '12px',
                       fontWeight: 600,
                       cursor: 'pointer',
-                      transition: 'all 0.15s ease',
+                      transition: 'all 0.2s ease',
                       boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
                     }}
                   >
@@ -2216,108 +2216,231 @@ export default function MapExplorer({ navigate }) {
               {/* 4 INFORMATION CARDS (RESPONSIVE GRID WITH ELEVATED MARITIME STYLING) */}
               <div className="coastal-conditions-grid telemetry-chips-grid">
                 {/* CARD 1: Tidal Hydrodynamics */}
-                <div style={{ background: 'linear-gradient(145deg, #ffffff 0%, #f0f9ff 100%)', border: '1px solid #bae6fd', borderRadius: '12px', padding: '16px 18px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '145px', boxShadow: '0 4px 14px rgba(2, 132, 199, 0.05), 0 1px 3px rgba(0,0,0,0.02)', transition: 'transform 0.2s ease, box-shadow 0.2s ease' }}>
+                <div
+                  style={{
+                    background: 'linear-gradient(180deg, #ffffff 0%, #f0f9ff 100%)',
+                    border: '1px solid #bae6fd',
+                    borderRadius: '14px',
+                    padding: '16px 18px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    minHeight: '160px',
+                    boxShadow: '0 4px 14px rgba(2, 132, 199, 0.05), 0 1px 3px rgba(0,0,0,0.02)',
+                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                  }}
+                >
                   <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                       <span style={{ fontSize: '13px', fontWeight: 700, color: '#0369a1', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span>🌊</span> Tidal Hydrodynamics
+                        <span>🌊</span> Tidal Level
                       </span>
-                      <span style={{ fontSize: '11px', fontWeight: 700, color: '#0284c7', background: '#e0f2fe', padding: '2px 8px', borderRadius: '12px' }}>
-                        {tideState.data?.station_name ? tideState.data.station_name.split(' ')[0] : (selectedLocation.name || 'Visakhapatnam')}
+                      <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#0369a1', background: '#e0f2fe', padding: '2px 8px', borderRadius: '10px', whiteSpace: 'nowrap' }}>
+                        {tideState.data?.station_name ? tideState.data.station_name.split(' ')[0] : 'Vizag'} Station
                       </span>
                     </div>
-                    <div>
-                      <div style={{ fontSize: '30px', fontWeight: 800, color: '#0f172a', lineHeight: 1.1, letterSpacing: '-0.02em' }}>
-                        {tideState.data?.current_height_m != null ? `+${tideState.data.current_height_m.toFixed(2)} m` : '+1.30 m'}
+
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'nowrap', gap: '8px' }}>
+                      <div style={{ fontSize: '28px', fontWeight: 800, color: '#0f172a', lineHeight: 1.1, letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>
+                        {tideState.data?.current_height_m != null
+                          ? `${tideState.data.current_height_m >= 0 ? '+' : ''}${tideState.data.current_height_m.toFixed(2)} m`
+                          : '+1.44 m'}
                       </div>
-                      <div style={{ marginTop: '6px' }}>
-                        <span style={{
+                      <span
+                        style={{
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '5px',
-                          fontSize: '11.5px',
+                          fontSize: '11px',
                           fontWeight: 700,
                           color: tideState.data?.tide_state?.includes('Flood') ? '#15803d' : '#b45309',
                           background: tideState.data?.tide_state?.includes('Flood') ? '#dcfce7' : '#fef3c7',
                           border: `1px solid ${tideState.data?.tide_state?.includes('Flood') ? '#86efac' : '#fde047'}`,
-                          padding: '3px 9px',
-                          borderRadius: '12px'
-                        }}>
-                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: tideState.data?.tide_state?.includes('Flood') ? '#16a34a' : '#d97706', display: 'inline-block' }}></span>
-                          {tideState.data?.tide_state ? (tideState.data.tide_state.includes('Flood') ? 'Flood · Rising' : 'Ebb · Falling') : 'Flood · Rising'}
-                        </span>
-                      </div>
+                          padding: '3px 8px',
+                          borderRadius: '10px',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        <span
+                          style={{
+                            width: '6px',
+                            height: '6px',
+                            borderRadius: '50%',
+                            background: tideState.data?.tide_state?.includes('Flood') ? '#16a34a' : '#d97706',
+                            display: 'inline-block',
+                          }}
+                        ></span>
+                        {tideState.data?.tide_state ? (tideState.data.tide_state.includes('Flood') ? 'Flood · Rising' : 'Ebb · Falling') : 'Ebb · Falling'}
+                      </span>
                     </div>
                   </div>
-                  <div style={{ fontSize: '12px', fontWeight: 500, color: '#475569', marginTop: '10px', borderTop: '1px solid #e0f2fe', paddingTop: '8px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <span>〰️</span> {tideState.data?.spring_neap_phase || 'Spring tide'} · Range {tideState.data?.tidal_range_m ? `${tideState.data.tidal_range_m} m` : '1.75 m'}
+
+                  <div
+                    style={{
+                      fontSize: '11.5px',
+                      fontWeight: 600,
+                      color: '#475569',
+                      marginTop: '12px',
+                      borderTop: '1px solid #e0f2fe',
+                      paddingTop: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '4px',
+                    }}
+                  >
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      <span>〰️</span> {tideState.data?.spring_neap_phase ? (tideState.data.spring_neap_phase.includes('Spring') ? 'Spring Tide' : 'Neap Tide') : 'Neap Tide'}
+                    </span>
+                    <span style={{ color: '#0369a1', fontWeight: 700 }}>
+                      Range {tideState.data?.tidal_range_m ? `${tideState.data.tidal_range_m} m` : '1.19 m'}
+                    </span>
                   </div>
                 </div>
 
                 {/* CARD 2: Next High / Low Tide */}
-                <div style={{ background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px 18px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '145px', boxShadow: '0 4px 14px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(0,0,0,0.02)' }}>
+                <div
+                  style={{
+                    background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '14px',
+                    padding: '16px 18px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    minHeight: '160px',
+                    boxShadow: '0 4px 14px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(0,0,0,0.02)',
+                  }}
+                >
                   <div>
-                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span>⏱️</span> Next High / Low Tide
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>⏱️</span> Next High / Low Tide
+                      </span>
+                      <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#64748b', background: '#f1f5f9', padding: '2px 8px', borderRadius: '10px', whiteSpace: 'nowrap' }}>
+                        Tidal Cycle
+                      </span>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                      <div style={{ background: '#f0f9ff', border: '1px solid #e0f2fe', borderRadius: '8px', padding: '6px 10px' }}>
-                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#0369a1', textTransform: 'uppercase' }}>High</div>
-                        <div style={{ fontSize: '11px', color: '#0f172a', fontWeight: 600, marginTop: '1px' }}>
-                          {tideState.data?.next_high_tide?.time_display || '11:47 AM UTC'}
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                      {/* High Tide Row */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f0f9ff', padding: '5px 8px', borderRadius: '6px', border: '1px solid #e0f2fe' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontSize: '10px', fontWeight: 800, color: '#0369a1', background: '#bae6fd', padding: '1px 5px', borderRadius: '4px', textTransform: 'uppercase' }}>HIGH</span>
+                          <span style={{ fontSize: '11.5px', fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap' }}>
+                            {tideState.data?.next_high_tide?.time_display || '04:27 AM UTC'}
+                          </span>
                         </div>
-                        <div style={{ fontSize: '15px', fontWeight: 800, color: '#0284c7', marginTop: '2px' }}>
-                          {tideState.data?.next_high_tide?.height_m ? `+${tideState.data.next_high_tide.height_m} m` : '+1.92 m'}
-                        </div>
+                        <strong style={{ fontSize: '13px', fontWeight: 800, color: '#0284c7', whiteSpace: 'nowrap' }}>
+                          {tideState.data?.next_high_tide?.height_m ? `+${Number(tideState.data.next_high_tide.height_m).toFixed(2)} m` : '+1.64 m'}
+                        </strong>
                       </div>
-                      <div style={{ background: '#f8fafc', border: '1px solid #f1f5f9', borderRadius: '8px', padding: '6px 10px' }}>
-                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Low</div>
-                        <div style={{ fontSize: '11px', color: '#0f172a', fontWeight: 600, marginTop: '1px' }}>
-                          {tideState.data?.next_low_tide?.time_display || '05:57 PM UTC'}
+
+                      {/* Low Tide Row */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#ffffff', padding: '5px 8px', borderRadius: '6px', border: '1px solid #f1f5f9' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontSize: '10px', fontWeight: 800, color: '#64748b', background: '#e2e8f0', padding: '1px 5px', borderRadius: '4px', textTransform: 'uppercase' }}>LOW</span>
+                          <span style={{ fontSize: '11.5px', fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap' }}>
+                            {tideState.data?.next_low_tide?.time_display || '10:07 PM UTC'}
+                          </span>
                         </div>
-                        <div style={{ fontSize: '15px', fontWeight: 800, color: '#475569', marginTop: '2px' }}>
-                          {tideState.data?.next_low_tide?.height_m ? `+${tideState.data.next_low_tide.height_m} m` : '+0.18 m'}
-                        </div>
+                        <strong style={{ fontSize: '13px', fontWeight: 800, color: '#475569', whiteSpace: 'nowrap' }}>
+                          {tideState.data?.next_low_tide?.height_m ? `+${Number(tideState.data.next_low_tide.height_m).toFixed(2)} m` : '+0.46 m'}
+                        </strong>
                       </div>
                     </div>
                   </div>
-                  <div style={{ fontSize: '12px', fontWeight: 500, color: '#475569', marginTop: '10px', borderTop: '1px solid #f1f5f9', paddingTop: '8px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <span>🧭</span> Current drift · {tideState.data?.current_velocity_knots ?? 1.3} kn {tideState.data?.current_direction_cardinal || 'NNE'}
+
+                  <div
+                    style={{
+                      fontSize: '11.5px',
+                      fontWeight: 600,
+                      color: '#475569',
+                      marginTop: '10px',
+                      borderTop: '1px solid #f1f5f9',
+                      paddingTop: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                      <span>🧭</span> Surface Drift
+                    </span>
+                    <span style={{ color: '#0f172a', fontWeight: 700 }}>
+                      {tideState.data?.current_velocity_knots ?? 0.5} kn {tideState.data?.current_direction_cardinal || 'SSW'}
+                    </span>
                   </div>
                 </div>
 
                 {/* CARD 3: Marine Safety */}
-                <div style={{ background: 'linear-gradient(145deg, #ffffff 0%, #f0fdf4 100%)', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '16px 18px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '145px', boxShadow: '0 4px 14px rgba(22, 101, 52, 0.05), 0 1px 3px rgba(0,0,0,0.02)' }}>
+                <div
+                  style={{
+                    background: 'linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%)',
+                    border: '1px solid #bbf7d0',
+                    borderRadius: '14px',
+                    padding: '16px 18px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    minHeight: '160px',
+                    boxShadow: '0 4px 14px rgba(22, 101, 52, 0.04), 0 1px 3px rgba(0,0,0,0.02)',
+                  }}
+                >
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                       <span style={{ fontSize: '13px', fontWeight: 700, color: '#166534', display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <span>🛡️</span> Marine Safety
                       </span>
-                      <span style={{
-                        fontSize: '11px',
-                        fontWeight: 700,
-                        color: '#15803d',
-                        background: '#dcfce7',
-                        border: '1px solid #86efac',
-                        padding: '2px 8px',
-                        borderRadius: '12px'
-                      }}>
+                      <span
+                        style={{
+                          fontSize: '10.5px',
+                          fontWeight: 700,
+                          color: '#15803d',
+                          background: '#dcfce7',
+                          border: '1px solid #86efac',
+                          padding: '2px 8px',
+                          borderRadius: '10px',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
                         Favorable
                       </span>
                     </div>
-                    <div style={{ margin: '4px 0 0 0' }}>
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                        <span style={{ fontSize: '32px', fontWeight: 800, color: '#0f172a', lineHeight: 1.1, letterSpacing: '-0.02em' }}>92</span>
-                        <span style={{ fontSize: '14px', fontWeight: 600, color: '#64748b' }}>/ 100</span>
-                      </div>
+
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                      <span style={{ fontSize: '28px', fontWeight: 800, color: '#0f172a', lineHeight: 1.1, letterSpacing: '-0.02em' }}>92</span>
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: '#64748b' }}>/ 100</span>
+                      <span style={{ marginLeft: 'auto', fontSize: '10.5px', fontWeight: 700, color: '#15803d', background: '#dcfce7', padding: '2px 6px', borderRadius: '6px' }}>
+                        Safe Sea State
+                      </span>
                     </div>
                   </div>
-                  <div style={{ fontSize: '12px', fontWeight: 500, color: '#475569', marginTop: '10px', borderTop: '1px solid #dcfce7', paddingTop: '8px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                    <span>🌊 Wave 0.12 m</span>
-                    <span>·</span>
-                    <span>💨 Wind 0.08</span>
-                    <span>·</span>
-                    <span>〰️ Swell 0.05</span>
+
+                  <div
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      color: '#475569',
+                      marginTop: '10px',
+                      borderTop: '1px solid #dcfce7',
+                      paddingTop: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <span style={{ background: '#ffffff', border: '1px solid #cbd5e1', padding: '2px 6px', borderRadius: '4px', color: '#0369a1', display: 'inline-flex', alignItems: 'center', gap: '2px', whiteSpace: 'nowrap' }}>
+                      🌊 Wave 0.12 m
+                    </span>
+                    <span style={{ background: '#ffffff', border: '1px solid #cbd5e1', padding: '2px 6px', borderRadius: '4px', color: '#475569', display: 'inline-flex', alignItems: 'center', gap: '2px', whiteSpace: 'nowrap' }}>
+                      💨 Wind 8.5 kt
+                    </span>
+                    <span style={{ background: '#ffffff', border: '1px solid #cbd5e1', padding: '2px 6px', borderRadius: '4px', color: '#475569', display: 'inline-flex', alignItems: 'center', gap: '2px', whiteSpace: 'nowrap' }}>
+                      〰️ Swell 0.5 m
+                    </span>
                   </div>
                 </div>
 
@@ -2325,25 +2448,72 @@ export default function MapExplorer({ navigate }) {
                 {(() => {
                   const pfzCount = layers.find((l) => String(l.id).toLowerCase() === 'pfz')?.features?.length || 113
                   return (
-                    <div style={{ background: 'linear-gradient(145deg, #ffffff 0%, #f0f9ff 100%)', border: '1px solid #bae6fd', borderRadius: '12px', padding: '16px 18px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '145px', boxShadow: '0 4px 14px rgba(2, 132, 199, 0.05), 0 1px 3px rgba(0,0,0,0.02)' }}>
+                    <div
+                      style={{
+                        background: 'linear-gradient(180deg, #ffffff 0%, #f0f9ff 100%)',
+                        border: '1px solid #bae6fd',
+                        borderRadius: '14px',
+                        padding: '16px 18px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        minHeight: '160px',
+                        boxShadow: '0 4px 14px rgba(2, 132, 199, 0.04), 0 1px 3px rgba(0,0,0,0.02)',
+                      }}
+                    >
                       <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                           <span style={{ fontSize: '13px', fontWeight: 700, color: '#0369a1', display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <span>🎯</span> INCOIS PFZ
                           </span>
-                          <span style={{ fontSize: '10px', fontWeight: 700, color: '#15803d', background: '#dcfce7', border: '1px solid #86efac', padding: '2px 7px', borderRadius: '10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <span
+                            style={{
+                              fontSize: '10px',
+                              fontWeight: 700,
+                              color: '#15803d',
+                              background: '#dcfce7',
+                              border: '1px solid #86efac',
+                              padding: '2px 7px',
+                              borderRadius: '10px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
                             <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#16a34a' }}></span> Live WFS
                           </span>
                         </div>
-                        <div style={{ margin: '4px 0 0 0' }}>
-                          <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-                            <span style={{ fontSize: '32px', fontWeight: 800, color: '#0284c7', lineHeight: 1.1, letterSpacing: '-0.02em' }}>{pfzCount}</span>
-                            <span style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a' }}>zones active</span>
-                          </div>
+
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                          <span style={{ fontSize: '28px', fontWeight: 800, color: '#0284c7', lineHeight: 1.1, letterSpacing: '-0.02em' }}>{pfzCount}</span>
+                          <span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>Zones Active</span>
+                          <span style={{ marginLeft: 'auto', fontSize: '10.5px', fontWeight: 700, color: '#0369a1', background: '#e0f2fe', padding: '2px 6px', borderRadius: '6px' }}>
+                            High Pelagic
+                          </span>
                         </div>
                       </div>
-                      <div style={{ fontSize: '12px', fontWeight: 500, color: '#475569', marginTop: '10px', borderTop: '1px solid #e0f2fe', paddingTop: '8px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <span>🛰️</span> {pfzSync.message || `${pfzCount} PFZ features loaded`}
+
+                      <div
+                        style={{
+                          fontSize: '11.5px',
+                          fontWeight: 500,
+                          color: '#475569',
+                          marginTop: '10px',
+                          borderTop: '1px solid #e0f2fe',
+                          paddingTop: '8px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <span>🛰️</span> {pfzCount} polygons synced
+                        </span>
+                        <span style={{ color: '#0284c7', fontWeight: 700, fontSize: '11px' }}>INCOIS WFS</span>
                       </div>
                     </div>
                   )
