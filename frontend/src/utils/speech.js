@@ -117,7 +117,7 @@ export function distillVoiceResponse(text, language = 'en', response = null) {
   const raw = String(text || response?.answer || '').trim()
   if (!raw) return ''
 
-  // 1. Strip markdown formatting: code blocks, headers, bold, italics, links, blockquotes, list bullets
+  // 1. Strip raw markdown formatting (code blocks, headers, bold, italics, links, blockquotes, list bullets, HTML, URLs)
   let cleaned = raw
     .replace(/```[\s\S]*?```/g, '')
     .replace(/`([^`]+)`/g, '$1')
@@ -133,15 +133,18 @@ export function distillVoiceResponse(text, language = 'en', response = null) {
     .replace(/https?:\/\/\S+/g, '')
     .trim()
 
-  // 2. Assistant natural phrasing normalization
+  // 2. Natural assistant phrasing & removing non-conversational boilerplate
   cleaned = cleaned
-    .replace(/ORCA'?s?\s+combined\s+assessment\s+for\s+([^.]+?)\s+is\s+([a-zA-Z]+)\s+risk/gi, 'Conditions for $1 are $2 risk')
-    .replace(/ORCA'?s?\s+combined\s+assessment\s+is\s+([a-zA-Z]+)\s+risk/gi, 'Conditions are $1 risk')
-    .replace(/Decision intelligence:\s*/gi, '')
+    .replace(/ORCA'?s?\s+combined\s+assessment\s+for\s+([^.]+?)\s+is\s+([a-zA-Z]+)\s+risk\.?/gi, 'Conditions for $1 are $2 risk.')
+    .replace(/ORCA'?s?\s+combined\s+assessment\s+is\s+([a-zA-Z]+)\s+risk\.?/gi, 'Conditions are $1 risk.')
+    .replace(/ORCA\s+సముద్ర\s+ప్రమాద\s+అంచనా\s*\[([^\]]+)\]:\s*/gi, '$1 వద్ద ')
+    .replace(/ORCA\s+का\s+संयुक्त\s+समुद्री\s+जोखिम\s+आकलन\s*\[([^\]]+)\]:\s*/gi, '$1 में ')
+    .replace(/ORCA\s+கடல்சார்\s+இடர்\s+மதிப்பீடு:\s*/gi, '')
+    .replace(/Decision intelligence:\s*/gi, 'Advisory: ')
     .replace(/Decision limitations:\s*/gi, '')
     .replace(/Domain evidence:\s*/gi, '')
-    .replace(/Weather evidence:\s*/gi, '')
-    .replace(/Ocean evidence:\s*/gi, '')
+    .replace(/Weather evidence:\s*/gi, 'Weather: ')
+    .replace(/Ocean evidence:\s*/gi, 'Ocean: ')
     .replace(/GIS evidence:\s*/gi, '')
     .replace(/Some requested capability domains remain pending:.*$/gim, '')
     .replace(/View the source-backed features in Map Explorer\.?/gi, '')
@@ -149,7 +152,16 @@ export function distillVoiceResponse(text, language = 'en', response = null) {
     .replace(/\([\d.]+\s*°\s*[NSEW],?\s*[\d.]+\s*°\s*[NSEW]\)/gi, '')
     .replace(/Confidence:\s*[\d.]+/gi, '')
 
-  // 3. Sentence boundary tokenization (handles English and Indic sentence terminators . ! ? ।)
+  // 3. Spoken pronunciation replacements for units
+  cleaned = cleaned
+    .replace(/(\d+(?:\.\d+)?)\s*m\/s/gi, '$1 meters per second')
+    .replace(/(\d+(?:\.\d+)?)\s*kts?/gi, '$1 knots')
+    .replace(/(\d+(?:\.\d+)?)\s*°C/gi, '$1 degrees Celsius')
+    .replace(/(\d+(?:\.\d+)?)\s*m\b/gi, '$1 meters')
+    .replace(/(\d+(?:\.\d+)?)\s*s\b/gi, '$1 seconds')
+    .replace(/;\s*/g, ', ')
+
+  // 4. Split into natural sentences (handles English and Indic terminators . ! ? ।)
   const sentenceDelimiters = /([.!?।]+[\s\n]+|\n\n+|\n(?=[A-Z\u0900-\u0DFF]))/g
   const tokens = cleaned.split(sentenceDelimiters)
   const sentences = []
@@ -166,7 +178,7 @@ export function distillVoiceResponse(text, language = 'en', response = null) {
     }
   }
 
-  // 4. Filter out metadata or non-conversational disclaimers
+  // 5. Filter out purely diagnostic/metadata sentences
   const filtered = sentences.filter((s) => {
     const lower = s.toLowerCase()
     if (lower.startsWith('note:') || lower.startsWith('disclaimer:') || lower.startsWith('source:') || lower.startsWith('data status:')) return false
@@ -176,24 +188,16 @@ export function distillVoiceResponse(text, language = 'en', response = null) {
     return true
   })
 
-  // 5. Select top 1-2 concise actionable sentences
-  let chosen = []
-  if (filtered.length > 0) {
-    chosen.push(filtered[0])
-    if (filtered.length > 1 && chosen[0].length < 90) {
-      const second = filtered[1]
-      if (second.length > 8 && !second.includes(';') && !second.toLowerCase().includes('limitations:')) {
-        chosen.push(second)
-      }
-    }
-  } else {
-    chosen = [cleaned.slice(0, 160)]
+  // 6. Combine all substantive answer sentences cleanly
+  let finalVoiceText = filtered.join(' ').replace(/\s+/g, ' ').trim()
+  if (!finalVoiceText) {
+    finalVoiceText = cleaned.slice(0, 300)
   }
 
-  let finalVoiceText = chosen.join('. ').replace(/\.\s*\./g, '.').replace(/\s+/g, ' ').trim()
   if (!/[.!?।]$/.test(finalVoiceText)) {
     finalVoiceText += '.'
   }
+
   return finalVoiceText
 }
 
