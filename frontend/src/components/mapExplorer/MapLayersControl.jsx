@@ -111,7 +111,7 @@ export default function MapLayersControl({
               className="layer-click-header"
               onClick={() => onToggleCloudIR?.()}
               aria-pressed={Boolean(isCloudIRVisible)}
-              title="Toggle Satellite Meteorological Cloud Canopy (Natural Visible White/Grey or Thermal IR Temp)"
+              title="Toggle Satellite Meteorological Cloud Canopy (Natural Visible or Thermal IR Temp)"
             >
               <div className="layer-left-info">
                 <span className="layer-checkbox-custom">
@@ -124,7 +124,7 @@ export default function MapLayersControl({
                     <span className="insat-badge">{cloudMode === 'natural' ? 'Optical Visible' : 'ISRO TIR1'}</span>
                   </span>
                   <span className="layer-sub-desc">
-                    {cloudMode === 'natural' ? 'Real Optical White/Grey Cloud Canopy' : 'TIR1 Cloud-Top Temp (< -60°C Convective Tops)'}
+                    {cloudMode === 'natural' ? 'Optical Satellite Cloud Canopy' : 'TIR1 Cloud-Top Temp (< -60°C Convective Tops)'}
                   </span>
                 </div>
               </div>
@@ -149,7 +149,7 @@ export default function MapLayersControl({
                   <button
                     type="button"
                     onClick={() => onToggleCloudMode?.('natural')}
-                    title="Real Optical White/Grey Satellite Photo Cloud Swirls"
+                    title="Natural Optical Satellite Cloud Imagery"
                     style={{
                       padding: '5px 8px',
                       fontSize: '10.5px',
@@ -163,7 +163,7 @@ export default function MapLayersControl({
                       transition: 'all 0.15s ease',
                     }}
                   >
-                    ☁️ Natural (White/Grey)
+                    ☁️ Natural
                   </button>
                   <button
                     type="button"
