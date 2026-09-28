@@ -552,6 +552,9 @@ export default function Message({ message }) {
     return { label: p.toUpperCase(), class: 'medium' }
   }
 
+  const isSafetyIntent = response?.intent === 'safety'
+  const isVentureSafety = /safe to venture|safe to fish|can i go|is it safe|should (?:i|we) sail/i.test(message.text || '')
+
   const isExplicitSafety = Boolean(
     isSafetyIntent ||
     isVentureSafety ||
