@@ -140,57 +140,82 @@ def is_coordinate_in_water(latitude: float, longitude: float) -> bool:
     Determines whether a geographic coordinate is located in the ocean / sea / water
     surrounding the Indian subcontinent rather than inland.
     """
-    # 1. South of Kanyakumari (Indian Ocean)
+    # 1. Far Oceanic Boundaries & South of Kanyakumari (Indian Ocean)
     if latitude < 8.08 and 65.0 <= longitude <= 95.0:
+        return True
+    if (longitude < 68.0 or longitude > 90.0) and latitude < 25.0:
         return True
 
     # 2. Arabian Sea (West Coast of India)
-    if 8.08 <= latitude <= 25.0 and longitude < 77.5:
-        if latitude > 22.2 and longitude < 69.0:  # Kutch / Northwest waters
+    if 8.08 <= latitude <= 25.0 and longitude < 77.55:
+        if latitude > 22.4 and longitude < 69.2:
             return True
-        if 20.5 <= latitude <= 22.2 and longitude < 69.8:  # Saurashtra West offshore
+        if 20.8 <= latitude <= 22.4 and longitude < 69.7:
             return True
-        if 20.0 <= latitude < 20.5 and longitude < 70.8:  # Saurashtra South offshore
+        if 20.0 <= latitude < 20.8 and longitude < 71.0:
             return True
-        if 18.5 <= latitude < 20.0 and longitude < 72.75:  # Mumbai / North Maharashtra waters
+        # Mumbai & North Maharashtra
+        if 18.5 <= latitude < 20.0 and longitude < 72.835:
             return True
-        if 16.5 <= latitude < 18.5 and longitude < 73.25:  # Central Maharashtra waters
+        # Central Maharashtra
+        if 16.5 <= latitude < 18.5 and longitude < 73.28:
             return True
-        if 15.0 <= latitude < 16.5 and longitude < 73.70:  # South Maharashtra / Goa waters
+        # South Maharashtra & Goa
+        if 14.8 <= latitude < 16.5 and longitude < 73.78:
             return True
-        if 13.8 <= latitude < 15.0 and longitude < 74.30:  # North Karnataka waters
+        # Karnataka
+        if 12.8 <= latitude < 14.8 and longitude < 74.75:
             return True
-        if 12.8 <= latitude < 13.8 and longitude < 74.70:  # South Karnataka waters
-            return True
+        # Kerala (Piecewise Coastline)
         if 8.08 <= latitude < 12.8:
-            kerala_coast_lon = 74.8 + (12.8 - latitude) * (77.55 - 74.8) / (12.8 - 8.08)
-            if longitude < kerala_coast_lon - 0.05:
+            if latitude >= 11.5:
+                coast_lon = 74.83 + (12.8 - latitude) * (75.40 - 74.83) / 1.3
+            elif latitude >= 10.0:
+                coast_lon = 75.40 + (11.5 - latitude) * (76.20 - 75.40) / 1.5
+            elif latitude >= 9.0:
+                coast_lon = 76.20 + (10.0 - latitude) * (76.52 - 76.20) / 1.0
+            else:
+                coast_lon = 76.52 + (9.0 - latitude) * (77.55 - 76.52) / 0.92
+            if longitude < coast_lon - 0.01:
                 return True
 
     # 3. Bay of Bengal / Palk Strait / Gulf of Mannar (East Coast of India)
-    if 8.08 <= latitude <= 23.0 and longitude > 77.5:
-        if 8.08 <= latitude < 10.0 and longitude > (77.55 + (latitude - 8.08) * (79.3 - 77.55) / 1.92 + 0.05):
+    if 8.08 <= latitude <= 23.0 and longitude > 77.55:
+        # South TN / Gulf of Mannar / Palk Bay
+        if 8.08 <= latitude < 10.0:
+            coast_lon = 77.55 + (latitude - 8.08) * (79.30 - 77.55) / 1.92
+            if longitude > coast_lon + 0.02:
+                return True
+        # Central Tamil Nadu (Nagapattinam to Cuddalore)
+        if 10.0 <= latitude < 11.5 and longitude > 79.80:
             return True
-        if 10.0 <= latitude < 11.5 and longitude > 79.85:  # Central Tamil Nadu offshore
+        # Chennai & North TN
+        if 11.5 <= latitude < 13.5 and longitude > 80.28:
             return True
-        if 11.5 <= latitude < 13.5 and longitude > 80.30:  # Chennai / North TN offshore
+        # South AP (Nellore)
+        if 13.5 <= latitude < 15.2 and longitude > 80.10:
             return True
-        if 13.5 <= latitude < 15.0 and longitude > 80.25:  # South AP offshore (Nellore)
+        # Central AP (Kakinada / Godavari)
+        if 15.2 <= latitude < 17.2:
+            coast_lon = 80.20 + (latitude - 15.2) * (82.25 - 80.20) / 2.0
+            if longitude > coast_lon:
+                return True
+        # North AP (Visakhapatnam & Srikakulam)
+        if 17.2 <= latitude < 19.0:
+            if latitude >= 17.7:
+                coast_lon = 83.28 + (latitude - 17.7) * (84.35 - 83.28) / 0.86
+            else:
+                coast_lon = 82.60 + (latitude - 17.2) * (83.28 - 82.60) / 0.50
+            if longitude > coast_lon:
+                return True
+        # Odisha
+        if 19.0 <= latitude < 21.5:
+            coast_lon = 84.80 + (latitude - 19.0) * (87.00 - 84.80) / 2.5
+            if longitude > coast_lon:
+                return True
+        # West Bengal / Delta
+        if 21.5 <= latitude < 23.0 and (latitude < 21.6 or (latitude < 22.0 and longitude > 88.0)):
             return True
-        if 15.0 <= latitude < 15.8 and longitude > 80.45:  # South-Central AP offshore
-            return True
-        if 15.8 <= latitude < 17.5 and longitude > (80.8 + (latitude - 15.8) * (82.3 - 80.8) / 1.7 + 0.05):  # Central AP (Kakinada) offshore
-            return True
-        if 17.5 <= latitude < 19.0 and longitude > (83.1 + (latitude - 17.5) * (84.3 - 83.1) / 1.5 + 0.05):  # Visakhapatnam / North AP offshore
-            return True
-        if 19.0 <= latitude < 21.5 and longitude > (84.8 + (latitude - 19.0) * (87.0 - 84.8) / 2.5 + 0.05):  # Odisha offshore
-            return True
-        if 21.5 <= latitude < 23.0 and (latitude < 21.6 or (latitude < 22.0 and longitude > 88.0)):  # Bengal offshore / Bay of Bengal
-            return True
-
-    # 4. Far Oceanic Boundaries
-    if (longitude < 68.0 or longitude > 89.5) and latitude < 25.0:
-        return True
 
     return False
 

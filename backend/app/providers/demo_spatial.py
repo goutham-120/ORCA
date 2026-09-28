@@ -65,8 +65,9 @@ def ensure_demo_gis(repository: SpatialFeatureRepository = spatial_features) -> 
     """Seed comprehensive coastal and deep offshore GIS features with round geometries."""
     try:
         existing = repository.list(source=DEMO_SOURCE)
-        if not existing:
-            records = (
+        if existing:
+            return 0
+        records = (
                 # 1. Visakhapatnam coastal & nearshore
                 _feature(
                     "ORCA_DEMO_GIS",
@@ -132,7 +133,7 @@ def ensure_demo_gis(repository: SpatialFeatureRepository = spatial_features) -> 
                     "ORCA_DEMO_GIS",
                     "hazards",
                     "demo-hazard-chennai-shipping",
-                    _make_circle_polygon(80.50, 13.18, radius_km=14.0),
+                    _make_circle_polygon(80.44, 13.13, radius_km=7.5),
                     "Chennai Offshore Commercial Shipping Traffic Separation Scheme (TSS)",
                     DEMO_SOURCE,
                 ),
@@ -191,11 +192,11 @@ def replace_demo_pfz(repository: SpatialFeatureRepository = spatial_features) ->
 
             # 3. Chennai / Kasimedu Sector (Coromandel Coast, Tamil Nadu)
             _feature("PFZ", "pfz", "demo-pfz-chennai-track", {
-                "type": "LineString", "coordinates": [[80.33, 12.85], [80.38, 13.05], [80.45, 13.25]]
-            }, "Coromandel Coast Oceanic PFZ Track", PFZ_DEMO_SOURCE, {"depth_m": 40, "sst_c": 28.6, "bearing_deg": 95}),
+                "type": "LineString", "coordinates": [[80.52, 13.14], [80.55, 13.12], [80.58, 13.10]]
+            }, "Coromandel Coast Oceanic PFZ Track", PFZ_DEMO_SOURCE, {"depth_m": 42, "sst_c": 28.6, "bearing_deg": 95}),
             _feature("PFZ", "pfz", "demo-pfz-chennai-point", {
-                "type": "Point", "coordinates": [80.38, 13.08]
-            }, "Kasimedu Offshore PFZ Zone", PFZ_DEMO_SOURCE, {"depth_m": 38, "sst_c": 28.5}),
+                "type": "Point", "coordinates": [80.55, 13.12]
+            }, "Kasimedu Offshore PFZ Zone", PFZ_DEMO_SOURCE, {"depth_m": 42, "sst_c": 28.6}),
 
             # 4. Nagapattinam & Palk Bay (Tamil Nadu)
             _feature("PFZ", "pfz", "demo-pfz-nagapattinam-track", {

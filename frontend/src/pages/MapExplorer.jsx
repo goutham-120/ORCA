@@ -1262,7 +1262,7 @@ export default function MapExplorer({ navigate }) {
       const res = await navigateNearestPFZ({
         latitude: lat,
         longitude: lon,
-        radiusKm: Math.max(Number(searchRadius) || 50, 150),
+        radiusKm: Number(searchRadius) || 50,
         vesselSpeedKnots: 12.0,
       })
 
@@ -1789,10 +1789,11 @@ export default function MapExplorer({ navigate }) {
           </button>
           <button
             type="button"
-            className="expand-toggle-btn"
+            className={`expand-toggle-btn ${isExpanded ? 'is-expanded-btn' : ''}`}
             onClick={() => setIsExpanded((value) => !value)}
+            title={isExpanded ? 'Exit Fullscreen map (ESC)' : 'Expand map to full screen'}
           >
-            {isExpanded ? 'Restore' : 'Fullscreen'}
+            {isExpanded ? '✕ Exit Fullscreen' : '⛶ Fullscreen'}
           </button>
         </div>
       </section>
@@ -2587,8 +2588,7 @@ export default function MapExplorer({ navigate }) {
                 radiusKm={Number(searchRadius) || 50}
                 pfzEvaluations={pfzEvaluations}
                 selectedPFZId={nearestPFZ.data?.selected_pfz?.id || liveNavigation.data?.selected_pfz?.id || null}
-                selectedPFZGeometry={nearestPFZ.data?.selected_pfz?.geometry || liveNavigation.data?.selected_pfz?.geometry || null}
-                pfzRouteGeometry={isRouteVisible ? (nearestPFZ.data?.route_geometry || null) : null}
+                pfzRouteGeometry={isRouteVisible ? (liveNavigation.data?.route?.route_geometry ? null : (nearestPFZ.data?.route_geometry || null)) : null}
                 onMapLocation={handleMapLocation}
                 isExpanded={isExpanded}
                 onToggleExpanded={() => setIsExpanded((value) => !value)}
@@ -2596,7 +2596,17 @@ export default function MapExplorer({ navigate }) {
                 navigationWaypoints={isRouteVisible ? (liveNavigation.data?.route?.waypoints || []) : []}
                 isTracking={isGpsTracking}
                 landTransit={isRouteVisible ? (liveNavigation.data?.land_transit || null) : null}
-                blockedDirectRoute={isRouteVisible ? (liveNavigation.data?.route?.blocked_direct_geometry || null) : null}
+                blockedDirectRoute={
+                  isRouteVisible
+                    ? (
+                        liveNavigation.data?.route?.blocked_direct_geometry ||
+                        (liveNavigation.data?.route?.alternative_used ? liveNavigation.data?.route?.direct_geometry : null) ||
+                        detailedRoute.data?.route?.blocked_direct_geometry ||
+                        (detailedRoute.data?.alternative_used ? detailedRoute.data?.direct_geometry : null) ||
+                        null
+                      )
+                    : null
+                }
                 baseMapMode={baseMapMode}
                 isCloudIRVisible={isCloudIRVisible}
                 cloudMode={cloudMode}

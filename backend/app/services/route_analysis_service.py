@@ -302,6 +302,7 @@ class RouteAnalysisService:
             "fuel_delta_liters": fuel_delta_liters,
             "route_geometry": final_route_geom,
             "direct_geometry": direct_line,
+            "blocked_direct_geometry": direct_line if alternative_used else None,
             "alternative_used": alternative_used,
             "waypoints": waypoints_detail,
             "marine_safety_index": msi_result,
@@ -370,10 +371,11 @@ class RouteAnalysisService:
         py = dx / length
 
         candidates: list[tuple[float, dict[str, Any]]] = []
-        # Multi-scale detour offsets (from fine ~1.5km to wide ~110km)
+
+        # 1. Multi-scale perpendicular waypoint detours (fine ~1.5km to wide ~110km)
         detour_offsets = [
-            0.015, -0.015, 0.03, -0.03, 0.06, -0.06, 0.10, -0.10,
-            0.18, -0.18, 0.30, -0.30, 0.50, -0.50, 0.75, -0.75, 1.0, -1.0
+            0.02, -0.02, 0.04, -0.04, 0.07, -0.07, 0.11, -0.11,
+            0.16, -0.16, 0.22, -0.22, 0.30, -0.30, 0.40, -0.40, 0.55, -0.55
         ]
         for mult in detour_offsets:
             wp = [round(mid_lon + px * mult, 5), round(mid_lat + py * mult, 5)]
@@ -388,10 +390,10 @@ class RouteAnalysisService:
                 )
                 candidates.append((cost, geom))
 
-        # Multi-point box detours around wide polygons
+        # 2. Multi-point box detours around wide polygons (3-leg bypass)
         detour_box_offsets = [
-            0.025, -0.025, 0.05, -0.05, 0.10, -0.10, 0.20, -0.20,
-            0.35, -0.35, 0.50, -0.50, 0.75, -0.75, 1.0, -1.0
+            0.025, -0.025, 0.05, -0.05, 0.09, -0.09, 0.15, -0.15,
+            0.22, -0.22, 0.32, -0.32, 0.45, -0.45, 0.60, -0.60
         ]
         for mult in detour_box_offsets:
             wp1 = [round(orig_pt[0] + 0.33 * dx + px * mult, 5), round(orig_pt[1] + 0.33 * dy + py * mult, 5)]
@@ -404,7 +406,7 @@ class RouteAnalysisService:
                 cost = math.sqrt(dx*dx + dy*dy) + abs(mult) * 2.2
                 candidates.append((cost, geom))
 
-        # Asymmetric waypoint detours (for irregular or angled obstacles)
+        # 3. Asymmetric waypoint detours (for irregular or angled obstacles)
         for frac in [0.25, 0.75]:
             for mult in detour_offsets:
                 wp = [round(orig_pt[0] + frac * dx + px * mult, 5), round(orig_pt[1] + frac * dy + py * mult, 5)]
@@ -418,6 +420,63 @@ class RouteAnalysisService:
                         math.sqrt((dest_pt[0] - wp[0])**2 + (dest_pt[1] - wp[1])**2)
                     )
                     candidates.append((cost, geom))
+
+        # 4. Obstacle perimeter clearance corridors (bounding perimeter waypoints)
+        for obs in conflicts:
+            geom = getattr(obs, "geometry", None) or (obs.get("geometry") if isinstance(obs, dict) else None)
+            if not geom:
+                continue
+            coords = []
+            if geom.get("type") == "Polygon":
+                coords = geom.get("coordinates", [[]])[0]
+            elif geom.get("type") == "MultiPolygon":
+                for poly in geom.get("coordinates", []):
+                    if poly:
+                        coords.extend(poly[0])
+            if not coords:
+                continue
+
+            lons = [c[0] for c in coords if isinstance(c, (list, tuple)) and len(c) >= 2]
+            lats = [c[1] for c in coords if isinstance(c, (list, tuple)) and len(c) >= 2]
+            if not lons or not lats:
+                continue
+
+            min_lon, max_lon = min(lons), max(lons)
+            min_lat, max_lat = min(lats), max(lats)
+            span_lon = max_lon - min_lon
+            span_lat = max_lat - min_lat
+            buf_lon = max(0.02, span_lon * 0.18)
+            buf_lat = max(0.02, span_lat * 0.18)
+
+            # North perimeter corridor
+            wp_n1 = [round(min_lon - 0.01, 5), round(max_lat + buf_lat, 5)]
+            wp_n2 = [round(max_lon + 0.01, 5), round(max_lat + buf_lat, 5)]
+            geom_n = {"type": "LineString", "coordinates": [orig_pt, wp_n1, wp_n2, dest_pt]}
+            if self._is_path_clear(geom_n, conflicts):
+                cost = math.sqrt(dx*dx + dy*dy) + abs(max_lat + buf_lat - mid_lat) * 2.2
+                candidates.append((cost, geom_n))
+
+            # South perimeter corridor
+            wp_s1 = [round(min_lon - 0.01, 5), round(min_lat - buf_lat, 5)]
+            wp_s2 = [round(max_lon + 0.01, 5), round(min_lat - buf_lat, 5)]
+            geom_s = {"type": "LineString", "coordinates": [orig_pt, wp_s1, wp_s2, dest_pt]}
+            if self._is_path_clear(geom_s, conflicts):
+                cost = math.sqrt(dx*dx + dy*dy) + abs(mid_lat - (min_lat - buf_lat)) * 2.2
+                candidates.append((cost, geom_s))
+
+            # Direct North single waypoint
+            wp_n_single = [round(mid_lon, 5), round(max_lat + buf_lat, 5)]
+            geom_ns = {"type": "LineString", "coordinates": [orig_pt, wp_n_single, dest_pt]}
+            if self._is_path_clear(geom_ns, conflicts):
+                cost = math.sqrt(dx*dx + dy*dy) + abs(max_lat + buf_lat - mid_lat) * 2.0
+                candidates.append((cost, geom_ns))
+
+            # Direct South single waypoint
+            wp_s_single = [round(mid_lon, 5), round(min_lat - buf_lat, 5)]
+            geom_ss = {"type": "LineString", "coordinates": [orig_pt, wp_s_single, dest_pt]}
+            if self._is_path_clear(geom_ss, conflicts):
+                cost = math.sqrt(dx*dx + dy*dy) + abs(mid_lat - (min_lat - buf_lat)) * 2.0
+                candidates.append((cost, geom_ss))
 
         if candidates:
             candidates.sort(key=lambda x: x[0])

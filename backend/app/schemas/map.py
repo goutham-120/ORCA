@@ -81,6 +81,7 @@ class DetailedRouteAnalysisResponse(BaseModel):
     fuel_delta_liters: float | None = None
     route_geometry: dict[str, Any]
     direct_geometry: dict[str, Any] | None = None
+    blocked_direct_geometry: dict[str, Any] | None = None
     alternative_used: bool = False
     waypoints: list[dict[str, Any]] = Field(default_factory=list)
     marine_safety_index: dict[str, Any] | None = None

@@ -1637,10 +1637,34 @@ export default function MapCanvas({
   }, [navigationWaypoints, landTransit, mapStatus])
 
   useEffect(() => {
-    try {
-      mapRef.current?.resize()
-    } catch {}
+    const resizeMap = () => {
+      try {
+        mapRef.current?.resize()
+      } catch {}
+    }
+    resizeMap()
+    const t1 = setTimeout(resizeMap, 50)
+    const t2 = setTimeout(resizeMap, 150)
+    const t3 = setTimeout(resizeMap, 300)
+    const t4 = setTimeout(resizeMap, 500)
+    return () => {
+      clearTimeout(t1)
+      clearTimeout(t2)
+      clearTimeout(t3)
+      clearTimeout(t4)
+    }
   }, [isExpanded])
+
+  useEffect(() => {
+    if (!isExpanded) return
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onToggleExpanded?.()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isExpanded, onToggleExpanded])
 
   return (
     <div
@@ -1703,12 +1727,12 @@ export default function MapCanvas({
 
           <button
             type="button"
-            className="canvas-btn canvas-btn-expand"
+            className={`canvas-btn canvas-btn-expand ${isExpanded ? 'is-active-expanded' : ''}`}
             onClick={onToggleExpanded}
-            title={isExpanded ? 'Restore map' : 'Fullscreen map'}
+            title={isExpanded ? 'Restore map (Press ESC)' : 'Fullscreen map'}
             aria-label={isExpanded ? 'Restore map' : 'Fullscreen map'}
           >
-            <span className="expand-btn-text">{isExpanded ? 'Exit' : 'Fullscreen'}</span>
+            <span className="expand-btn-text">{isExpanded ? '✕ Exit Fullscreen (ESC)' : '⛶ Fullscreen'}</span>
             <span className="expand-btn-icon" aria-hidden="true">{isExpanded ? '✕' : '⛶'}</span>
           </button>
         </div>
