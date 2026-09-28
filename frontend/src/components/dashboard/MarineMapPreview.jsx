@@ -898,7 +898,7 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
                       cursor: 'pointer',
                     }}
                   >
-                    ☁️ Natural (White/Grey)
+                    ☁️ Natural
                   </button>
                   <button
                     type="button"
@@ -920,7 +920,7 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
 
                 {cloudMode === 'natural' ? (
                   <div style={{ fontSize: '9px', color: '#cbd5e1', marginBottom: '6px' }}>
-                    Real Optical White/Grey Cloud Canopy & Vortex Swirls
+                    Optical Satellite Cloud Canopy & Vortex Swirls
                   </div>
                 ) : (
                   <div>
