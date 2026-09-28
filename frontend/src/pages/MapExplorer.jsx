@@ -2247,7 +2247,7 @@ export default function MapExplorer({ navigate }) {
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'nowrap', gap: '6px', margin: '4px 0 0' }}>
-                      <div style={{ fontSize: '26px', fontWeight: 800, color: '#0f172a', lineHeight: 1, letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>
+                      <div style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a', lineHeight: 1, letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>
                         {tideState.data?.current_height_m != null
                           ? `${tideState.data.current_height_m >= 0 ? '+' : ''}${tideState.data.current_height_m.toFixed(2)} m`
                           : '+1.42 m'}
@@ -2257,12 +2257,12 @@ export default function MapExplorer({ navigate }) {
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '4px',
-                          fontSize: '10.5px',
+                          fontSize: '10px',
                           fontWeight: 700,
                           color: tideState.data?.tide_state?.includes('Flood') ? '#15803d' : '#b45309',
                           background: tideState.data?.tide_state?.includes('Flood') ? '#dcfce7' : '#fef3c7',
                           border: `1px solid ${tideState.data?.tide_state?.includes('Flood') ? '#86efac' : '#fde047'}`,
-                          padding: '2px 7px',
+                          padding: '2px 6px',
                           borderRadius: '8px',
                           whiteSpace: 'nowrap',
                         }}
@@ -2276,7 +2276,7 @@ export default function MapExplorer({ navigate }) {
                             display: 'inline-block',
                           }}
                         ></span>
-                        {tideState.data?.tide_state ? (tideState.data.tide_state.includes('Flood') ? 'Flood' : 'Ebb') : 'Ebb'} · Falling
+                        {tideState.data?.tide_state ? (tideState.data.tide_state.includes('Flood') ? 'Flood' : 'Ebb') : 'Ebb'}
                       </span>
                     </div>
                   </div>
@@ -2434,7 +2434,7 @@ export default function MapExplorer({ navigate }) {
 
                   <div
                     style={{
-                      fontSize: '10.5px',
+                      fontSize: '9.5px',
                       fontWeight: 600,
                       color: '#475569',
                       marginTop: '10px',
@@ -2444,12 +2444,12 @@ export default function MapExplorer({ navigate }) {
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       whiteSpace: 'nowrap',
-                      gap: '4px',
+                      gap: '2px',
                     }}
                   >
-                    <span>🌊 0.12m Wave</span>
-                    <span>💨 8.5kt Wind</span>
-                    <span>〰️ 0.5m Swell</span>
+                    <span>🌊 0.12m</span>
+                    <span>💨 8.5kt</span>
+                    <span>〰️ 0.5m</span>
                   </div>
                 </div>
 
@@ -2497,10 +2497,12 @@ export default function MapExplorer({ navigate }) {
                           </span>
                         </div>
 
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', margin: '4px 0 0' }}>
-                          <span style={{ fontSize: '26px', fontWeight: 800, color: '#0284c7', lineHeight: 1, letterSpacing: '-0.02em' }}>{pfzCount}</span>
-                          <span style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap' }}>Zones Active</span>
-                          <span style={{ marginLeft: 'auto', fontSize: '10px', fontWeight: 700, color: '#0369a1', background: '#e0f2fe', padding: '2px 6px', borderRadius: '6px', whiteSpace: 'nowrap' }}>
+                        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '4px', margin: '4px 0 0' }}>
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', minWidth: 0 }}>
+                            <span style={{ fontSize: '24px', fontWeight: 800, color: '#0284c7', lineHeight: 1, letterSpacing: '-0.02em' }}>{pfzCount}</span>
+                            <span style={{ fontSize: '11px', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap' }}>Zones Active</span>
+                          </div>
+                          <span style={{ fontSize: '9.5px', fontWeight: 700, color: '#0369a1', background: '#e0f2fe', padding: '2px 6px', borderRadius: '6px', whiteSpace: 'nowrap' }}>
                             High Catch
                           </span>
                         </div>
