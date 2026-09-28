@@ -396,7 +396,8 @@ export default function Message({ message }) {
         spokenLang,
         () => setIsSpeakingThis(false),
         () => setIsSpeakingThis(false),
-        message.id
+        message.id,
+        response
       )
     }
   }
