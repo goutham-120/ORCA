@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { coastalService } from '../../services/coastalService'
+import { aisStreamService } from '../../services/aisStreamService'
 
 // Verified public maritime & naval facility data by region
 const REGIONAL_MARITIME_FACILITIES = {
@@ -244,6 +245,20 @@ export default function CoastalAuthorityPersonalization({ user, userKey }) {
   const [toastMessage, setToastMessage] = useState('')
 
   // 4. FLEET MANAGEMENT & VESSEL MONITORING SYSTEM (VMS) STATE
+  const [vmsSource, setVmsSource] = useState('live_ais') // 'live_ais' | 'coastal_trawlers'
+  const [liveAisVessels, setLiveAisVessels] = useState([])
+  const [aisStatus, setAisStatus] = useState('CONNECTING')
+  const [aisPacketCount, setAisPacketCount] = useState(0)
+
+  useEffect(() => {
+    const unsubscribe = aisStreamService.subscribe((list, status, count) => {
+      setLiveAisVessels(list)
+      setAisStatus(status)
+      setAisPacketCount(count)
+    })
+    return () => unsubscribe()
+  }, [])
+
   const [vmsFilter, setVmsFilter] = useState('all')
   const [vessels, setVessels] = useState([
     {
@@ -599,13 +614,14 @@ export default function CoastalAuthorityPersonalization({ user, userKey }) {
                 FLEET MANAGEMENT & VESSEL MONITORING SYSTEM (VMS)
               </h3>
               <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--muted)' }}>
-                Real-time NavIC/AIS transponder roster, IMBL boundary geofencing, and digital catch telemetry.
+                Real-time AISStream.io satellite transponder stream, IMBL boundary geofencing, and digital vessel telemetry.
               </p>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <span style={{ fontSize: 11, fontWeight: 800, background: '#eff6ff', color: '#1d4ed8', padding: '4px 10px', borderRadius: 6, border: '1px solid #bfdbfe' }}>
-              📡 NAVIC-L5 DUAL LINK ACTIVE
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 11, fontWeight: 800, background: aisStatus === 'LIVE' ? '#dcfce7' : '#eff6ff', color: aisStatus === 'LIVE' ? '#15803d' : '#1d4ed8', padding: '4px 10px', borderRadius: 6, border: aisStatus === 'LIVE' ? '1px solid #86efac' : '1px solid #bfdbfe', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ width: 7, height: 7, borderRadius: '50%', background: aisStatus === 'LIVE' ? '#16a34a' : '#0284c7', display: 'inline-block' }}></span>
+              {aisStatus === 'LIVE' ? `LIVE AIS FEED (${aisPacketCount} PACKETS)` : `AIS: ${aisStatus}`}
             </span>
             <span style={{ fontSize: 11, fontWeight: 800, background: '#fef2f2', color: '#b91c1c', padding: '4px 10px', borderRadius: 6, border: '1px solid #fecaca' }}>
               ⚠️ IMBL GEOFENCE ARMED
@@ -613,179 +629,263 @@ export default function CoastalAuthorityPersonalization({ user, userKey }) {
           </div>
         </div>
 
-        {/* Quick VMS KPI Bar */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
-          <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}>
-            <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Tracked Fleet</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', marginTop: 2 }}>{vessels.length} Trawlers</div>
-            <div style={{ fontSize: 11, color: '#16a34a', marginTop: 2 }}>● 100% NavIC Link Up</div>
+        {/* AIS Source Selector Bar */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc', padding: '10px 14px', borderRadius: 8, border: '1px solid #e2e8f0', flexWrap: 'wrap', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#334155' }}>VMS Data Source:</span>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button
+                type="button"
+                onClick={() => setVmsSource('live_ais')}
+                style={{
+                  padding: '5px 12px',
+                  borderRadius: 6,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  border: vmsSource === 'live_ais' ? '1.5px solid #16a34a' : '1px solid #cbd5e1',
+                  background: vmsSource === 'live_ais' ? '#16a34a' : '#ffffff',
+                  color: vmsSource === 'live_ais' ? '#ffffff' : '#334155',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <span>🛰️</span>
+                <span>Live Real-Time AIS Stream ({liveAisVessels.length} active)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setVmsSource('coastal_trawlers')}
+                style={{
+                  padding: '5px 12px',
+                  borderRadius: 6,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  border: vmsSource === 'coastal_trawlers' ? '1.5px solid #0284c7' : '1px solid #cbd5e1',
+                  background: vmsSource === 'coastal_trawlers' ? '#0284c7' : '#ffffff',
+                  color: vmsSource === 'coastal_trawlers' ? '#ffffff' : '#334155',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <span>⚓</span>
+                <span>Coastal Mechanized Trawler Fleet (NavIC)</span>
+              </button>
+            </div>
           </div>
-          <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}>
-            <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Safe EEZ Zone</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: '#16a34a', marginTop: 2 }}>{vessels.filter(v => v.imblStatus === 'safe').length} Vessels</div>
-            <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>Compliant Fishing Trajectory</div>
-          </div>
-          <div style={{ background: '#fef2f2', padding: 12, borderRadius: 8, border: '1px solid #fecaca' }}>
-            <div style={{ fontSize: 11, color: '#991b1b', fontWeight: 700, textTransform: 'uppercase' }}>IMBL Proximity Alert</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: '#dc2626', marginTop: 2 }}>{vessels.filter(v => v.imblStatus === 'warning').length} Vessels</div>
-            <div style={{ fontSize: 11, color: '#b91c1c', marginTop: 2 }}>&lt; 3 NM to International Boundary</div>
-          </div>
-          <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}>
-            <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Reported Haul Est.</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: '#0284c7', marginTop: 2 }}>19.5 Tons</div>
-            <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>Across all active trips</div>
+
+          <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>
+            {vmsSource === 'live_ais' ? (
+              <span style={{ color: '#15803d' }}>● Connected to AISStream.io (Global WebSocket Gateway)</span>
+            ) : (
+              <span>● NavIC MSS Transponder Telemetry Network</span>
+            )}
           </div>
         </div>
 
+        {/* Quick VMS KPI Bar */}
+        {(() => {
+          const currentList = vmsSource === 'live_ais' ? (liveAisVessels.length > 0 ? liveAisVessels : vessels) : vessels
+          const safeCount = currentList.filter(v => v.imblStatus === 'safe').length
+          const warnCount = currentList.filter(v => v.imblStatus === 'warning').length
+
+          return (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+              <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
+                  {vmsSource === 'live_ais' ? 'Live Streamed Ships' : 'Tracked Fleet'}
+                </div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', marginTop: 2 }}>{currentList.length} Vessels</div>
+                <div style={{ fontSize: 11, color: '#16a34a', marginTop: 2 }}>
+                  {vmsSource === 'live_ais' ? '● Real-Time AIS Stream' : '● 100% NavIC Link Up'}
+                </div>
+              </div>
+              <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Safe Corridor</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: '#16a34a', marginTop: 2 }}>{safeCount} Vessels</div>
+                <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>Compliant Trajectory</div>
+              </div>
+              <div style={{ background: '#fef2f2', padding: 12, borderRadius: 8, border: '1px solid #fecaca' }}>
+                <div style={{ fontSize: 11, color: '#991b1b', fontWeight: 700, textTransform: 'uppercase' }}>Boundary Warning</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: '#dc2626', marginTop: 2 }}>{warnCount} Vessels</div>
+                <div style={{ fontSize: 11, color: '#b91c1c', marginTop: 2 }}>Proximity to Maritime Boundary</div>
+              </div>
+              <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Stream Protocol</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: '#0284c7', marginTop: 2 }}>
+                  {vmsSource === 'live_ais' ? 'AIS Class A/B' : 'NavIC-L5 MSS'}
+                </div>
+                <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
+                  {vmsSource === 'live_ais' ? `${aisPacketCount} packets decoded` : 'Digital Haul Telemetry'}
+                </div>
+              </div>
+            </div>
+          )
+        })()}
+
         {/* Filter Controls */}
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {[
-            { id: 'all', label: `All Vessels (${vessels.length})` },
-            { id: 'imbl-warning', label: `⚠️ IMBL Warning (${vessels.filter(v => v.imblStatus === 'warning').length})` },
-            { id: 'safe', label: `✓ Safe EEZ (${vessels.filter(v => v.imblStatus === 'safe').length})` },
-          ].map(tab => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setVmsFilter(tab.id)}
-              style={{
-                padding: '7px 14px',
-                borderRadius: 6,
-                fontSize: 12,
-                fontWeight: 700,
-                border: vmsFilter === tab.id ? '1px solid #0284c7' : '1px solid #cbd5e1',
-                background: vmsFilter === tab.id ? '#0284c7' : '#ffffff',
-                color: vmsFilter === tab.id ? '#ffffff' : '#334155',
-                cursor: 'pointer'
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        {(() => {
+          const currentList = vmsSource === 'live_ais' ? (liveAisVessels.length > 0 ? liveAisVessels : vessels) : vessels
+          const warnCount = currentList.filter(v => v.imblStatus === 'warning').length
+          const safeCount = currentList.filter(v => v.imblStatus === 'safe').length
+
+          return (
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {[
+                { id: 'all', label: `All Vessels (${currentList.length})` },
+                { id: 'imbl-warning', label: `⚠️ Boundary Warning (${warnCount})` },
+                { id: 'safe', label: `✓ Safe Zone (${safeCount})` },
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setVmsFilter(tab.id)}
+                  style={{
+                    padding: '7px 14px',
+                    borderRadius: 6,
+                    fontSize: 12,
+                    fontWeight: 700,
+                    border: vmsFilter === tab.id ? '1px solid #0284c7' : '1px solid #cbd5e1',
+                    background: vmsFilter === tab.id ? '#0284c7' : '#ffffff',
+                    color: vmsFilter === tab.id ? '#ffffff' : '#334155',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          )
+        })()}
 
         {/* Vessels Grid */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 14 }}>
-          {vessels
-            .filter(v => {
-              if (vmsFilter === 'imbl-warning') return v.imblStatus === 'warning'
-              if (vmsFilter === 'safe') return v.imblStatus === 'safe'
-              return true
-            })
-            .map(v => (
-              <div
-                key={v.id}
-                style={{
-                  padding: 16,
-                  borderRadius: 10,
-                  border: v.imblStatus === 'warning' ? '1.5px solid #f87171' : '1px solid #cbd5e1',
-                  background: v.imblStatus === 'warning' ? '#fffaf0' : '#ffffff',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 10,
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.03)'
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{ fontSize: 16 }}>🚢</span>
-                      <strong style={{ fontSize: 14, color: '#0f172a' }}>{v.name}</strong>
+          {(() => {
+            const currentList = vmsSource === 'live_ais' ? (liveAisVessels.length > 0 ? liveAisVessels : vessels) : vessels
+            return currentList
+              .filter(v => {
+                if (vmsFilter === 'imbl-warning') return v.imblStatus === 'warning'
+                if (vmsFilter === 'safe') return v.imblStatus === 'safe'
+                return true
+              })
+              .map(v => (
+                <div
+                  key={v.id}
+                  style={{
+                    padding: 16,
+                    borderRadius: 10,
+                    border: v.imblStatus === 'warning' ? '1.5px solid #f87171' : '1px solid #cbd5e1',
+                    background: v.imblStatus === 'warning' ? '#fffaf0' : '#ffffff',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 10,
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.03)'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ fontSize: 16 }}>🚢</span>
+                        <strong style={{ fontSize: 14, color: '#0f172a' }}>{v.name}</strong>
+                      </div>
+                      <span style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>{v.regNo} • {v.type}</span>
                     </div>
-                    <span style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>{v.regNo} • {v.type}</span>
-                  </div>
-                  <span
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 800,
-                      padding: '3px 8px',
-                      borderRadius: 4,
-                      background: v.imblStatus === 'warning' ? '#fee2e2' : '#dcfce7',
-                      color: v.imblStatus === 'warning' ? '#991b1b' : '#166534',
-                      border: v.imblStatus === 'warning' ? '1px solid #fca5a5' : '1px solid #86efac'
-                    }}
-                  >
-                    {v.imblStatus === 'warning' ? 'IMBL PROXIMITY' : 'EEZ COMPLIANT'}
-                  </span>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 12, background: '#f8fafc', padding: 10, borderRadius: 6 }}>
-                  <div><strong>Captain:</strong> {v.captain}</div>
-                  <div><strong>Home Port:</strong> {v.port}</div>
-                  <div><strong>Coords:</strong> {v.coordinates}</div>
-                  <div><strong>Speed / Hdg:</strong> {v.speed} / {v.heading}</div>
-                  <div><strong>Fuel:</strong> {v.fuel}</div>
-                  <div><strong>Distance to IMBL:</strong> <span style={{ color: v.imblStatus === 'warning' ? '#dc2626' : '#16a34a', fontWeight: 700 }}>{v.imblDist}</span></div>
-                </div>
-
-                <div style={{ fontSize: 11, color: '#334155' }}>
-                  <div><strong>Catch Logbook:</strong> {v.catchEst}</div>
-                  <div style={{ marginTop: 2, color: '#64748b' }}><strong>Transponder:</strong> {v.transponder} ({v.lastPing})</div>
-                  {v.lastAlertSent && (
-                    <div style={{ marginTop: 4, color: '#b91c1c', fontWeight: 700 }}>
-                      ⚡ {v.lastAlertSent}
-                    </div>
-                  )}
-                </div>
-
-                <div style={{ display: 'flex', gap: 8, marginTop: 'auto', paddingTop: 6, borderTop: '1px solid #f1f5f9' }}>
-                  <button
-                    type="button"
-                    onClick={() => handlePingTransponder(v.id)}
-                    style={{
-                      flex: 1,
-                      padding: '6px 10px',
-                      fontSize: 11,
-                      fontWeight: 700,
-                      background: '#f1f5f9',
-                      color: '#334155',
-                      border: '1px solid #cbd5e1',
-                      borderRadius: 6,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    🛰️ Ping Transponder
-                  </button>
-                  {v.imblStatus === 'warning' ? (
-                    <button
-                      type="button"
-                      onClick={() => handleSendImblWarning(v.id, v.regNo)}
+                    <span
                       style={{
-                        flex: 1.2,
-                        padding: '6px 10px',
-                        fontSize: 11,
+                        fontSize: 10,
                         fontWeight: 800,
-                        background: '#dc2626',
-                        color: '#ffffff',
-                        border: 'none',
-                        borderRadius: 6,
-                        cursor: 'pointer'
+                        padding: '3px 8px',
+                        borderRadius: 4,
+                        background: v.imblStatus === 'warning' ? '#fee2e2' : '#dcfce7',
+                        color: v.imblStatus === 'warning' ? '#991b1b' : '#166534',
+                        border: v.imblStatus === 'warning' ? '1px solid #fca5a5' : '1px solid #86efac'
                       }}
                     >
-                      🚨 Send IMBL Warning
-                    </button>
-                  ) : (
+                      {v.imblStatus === 'warning' ? 'BOUNDARY WARNING' : (v.isLiveAis ? 'LIVE AIS ACTIVE' : 'EEZ COMPLIANT')}
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 12, background: '#f8fafc', padding: 10, borderRadius: 6 }}>
+                    <div><strong>Captain/Master:</strong> {v.captain}</div>
+                    <div><strong>Destination/Port:</strong> {v.port}</div>
+                    <div><strong>Coords:</strong> {v.coordinates}</div>
+                    <div><strong>Speed / Hdg:</strong> {v.speed} / {v.heading}</div>
+                    <div><strong>Fuel / Power:</strong> {v.fuel}</div>
+                    <div><strong>Boundary Proximity:</strong> <span style={{ color: v.imblStatus === 'warning' ? '#dc2626' : '#16a34a', fontWeight: 700 }}>{v.imblDist}</span></div>
+                  </div>
+
+                  <div style={{ fontSize: 11, color: '#334155' }}>
+                    <div><strong>Status:</strong> {v.status} ({v.catchEst})</div>
+                    <div style={{ marginTop: 2, color: '#64748b' }}><strong>Transponder:</strong> {v.transponder} ({v.lastPing})</div>
+                    {v.lastAlertSent && (
+                      <div style={{ marginTop: 4, color: '#b91c1c', fontWeight: 700 }}>
+                        ⚡ {v.lastAlertSent}
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 8, marginTop: 'auto', paddingTop: 6, borderTop: '1px solid #f1f5f9' }}>
                     <button
                       type="button"
-                      onClick={() => handleRequestCatchLog(v.regNo)}
+                      onClick={() => handlePingTransponder(v.id)}
                       style={{
                         flex: 1,
                         padding: '6px 10px',
                         fontSize: 11,
                         fontWeight: 700,
-                        background: '#0284c7',
-                        color: '#ffffff',
-                        border: 'none',
+                        background: '#f1f5f9',
+                        color: '#334155',
+                        border: '1px solid #cbd5e1',
                         borderRadius: 6,
                         cursor: 'pointer'
                       }}
                     >
-                      📋 Request Catch Log
+                      🛰️ Ping Transponder
                     </button>
-                  )}
+                    {v.imblStatus === 'warning' ? (
+                      <button
+                        type="button"
+                        onClick={() => handleSendImblWarning(v.id, v.regNo)}
+                        style={{
+                          flex: 1.2,
+                          padding: '6px 10px',
+                          fontSize: 11,
+                          fontWeight: 800,
+                          background: '#dc2626',
+                          color: '#ffffff',
+                          border: 'none',
+                          borderRadius: 6,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        🚨 Send Warning
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleRequestCatchLog(v.regNo)}
+                        style={{
+                          flex: 1,
+                          padding: '6px 10px',
+                          fontSize: 11,
+                          fontWeight: 700,
+                          background: '#0284c7',
+                          color: '#ffffff',
+                          border: 'none',
+                          borderRadius: 6,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        📋 Request Log
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+          })()}
         </div>
       </div>
 
