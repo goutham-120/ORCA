@@ -59,11 +59,26 @@ const PersonalizationIcon = () => (
   </svg>
 )
 
+const SimulatorIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M10 2v7.31M14 9.3V1.99M8.5 2h7M14 9.3a6.5 6.5 0 1 1-4 0" />
+    <path d="M5.52 16h12.96" />
+  </svg>
+)
+
+const SettingsIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="3" />
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+  </svg>
+)
+
 const mainNavigation = [
   ['dashboard', 'Dashboard', DashboardIcon],
   ['personalization', 'Personalization', PersonalizationIcon],
   ['ask-orca', 'Ask ORCA', AskOrcaIcon],
   ['map-explorer', 'Map Explorer', MapExplorerIcon],
+  ['scenario-simulator', 'Scenario Simulator', SimulatorIcon],
   ['alerts', 'Alerts', AlertsIcon],
   ['reports', 'Reports', ReportsIcon],
 ]
@@ -158,8 +173,20 @@ export default function Sidebar({ path, navigate, onLogout, isOpen, onClose, onT
       {/* Flexible Spacer to fit inside 100vh viewport */}
       <div className="sidebar-spacer" />
 
-      {/* Sidebar Footer with Logout Button */}
+      {/* Sidebar Footer with Settings & Logout Buttons */}
       <div className="sidebar-footer font-inter">
+        <button
+          className={`nav-item font-inter ${path === '/settings' ? 'active' : ''}`}
+          onClick={() => {
+            navigate('/settings')
+            onClose?.()
+          }}
+          type="button"
+        >
+          <span className="nav-icon"><SettingsIcon /></span>
+          <span className="nav-label">Settings</span>
+        </button>
+
         <button
           className="nav-item logout font-inter"
           onClick={() => {
