@@ -14,6 +14,14 @@ const PARAMETER_CONFIG = {
   mixed_layer_depth: { name: 'Mixed Layer Depth', unit: 'm', current: 32.5, baseline: 35.0, delta: '-2.5', trend: '↓ 0.8 m / week', history: [36.0, 35.2, 34.5, 34.0, 33.2, 32.8, 32.5] },
 }
 
+const RESEARCH_SPECIES_HABITAT = [
+  { taxon: 'Pelagic Teleosts', species: 'Indian Mackerel (R. kanagurta)', tempRange: '27.0 - 29.5 °C', chlRange: '0.8 - 2.5 mg/m³', salRange: '32.0 - 35.0 PSU', oxyThreshold: '> 4.2 mg/L', trophicNiche: 'Planktivorous Filter Feeder', keyPhenology: 'Post-monsoon upwelling aggregation' },
+  { taxon: 'Pelagic Clupeoids', species: 'Indian Oil Sardine (S. longiceps)', tempRange: '26.5 - 29.0 °C', chlRange: '1.2 - 3.8 mg/m³', salRange: '30.0 - 34.5 PSU', oxyThreshold: '> 3.8 mg/L', trophicNiche: 'Primary Phytoplankton Consumer', keyPhenology: 'Sensitive to coastal upwelling indices & ENSO/IOD cycles' },
+  { taxon: 'Large Pelagics', species: 'Yellowfin Tuna (T. albacares)', tempRange: '24.0 - 28.5 °C', chlRange: '0.2 - 0.9 mg/m³', salRange: '34.0 - 36.0 PSU', oxyThreshold: '> 2.5 mg/L', trophicNiche: 'Apex Epipelagic Predator', keyPhenology: 'Tracks cyclonic and anticyclonic oceanic eddies' },
+  { taxon: 'Scombroids', species: 'King Seer Fish (S. commerson)', tempRange: '26.0 - 29.0 °C', chlRange: '0.5 - 1.8 mg/m³', salRange: '33.0 - 35.5 PSU', oxyThreshold: '> 4.0 mg/L', trophicNiche: 'Piscivorous Neritic Hunter', keyPhenology: 'Spawns along 50m bathymetry contour lines' },
+  { taxon: 'Demersal Crustaceans', species: 'Tiger Prawn (P. monodon)', tempRange: '25.0 - 30.0 °C', chlRange: '1.5 - 4.0 mg/m³', salRange: '25.0 - 33.0 PSU', oxyThreshold: '> 3.5 mg/L', trophicNiche: 'Benthic Detritivore', keyPhenology: 'Estuarine juvenile recruitment & shelf maturation' },
+]
+
 export default function ResearcherPersonalization({ user, userKey }) {
   // 1. RESEARCH PROFILE STATE
   const profileStorageKey = `orca_researcher_profile_${userKey}`
@@ -428,6 +436,58 @@ export default function ResearcherPersonalization({ user, userKey }) {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* 3. MARINE SPECIES OCEANOGRAPHIC HABITAT MATRIX */}
+      <div style={{ background: '#ffffff', borderRadius: 12, border: '1px solid #dce7f0', padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, borderBottom: '1px solid #f1f5f9', paddingBottom: 12 }}>
+          <div>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#0284c7', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              SPECIES BIO-OCEANOGRAPHY
+            </span>
+            <h2 style={{ margin: '2px 0 0', fontSize: 18, color: '#0f172a', fontFamily: 'Sora, sans-serif' }}>
+              Marine Species Bio-Tolerance & Phenology Directory
+            </h2>
+            <p style={{ margin: '2px 0 0', fontSize: 12, color: '#64748b' }}>
+              Ecological envelope benchmarks cross-calibrated against CMFRI & INCOIS fishery-oceanographic surveys.
+            </p>
+          </div>
+          <span style={{ fontSize: 11, fontWeight: 700, background: '#eff6ff', color: '#1d4ed8', padding: '4px 10px', borderRadius: 6, border: '1px solid #bfdbfe' }}>
+            5 KEY TAXONOMIC GROUPS
+          </span>
+        </div>
+
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, textAlign: 'left' }}>
+            <thead>
+              <tr style={{ background: '#f8fafc', color: '#334155' }}>
+                <th style={{ padding: '10px 12px', borderBottom: '2px solid #cbd5e1' }}>Taxon / Species</th>
+                <th style={{ padding: '10px 12px', borderBottom: '2px solid #cbd5e1' }}>Thermal Envelope (SST)</th>
+                <th style={{ padding: '10px 12px', borderBottom: '2px solid #cbd5e1' }}>Chlorophyll-a</th>
+                <th style={{ padding: '10px 12px', borderBottom: '298px solid #cbd5e1', borderBottomColor: '#cbd5e1' }}>Salinity</th>
+                <th style={{ padding: '10px 12px', borderBottom: '2px solid #cbd5e1' }}>Hypoxia Limit (DO)</th>
+                <th style={{ padding: '10px 12px', borderBottom: '2px solid #cbd5e1' }}>Trophic Guild</th>
+                <th style={{ padding: '10px 12px', borderBottom: '2px solid #cbd5e1' }}>Oceanographic Phenology</th>
+              </tr>
+            </thead>
+            <tbody>
+              {RESEARCH_SPECIES_HABITAT.map((h, idx) => (
+                <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0', background: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
+                  <td style={{ padding: '10px 12px' }}>
+                    <div style={{ fontWeight: 700, color: '#0f172a' }}>{h.species}</div>
+                    <div style={{ fontSize: 11, color: '#64748b' }}>{h.taxon}</div>
+                  </td>
+                  <td style={{ padding: '10px 12px', color: '#0284c7', fontWeight: 600 }}>{h.tempRange}</td>
+                  <td style={{ padding: '10px 12px', color: '#16a34a', fontWeight: 600 }}>{h.chlRange}</td>
+                  <td style={{ padding: '10px 12px' }}>{h.salRange}</td>
+                  <td style={{ padding: '10px 12px', color: '#dc2626', fontWeight: 600 }}>{h.oxyThreshold}</td>
+                  <td style={{ padding: '10px 12px', color: '#475569' }}>{h.trophicNiche}</td>
+                  <td style={{ padding: '10px 12px', fontSize: 11, color: '#334155' }}>{h.keyPhenology}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 

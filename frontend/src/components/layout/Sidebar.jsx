@@ -59,6 +59,12 @@ const PersonalizationIcon = () => (
   </svg>
 )
 
+const SatelliteIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+  </svg>
+)
+
 const SimulatorIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <path d="M10 2v7.31M14 9.3V1.99M8.5 2h7M14 9.3a6.5 6.5 0 1 1-4 0" />
@@ -76,6 +82,7 @@ const SettingsIcon = () => (
 const mainNavigation = [
   ['dashboard', 'Dashboard', DashboardIcon],
   ['personalization', 'Personalization', PersonalizationIcon],
+  ['satellite-intelligence', 'Satellite Intel', SatelliteIcon],
   ['ask-orca', 'Ask ORCA', AskOrcaIcon],
   ['map-explorer', 'Map Explorer', MapExplorerIcon],
   ['scenario-simulator', 'Scenario Simulator', SimulatorIcon],

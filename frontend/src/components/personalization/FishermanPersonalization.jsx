@@ -12,6 +12,27 @@ const COASTAL_REGIONS = [
   'Surat / Gujarat Coast',
 ]
 
+const HARBOR_MANDI_PRICES = [
+  { species: 'Indian Mackerel (Kanagurta)', localName: 'Bangda / Kanangeluthi', price: 220, unit: '₹/kg', trend: '+15', trendDir: 'up', demand: 'High Domestic', season: 'Peak Season' },
+  { species: 'Oil Sardine (Sardinella)', localName: 'Tarli / Mathi', price: 140, unit: '₹/kg', trend: '-10', trendDir: 'down', demand: 'High Bulk', season: 'Peak Season' },
+  { species: 'Yellowfin Tuna (Albacares)', localName: 'Kera / Soorai', price: 420, unit: '₹/kg', trend: '+35', trendDir: 'up', demand: 'Peak Export', season: 'Good (Deep Sea)' },
+  { species: 'King Seer Fish / Spanish Mackerel', localName: 'Vanjaram / Surmai', price: 780, unit: '₹/kg', trend: '+50', trendDir: 'up', demand: 'Premium Market', season: 'Moderate' },
+  { species: 'Tiger Prawn (Large Grade)', localName: 'Karuvadu Eral / Jhinga', price: 650, unit: '₹/kg', trend: '+40', trendDir: 'up', demand: 'Export Grade', season: 'Peak Season' },
+  { species: 'Silver Pomfret', localName: 'Vavval / Paplet', price: 890, unit: '₹/kg', trend: '+60', trendDir: 'up', demand: 'High Demand', season: 'Limited Catch' },
+  { species: 'Ribbonfish / Hairtail', localName: 'Savalai / Bala', price: 180, unit: '₹/kg', trend: '0', trendDir: 'steady', demand: 'Stable Export', season: 'Abundant' },
+  { species: 'Blue Swimming Crab', localName: 'Nandu / Khekda', price: 380, unit: '₹/kg', trend: '+20', trendDir: 'up', demand: 'High Fresh', season: 'Peak Season' },
+  { species: 'Cuttlefish / Squid', localName: 'Oosi Kanava / Maandhi', price: 340, unit: '₹/kg', trend: '+15', trendDir: 'up', demand: 'Export Demand', season: 'Good' },
+]
+
+const SPECIES_BIO_MATRIX = [
+  { species: 'Indian Mackerel', optSST: '27.0 - 29.5 °C', optChla: '0.8 - 2.5 mg/m³', optSalinity: '32 - 35 PSU', depth: '15 - 50 m', gear: 'Purse Seine / Ring Net', pfzIndicator: 'Coastal thermal fronts & chlorophyll convergence' },
+  { species: 'Oil Sardine', optSST: '26.5 - 29.0 °C', optChla: '1.2 - 3.5 mg/m³', optSalinity: '30 - 34.5 PSU', depth: '5 - 35 m', gear: 'Ring Seine / Gillnet', pfzIndicator: 'High chlorophyll bloom edges & upwelling zones' },
+  { species: 'Yellowfin Tuna', optSST: '24.0 - 28.5 °C', optChla: '0.2 - 0.9 mg/m³', optSalinity: '34 - 36 PSU', depth: '50 - 250 m', gear: 'Longline / Hook & Line', pfzIndicator: 'Deep thermocline boundary & seamounts/eddies' },
+  { species: 'King Seer Fish', optSST: '26.0 - 29.0 °C', optChla: '0.5 - 1.8 mg/m³', optSalinity: '33 - 35.5 PSU', depth: '20 - 80 m', gear: 'Drift Gillnet / Trolling', pfzIndicator: 'Shelf break contours & coastal current confluences' },
+  { species: 'Tiger Prawn', optSST: '25.0 - 30.0 °C', optChla: '1.5 - 4.0 mg/m³', optSalinity: '25 - 33 PSU', depth: '10 - 45 m', gear: 'Bottom Trawl (with TED)', pfzIndicator: 'Estuarine plume boundaries & muddy/sandy shelf' },
+  { species: 'Silver Pomfret', optSST: '25.5 - 28.5 °C', optChla: '0.7 - 2.0 mg/m³', optSalinity: '32 - 35 PSU', depth: '25 - 90 m', gear: 'Bottom / Mid-water Trawl', pfzIndicator: 'Gentle bathymetric gradients & moderate SST front' },
+]
+
 export default function FishermanPersonalization({ user, userKey }) {
   // 1. REGION SELECTION
   const [selectedRegion, setSelectedRegion] = useState('Visakhapatnam Coast')
@@ -23,7 +44,22 @@ export default function FishermanPersonalization({ user, userKey }) {
   const [complaints, setComplaints] = useState([])
   const [loadingComplaints, setLoadingComplaints] = useState(false)
 
-  // 3. COMPLAINT / MESSAGE FORM STATE
+  // 3. FISHERIES MARKET & SPECIES INTELLIGENCE STATE
+  const [fishSubTab, setFishSubTab] = useState('mandi') // 'mandi' | 'species-bio' | 'ban-tracker' | 'profit-calc'
+  const [mandiSearch, setMandiSearch] = useState('')
+  
+  // Profit Estimator Form
+  const [calcInputs, setCalcInputs] = useState({
+    dieselLiters: 220,
+    dieselRate: 94,
+    iceAndProvisions: 4200,
+    crewCount: 4,
+    crewSharePct: 40,
+    expectedHaulKg: 550,
+    avgFishRate: 230,
+  })
+
+  // 4. COMPLAINT / MESSAGE FORM STATE
   const [messageText, setMessageText] = useState('')
   const [locationText, setLocationText] = useState('Visakhapatnam Outer Harbor')
   const [photoFile, setPhotoFile] = useState(null)
@@ -420,6 +456,328 @@ export default function FishermanPersonalization({ user, userKey }) {
               })}
           </div>
         )}
+      </div>
+
+      {/* SECTION 2: 🐟 FISHERIES MARKET & SPECIES INTELLIGENCE */}
+      <div style={{ background: '#ffffff', border: '1px solid #dce7f0', borderRadius: 12, padding: 22, boxShadow: '0 2px 8px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', gap: 18 }}>
+        
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: 14, flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 24 }}>🐟</span>
+            <div>
+              <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: 'var(--ink)', fontFamily: 'Sora, sans-serif' }}>
+                Fisheries Market & Species Intelligence
+              </h2>
+              <span style={{ fontSize: 12, color: 'var(--muted)' }}>
+                Live harbor mandi wholesale rates, species environmental tolerances & trip fuel profit calculator
+              </span>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 11, fontWeight: 700, background: '#f0fdf4', color: '#166534', padding: '4px 10px', borderRadius: 6, border: '1px solid #bbf7d0' }}>
+              ● LIVE HARBOR MANDI FEED
+            </span>
+            <span style={{ fontSize: 11, fontWeight: 700, background: '#eff6ff', color: '#1d4ed8', padding: '4px 10px', borderRadius: 6, border: '1px solid #bfdbfe' }}>
+              INCOIS BIO-TOLERANCE LINKED
+            </span>
+          </div>
+        </div>
+
+        {/* Sub-Tabs */}
+        <div style={{ display: 'flex', gap: 8, borderBottom: '1px solid #e2e8f0', paddingBottom: 10, flexWrap: 'wrap' }}>
+          {[
+            { id: 'mandi', label: '📊 Daily Harbor Wholesale Prices', icon: '💰' },
+            { id: 'species-bio', label: '🧬 Species Bio-Tolerance & PFZ Matrix', icon: '🔬' },
+            { id: 'ban-tracker', label: '⏳ Monsoon Fishing Ban Countdown', icon: '📅' },
+            { id: 'profit-calc', label: '⛽ Trip Fuel vs Catch Profit Estimator', icon: '🧮' },
+          ].map(tab => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setFishSubTab(tab.id)}
+              style={{
+                padding: '7px 14px',
+                borderRadius: 8,
+                fontSize: 12,
+                fontWeight: 700,
+                border: fishSubTab === tab.id ? '1.5px solid #0284c7' : '1px solid #cbd5e1',
+                background: fishSubTab === tab.id ? '#0284c7' : '#ffffff',
+                color: fishSubTab === tab.id ? '#ffffff' : '#334155',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6
+              }}
+            >
+              <span>{tab.icon}</span>
+              <span>{tab.label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* TAB 1: DAILY HARBOR WHOLESALE MANDI PRICES */}
+        {fishSubTab === 'mandi' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+              <div style={{ fontSize: 13, color: '#334155', fontWeight: 600 }}>
+                Wholesale rates at <strong>{selectedRegion}</strong> fish landing center & harbor mandi (Updated 06:00 IST Today)
+              </div>
+              <input
+                type="text"
+                placeholder="Search species (e.g. Tuna, Sardine, Vanjaram)..."
+                value={mandiSearch}
+                onChange={(e) => setMandiSearch(e.target.value)}
+                style={{
+                  padding: '7px 12px',
+                  borderRadius: 6,
+                  border: '1px solid #cbd5e1',
+                  fontSize: 12,
+                  minWidth: 260,
+                  outline: 'none'
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
+              {HARBOR_MANDI_PRICES
+                .filter(item => 
+                  item.species.toLowerCase().includes(mandiSearch.toLowerCase()) || 
+                  item.localName.toLowerCase().includes(mandiSearch.toLowerCase())
+                )
+                .map((item, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      border: '1px solid #e2e8f0',
+                      borderRadius: 10,
+                      padding: 14,
+                      background: '#f8fafc',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      gap: 10
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <strong style={{ fontSize: 14, color: '#0f172a' }}>{item.species}</strong>
+                        <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 6px', borderRadius: 4, background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe' }}>
+                          {item.demand}
+                        </span>
+                      </div>
+                      <span style={{ fontSize: 11, color: '#64748b' }}>Local name: <em>{item.localName}</em></span>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', borderTop: '1px solid #e2e8f0', paddingTop: 8 }}>
+                      <div>
+                        <span style={{ fontSize: 20, fontWeight: 800, color: '#0f172a' }}>₹{item.price}</span>
+                        <span style={{ fontSize: 11, color: '#64748b', marginLeft: 3 }}>/ kg</span>
+                      </div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: item.trendDir === 'up' ? '#16a34a' : item.trendDir === 'down' ? '#dc2626' : '#64748b' }}>
+                        {item.trendDir === 'up' ? `▲ +₹${item.trend}/kg` : item.trendDir === 'down' ? `▼ ${item.trend}/kg` : '● Steady'}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 2: SPECIES BIO-TOLERANCE & PFZ MATRIX */}
+        {fishSubTab === 'species-bio' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', padding: 12, borderRadius: 8, fontSize: 12, color: '#0369a1', lineHeight: 1.5 }}>
+              💡 <strong>How to use this with ORCA:</strong> Cross-reference the live Sea Surface Temperature (SST) and Chlorophyll-a layers on the <strong>Map Explorer</strong> with the optimum ranges below to pinpoint targeted high-yield schools.
+            </div>
+
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ background: '#f1f5f9', color: '#334155' }}>
+                    <th style={{ padding: '10px 12px', borderBottom: '2px solid #cbd5e1' }}>Commercial Species</th>
+                    <th style={{ padding: '10px 12px', borderBottom: '2px solid #cbd5e1' }}>Optimum SST</th>
+                    <th style={{ padding: '10px 12px', borderBottom: '2px solid #cbd5e1' }}>Chlorophyll-a</th>
+                    <th style={{ padding: '10px 12px', borderBottom: '2px solid #cbd5e1' }}>Salinity</th>
+                    <th style={{ padding: '10px 12px', borderBottom: '2px solid #cbd5e1' }}>Depth Zone</th>
+                    <th style={{ padding: '10px 12px', borderBottom: '2px solid #cbd5e1' }}>Recommended Gear</th>
+                    <th style={{ padding: '10px 12px', borderBottom: '2px solid #cbd5e1' }}>PFZ Oceanic Indicator</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {SPECIES_BIO_MATRIX.map((s, idx) => (
+                    <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0', background: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
+                      <td style={{ padding: '10px 12px', fontWeight: 700, color: '#0f172a' }}>{s.species}</td>
+                      <td style={{ padding: '10px 12px', color: '#0284c7', fontWeight: 600 }}>{s.optSST}</td>
+                      <td style={{ padding: '10px 12px', color: '#16a34a', fontWeight: 600 }}>{s.optChla}</td>
+                      <td style={{ padding: '10px 12px' }}>{s.optSalinity}</td>
+                      <td style={{ padding: '10px 12px' }}>{s.depth}</td>
+                      <td style={{ padding: '10px 12px', color: '#64748b' }}>{s.gear}</td>
+                      <td style={{ padding: '10px 12px', fontSize: 11, color: '#475569' }}>{s.pfzIndicator}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3: MONSOON FISHING BAN COUNTDOWN */}
+        {fishSubTab === 'ban-tracker' && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+            <div style={{ background: '#f8fafc', padding: 18, borderRadius: 10, border: '1px solid #cbd5e1', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 20 }}>🌊</span>
+                <div>
+                  <strong style={{ fontSize: 14, color: '#0f172a' }}>East Coast of India (Uniform Ban)</strong>
+                  <div style={{ fontSize: 11, color: '#64748b' }}>Bay of Bengal & Andhra / TN / Odisha / WB</div>
+                </div>
+              </div>
+              <div style={{ background: '#eff6ff', padding: 12, borderRadius: 8, border: '1px solid #bfdbfe' }}>
+                <div style={{ fontSize: 11, color: '#1d4ed8', fontWeight: 700 }}>MANDATORY PERIOD (61 DAYS)</div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', marginTop: 2 }}>April 15 to June 14</div>
+                <div style={{ fontSize: 11, color: '#16a34a', marginTop: 4, fontWeight: 700 }}>● Active Open Fishing Season Currently</div>
+              </div>
+              <p style={{ margin: 0, fontSize: 12, color: '#475569', lineHeight: 1.5 }}>
+                Applies to all motorized trawlers & mechanized vessels to conserve breeding broodstock during the pre-monsoon spawning season.
+              </p>
+            </div>
+
+            <div style={{ background: '#f8fafc', padding: 18, borderRadius: 10, border: '1px solid #cbd5e1', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 20 }}>🌊</span>
+                <div>
+                  <strong style={{ fontSize: 14, color: '#0f172a' }}>West Coast of India (Uniform Ban)</strong>
+                  <div style={{ fontSize: 11, color: '#64748b' }}>Arabian Sea & Kerala / Goa / Maharashtra / Gujarat</div>
+                </div>
+              </div>
+              <div style={{ background: '#eff6ff', padding: 12, borderRadius: 8, border: '1px solid #bfdbfe' }}>
+                <div style={{ fontSize: 11, color: '#1d4ed8', fontWeight: 700 }}>MANDATORY PERIOD (61 DAYS)</div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', marginTop: 2 }}>June 1 to July 31</div>
+                <div style={{ fontSize: 11, color: '#16a34a', marginTop: 4, fontWeight: 700 }}>● Active Open Fishing Season Currently</div>
+              </div>
+              <p style={{ margin: 0, fontSize: 12, color: '#475569', lineHeight: 1.5 }}>
+                Enforced strictly by Coast Guard and State Fisheries departments for sustainable pelagic stock replenishment.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 4: TRIP FUEL VS CATCH PROFIT ESTIMATOR */}
+        {fishSubTab === 'profit-calc' && (() => {
+          const totalFuelCost = calcInputs.dieselLiters * calcInputs.dieselRate
+          const totalExpense = totalFuelCost + calcInputs.iceAndProvisions
+          const grossRev = calcInputs.expectedHaulKg * calcInputs.avgFishRate
+          const netRev = Math.max(0, grossRev - totalExpense)
+          const crewShare = (netRev * (calcInputs.crewSharePct / 100))
+          const crewPerHead = calcInputs.crewCount > 0 ? (crewShare / calcInputs.crewCount).toFixed(0) : 0
+          const boatProfit = netRev - crewShare
+          const isProfitable = grossRev >= totalExpense
+
+          return (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
+              {/* Inputs */}
+              <div style={{ background: '#f8fafc', padding: 18, borderRadius: 10, border: '1px solid #cbd5e1', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <h4 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#0f172a', textTransform: 'uppercase' }}>
+                  Voyage Parameters
+                </h4>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, fontSize: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: 2 }}>Diesel Fuel (Liters)</label>
+                    <input
+                      type="number"
+                      value={calcInputs.dieselLiters}
+                      onChange={(e) => setCalcInputs({ ...calcInputs, dieselLiters: Number(e.target.value) || 0 })}
+                      style={{ width: '100%', padding: '6px 10px', borderRadius: 6, border: '1px solid #cbd5e1', fontSize: 12 }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: 2 }}>Diesel Rate (₹/L)</label>
+                    <input
+                      type="number"
+                      value={calcInputs.dieselRate}
+                      onChange={(e) => setCalcInputs({ ...calcInputs, dieselRate: Number(e.target.value) || 0 })}
+                      style={{ width: '100%', padding: '6px 10px', borderRadius: 6, border: '1px solid #cbd5e1', fontSize: 12 }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: 2 }}>Ice & Provisions (₹)</label>
+                    <input
+                      type="number"
+                      value={calcInputs.iceAndProvisions}
+                      onChange={(e) => setCalcInputs({ ...calcInputs, iceAndProvisions: Number(e.target.value) || 0 })}
+                      style={{ width: '100%', padding: '6px 10px', borderRadius: 6, border: '1px solid #cbd5e1', fontSize: 12 }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: 2 }}>Crew Count</label>
+                    <input
+                      type="number"
+                      value={calcInputs.crewCount}
+                      onChange={(e) => setCalcInputs({ ...calcInputs, crewCount: Number(e.target.value) || 0 })}
+                      style={{ width: '100%', padding: '6px 10px', borderRadius: 6, border: '1px solid #cbd5e1', fontSize: 12 }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: 2 }}>Target Catch (kg)</label>
+                    <input
+                      type="number"
+                      value={calcInputs.expectedHaulKg}
+                      onChange={(e) => setCalcInputs({ ...calcInputs, expectedHaulKg: Number(e.target.value) || 0 })}
+                      style={{ width: '100%', padding: '6px 10px', borderRadius: 6, border: '1px solid #cbd5e1', fontSize: 12 }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontWeight: 600, color: '#475569', marginBottom: 2 }}>Avg Price (₹/kg)</label>
+                    <input
+                      type="number"
+                      value={calcInputs.avgFishRate}
+                      onChange={(e) => setCalcInputs({ ...calcInputs, avgFishRate: Number(e.target.value) || 0 })}
+                      style={{ width: '100%', padding: '6px 10px', borderRadius: 6, border: '1px solid #cbd5e1', fontSize: 12 }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Outputs */}
+              <div style={{ background: isProfitable ? '#f0fdf4' : '#fef2f2', padding: 18, borderRadius: 10, border: isProfitable ? '1px solid #bbf7d0' : '1px solid #fecaca', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <h4 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: isProfitable ? '#166534' : '#991b1b', textTransform: 'uppercase' }}>
+                  Projected Net Trip Profitability
+                </h4>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <div style={{ background: '#ffffff', padding: 10, borderRadius: 6, border: '1px solid #cbd5e1' }}>
+                    <div style={{ fontSize: 11, color: '#64748b' }}>Total Trip Expense</div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: '#dc2626', marginTop: 2 }}>₹{totalExpense.toLocaleString()}</div>
+                    <div style={{ fontSize: 10, color: '#64748b' }}>Fuel: ₹{totalFuelCost.toLocaleString()}</div>
+                  </div>
+                  <div style={{ background: '#ffffff', padding: 10, borderRadius: 6, border: '1px solid #cbd5e1' }}>
+                    <div style={{ fontSize: 11, color: '#64748b' }}>Estimated Gross Sales</div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: '#0284c7', marginTop: 2 }}>₹{grossRev.toLocaleString()}</div>
+                    <div style={{ fontSize: 10, color: '#64748b' }}>{calcInputs.expectedHaulKg} kg @ ₹{calcInputs.avgFishRate}</div>
+                  </div>
+                </div>
+
+                <div style={{ background: '#ffffff', padding: 12, borderRadius: 8, border: '1px solid #cbd5e1' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontSize: 12, color: '#475569' }}>Boat Owner Net Margin:</span>
+                    <strong style={{ fontSize: 14, color: isProfitable ? '#16a34a' : '#dc2626' }}>₹{boatProfit.toLocaleString()}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontSize: 12, color: '#475569' }}>Total Crew Share ({calcInputs.crewSharePct}%):</span>
+                    <strong style={{ fontSize: 13, color: '#0f172a' }}>₹{crewShare.toLocaleString()}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: 12, color: '#475569' }}>Per Crew Member ({calcInputs.crewCount} hands):</span>
+                    <strong style={{ fontSize: 13, color: '#0284c7' }}>₹{crewPerHead}</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )
+        })()}
       </div>
 
       {/* SECTION 3: 💬 SEND MESSAGE / COMPLAINT TO COASTAL AUTHORITY */}
