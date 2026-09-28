@@ -262,6 +262,19 @@ class OrcaWorkflow:
         elif decision_type == "simulation":
             perturbations = getattr(state["context"].parsed_query, "perturbations", None)
             decision=await self.decision_service.simulation(location, perturbations, at)
+        elif decision_type == "route":
+            dest = getattr(state["context"].parsed_query, "destination", None)
+            if not dest and location:
+                # Default offshore fishing ground corridor ~18-20 km offshore into open waters
+                dest = {
+                    "latitude": round(location["latitude"] - 0.12, 4),
+                    "longitude": round(location["longitude"] + 0.15, 4),
+                    "label": "Offshore Fishing Ground Corridor"
+                }
+            if location and dest:
+                decision = await self.decision_service.route(location, dest, at=at)
+            else:
+                decision = None
         else:
             decision=None
 

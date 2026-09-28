@@ -97,29 +97,31 @@ function parseOrcaAnswer(rawText) {
   }
 
   let summary = ''
-  const summaryMatch = rawText.match(/^(ORCA's combined assessment[^.]*\.|ORCA cannot make[^.]*\.|Assessment[^.]*\.|Combined risk assessment[^.]*\.)/i)
+  const summaryMatch = rawText.match(/^(?:ORCA's combined assessment[^.\n]*\.|ORCA cannot make[^.\n]*\.|Assessment[^.\n]*\.|Combined risk assessment[^.\n]*\.|Marine Ecosystem Diagnosis[^.\n]*\.)/i)
   if (summaryMatch) {
-    summary = summaryMatch[1].trim()
+    summary = summaryMatch[0].trim()
   }
 
   const sections = []
 
   // 0. Tide & Hydrodynamic Evidence
-  const tideMatch = rawText.match(/(?:Tide conditions|Next High Tide)[^.]*\.(?:\s*(?:Next High Tide|Tide)[^.]*\.)?/i)
+  const tideMatch = rawText.match(/(?:Tide conditions|Next High Tide)[\s\S]*?(?=(?:\.\s+(?:Ocean evidence:|Weather evidence:|GIS checked|Decision intelligence:|Marine Safety Index:|Risk factors:|Ecosystem Diagnosis:|Key Pelagic|Forecast evidence|View the source|“|ORCA)|$))/i)
   if (tideMatch) {
+    let tideText = tideMatch[0].trim()
+    if (!tideText.endsWith('.')) tideText += '.'
     sections.push({
       id: 'tide',
       title: 'Tidal & Hydrodynamic Conditions',
       icon: '🌊',
-      text: tideMatch[0].trim(),
+      text: tideText,
       raw: tideMatch[0]
     })
   }
 
   // 1. Ocean Evidence
-  const oceanMatch = rawText.match(/Ocean evidence:\s*([^.]*)\./i)
+  const oceanMatch = rawText.match(/Ocean evidence:\s*([\s\S]*?)(?=(?:\.\s+(?:Weather evidence:|GIS checked|Decision intelligence:|Marine Safety Index:|Risk factors:|Ecosystem Diagnosis:|Key Pelagic|Forecast evidence|View the source|“|ORCA)|$))/i)
   if (oceanMatch) {
-    const rawMetrics = oceanMatch[1].split(';').map((s) => s.trim()).filter(Boolean)
+    const rawMetrics = oceanMatch[1].replace(/\.$/, '').split(';').map((s) => s.trim()).filter(Boolean)
     const metrics = rawMetrics.map((item) => {
       const match = item.match(/^(wave height|wave period|sea-surface temperature|sea surface temperature|sst)[:\s]+(.*)$/i)
       if (match) {
@@ -139,14 +141,14 @@ function parseOrcaAnswer(rawText) {
       title: 'Ocean Conditions & Sea State',
       icon: '🌊',
       metrics,
-      raw: oceanMatch[1]
+      raw: oceanMatch[0]
     })
   }
 
   // 2. Weather Evidence
-  const weatherMatch = rawText.match(/Weather evidence:\s*([^.]*)\./i)
+  const weatherMatch = rawText.match(/Weather evidence:\s*([\s\S]*?)(?=(?:\.\s+(?:Ocean evidence:|GIS checked|Decision intelligence:|Marine Safety Index:|Risk factors:|Ecosystem Diagnosis:|Key Pelagic|Forecast evidence|View the source|“|ORCA)|$))/i)
   if (weatherMatch) {
-    const rawMetrics = weatherMatch[1].split(';').map((s) => s.trim()).filter(Boolean)
+    const rawMetrics = weatherMatch[1].replace(/\.$/, '').split(';').map((s) => s.trim()).filter(Boolean)
     const metrics = rawMetrics.map((item) => {
       const match = item.match(/^(condition|wind speed|wind|precipitation|air temperature)[:\s]+(.*)$/i)
       if (match) {
@@ -166,31 +168,31 @@ function parseOrcaAnswer(rawText) {
       title: 'Atmospheric & Wind Conditions',
       icon: '⛅',
       metrics,
-      raw: weatherMatch[1]
+      raw: weatherMatch[0]
     })
   }
 
   // 3. GIS Evidence
-  const gisMatch = rawText.match(/(GIS checked[^.]*\.)/i)
+  const gisMatch = rawText.match(/(?:GIS checked|Clear waters:)[\s\S]*?(?=(?:\.\s+(?:Decision intelligence:|Ocean evidence:|Weather evidence:|View the source|Risk factors:)|$))/i)
   if (gisMatch) {
     sections.push({
       id: 'gis',
       title: 'GIS & Spatial Intelligence',
       icon: '🗺️',
-      text: gisMatch[1].replace(/^GIS checked\s*/i, 'Checked ').replace(/;/g, ' •'),
-      raw: gisMatch[1]
+      text: gisMatch[0].replace(/^GIS checked\s*/i, 'Checked ').replace(/;/g, ' •').trim(),
+      raw: gisMatch[0]
     })
   }
 
   // 4. Decision Intelligence
-  const decisionMatch = rawText.match(/Decision intelligence:\s*([^.]*)\./i)
+  const decisionMatch = rawText.match(/Decision intelligence:\s*([\s\S]*?)(?=(?:\.\s+(?:Decision limitations:|Risk factors:|Operational Recommendation:|View the source)|$))/i)
   if (decisionMatch) {
     sections.push({
       id: 'decision',
       title: 'Operational Intelligence',
       icon: '🧠',
-      text: decisionMatch[1].trim(),
-      raw: decisionMatch[1]
+      text: decisionMatch[1].replace(/\.$/, '').trim(),
+      raw: decisionMatch[0]
     })
   }
 
@@ -203,7 +205,7 @@ function parseOrcaAnswer(rawText) {
       title: 'Risk Concerns & Hazards',
       icon: '⚠️',
       items: factors,
-      raw: riskMatch[1]
+      raw: riskMatch[0]
     })
   }
 
@@ -422,8 +424,15 @@ export default function Message({ message }) {
   const spokenLang = response?.language || response?.context?.response_language || 'en'
   const ui = getUILabels(spokenLang)
 
-  const isPFZDiscovery = response?.context?.decision_type === 'pfz' && decision?.status === 'available' && decision?.features?.length > 0 && decision?.suitability === 'unavailable'
-  const isFishingSuitability = Boolean(decision?.suitability && decision?.suitability !== 'unavailable')
+  const isChlorophyllOrSST = /chlorophyll|sea surface temperature|thermal front|thermal breaks/i.test(message.text || '')
+  const isAvoidanceQuery = /avoid|avoided|geofenc|restricted zone|restricted area|hazard zone|restriction|exclusion zone/i.test(message.text || '')
+  const isPFZDiscovery = !isChlorophyllOrSST && !isAvoidanceQuery &&
+    response?.context?.decision_type === 'pfz' &&
+    decision?.status === 'available' &&
+    decision?.features?.length > 0 &&
+    decision?.suitability === 'unavailable' &&
+    (response?.intent === 'pfz' || /pfz|potential fishing zone/i.test(message.text || ''))
+  const isFishingSuitability = !isAvoidanceQuery && Boolean(decision?.suitability && decision?.suitability !== 'unavailable')
   const isSimulation = response?.context?.decision_type === 'simulation' || Boolean(decision?.scenario_simulation)
   const simulation = decision?.scenario_simulation
 
@@ -456,9 +465,10 @@ export default function Message({ message }) {
     : decisionLevel
 
   const isKnowledgeOnly = response?.query_mode === 'knowledge_only'
+  const isAnalyticalOnly = isChlorophyllOrSST || isAvoidanceQuery || (['ocean', 'gis'].includes(response?.intent) && !['safety', 'simulation', 'pfz'].includes(response?.context?.decision_type))
   const levelBadgeClass = level === 'low' ? 'low' : level === 'moderate' ? 'moderate' : level === 'high' ? 'high' : level === 'critical' ? 'critical' : 'unknown'
   const evidenceList = response?.evidence || []
-  const recommendations = isKnowledgeOnly ? [] : (response?.recommendations || [])
+  const recommendations = (isKnowledgeOnly || isAnalyticalOnly) ? [] : (response?.recommendations || [])
   const hasLimitations = Boolean(!isKnowledgeOnly && !isSimulation && (response?.unavailable_domains?.length || response?.pending_domains?.length || decision?.unavailable_data?.length))
   const answer = response?.answer || message.text || ''
   const parsed = parseOrcaAnswer(answer)
@@ -542,13 +552,23 @@ export default function Message({ message }) {
     return { label: p.toUpperCase(), class: 'medium' }
   }
 
-  const hasTopAssessment = !isKnowledgeOnly && Boolean(
-    isPFZDiscovery ||
-    isFishingSuitability ||
-    (level && level !== 'unknown') ||
-    scorePercent != null ||
-    (isSpecialized && headlineVerdict)
+  const isExplicitSafety = Boolean(
+    isSafetyIntent ||
+    isVentureSafety ||
+    isSimulation ||
+    level === 'high' ||
+    level === 'critical' ||
+    response?.intent === 'safety' ||
+    response?.context?.decision_type === 'safety'
   )
+
+  const hasTopAssessment = !isKnowledgeOnly && Boolean(
+    isExplicitSafety ||
+    isPFZDiscovery ||
+    isFishingSuitability
+  )
+
+  const shouldShowStructuredReason = showReason || !hasTopAssessment
 
   const isMaritimeRelevant = Boolean(
     isSpecialized ||
@@ -747,9 +767,9 @@ export default function Message({ message }) {
         )}
 
         {/* 3. REASON BREAKDOWN SECTION (UNDER RISK BOX) */}
-        {showReason && isSpecialized && (
+        {shouldShowStructuredReason && isSpecialized && (
           <div className="structured-reason-container font-sans">
-            {parsed.summary && (
+            {parsed.summary && isExplicitSafety && (
               <div className="reason-verdict-banner">
                 <span className="verdict-icon">⚡</span>
                 <span className="verdict-text">{parsed.summary}</span>
@@ -822,18 +842,18 @@ export default function Message({ message }) {
         )}
 
         {/* 3.5 MAIN ANALYSIS TEXT - Only displayed when not already encapsulated in top card, reason breakdown, or simulation report */}
-        {!isSimulation && (!hasTopAssessment || !parsed.hasStructuredEvidence) && answer ? (
+        {!isSimulation && !parsed.hasStructuredEvidence && answer ? (
           <div className="analysis-body-section font-sans">
-            <FormattedAnswer text={parsed.hasStructuredEvidence ? parsed.remaining : answer} />
+            <FormattedAnswer text={answer} />
           </div>
-        ) : (!isSimulation && parsed.remaining) ? (
+        ) : (!isSimulation && parsed.remaining && parsed.remaining.length > 30 && !parsed.remaining.includes(';') && !/^[\s\d.,;:]+(?:m\/s|mm|°C|kts)/i.test(parsed.remaining)) ? (
           <div className="analysis-body-section font-sans">
             <FormattedAnswer text={parsed.remaining} />
           </div>
         ) : null}
 
         {/* 4. SUPPORTING RECOMMENDATIONS & WARNINGS */}
-        {(recommendations.length > 0 || hasLimitations || (decision?.warnings && decision.warnings.length > 0)) && (
+        {!isAnalyticalOnly && (recommendations.length > 0 || hasLimitations || (decision?.warnings && decision.warnings.length > 0)) && (
           <details className="response-supporting-details font-sans" open={level === 'high' || level === 'critical'}>
             <summary className="font-mono">
               Action recommendations & operational warnings ({recommendations.length + (hasLimitations ? 1 : 0) + (decision?.warnings?.length || 0)})
