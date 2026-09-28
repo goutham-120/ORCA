@@ -178,6 +178,7 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
   const [tempOpacity, setTempOpacity] = useState(0.75)
   const [windOpacity, setWindOpacity] = useState(0.75)
   const [cloudIROpacity, setCloudIROpacity] = useState(0.75)
+  const [isExpanded, setIsExpanded] = useState(false)
 
   const lng = location.longitude ?? 78.9
   const lat = location.latitude ?? 20.5
@@ -537,15 +538,34 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
     if (mapRef.current) mapRef.current.zoomIn()
   }
 
-  const handleZoomOut = () => {
-    onZoom(-0.15)
-    if (mapRef.current) mapRef.current.zoomOut()
-  }
+  // Listen for ESC key to exit fullscreen
+  useEffect(() => {
+    if (!isExpanded) return undefined
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setIsExpanded(false)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isExpanded])
+
+  // Trigger map resize when entering/exiting fullscreen
+  useEffect(() => {
+    const timer1 = setTimeout(() => mapRef.current?.resize(), 50)
+    const timer2 = setTimeout(() => mapRef.current?.resize(), 200)
+    const timer3 = setTimeout(() => mapRef.current?.resize(), 400)
+    return () => {
+      clearTimeout(timer1)
+      clearTimeout(timer2)
+      clearTimeout(timer3)
+    }
+  }, [isExpanded])
 
   const isCurrentsActive = Boolean(layers.currents || layers['ocean-current-direction'] || layers.oceanCurrentDirection)
 
   return (
-    <section className="marine-map panel font-sans" aria-label="Operational marine GIS map preview">
+    <section className={`marine-map panel font-sans ${isExpanded ? 'is-expanded-marine-map' : ''}`} aria-label="Operational marine GIS map preview">
       <div className="panel-title">
         <div>
           <p className="eyebrow font-mono">ORCA SPATIAL OVERVIEW</p>
@@ -562,11 +582,36 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
               Connecting Open-Meteo...
             </span>
           )}
+          <button
+            type="button"
+            className={`canvas-btn-expand ${isExpanded ? 'is-active-expanded' : ''}`}
+            onClick={() => setIsExpanded((prev) => !prev)}
+            title={isExpanded ? 'Exit Fullscreen map (ESC)' : 'Expand map to full screen'}
+            aria-label={isExpanded ? 'Exit Fullscreen map' : 'Expand map to full screen'}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: isExpanded ? '6px 14px' : '5px 12px',
+              background: isExpanded ? '#dc2626' : '#ffffff',
+              color: isExpanded ? '#ffffff' : '#0369a1',
+              border: isExpanded ? '1px solid #ef4444' : '1px solid #bae6fd',
+              borderRadius: '6px',
+              fontSize: '12px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: isExpanded ? '0 4px 14px rgba(220, 38, 38, 0.45)' : '0 1px 3px rgba(0,0,0,0.05)',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <span>{isExpanded ? '✕' : '⛶'}</span>
+            {isExpanded ? 'Exit Fullscreen (ESC)' : 'Fullscreen'}
+          </button>
         </div>
       </div>
 
-      <div className="map-canvas" style={{ position: 'relative', minHeight: '480px', background: '#09131d' }}>
-        <div ref={mapContainerRef} style={{ width: '100%', height: '480px', borderRadius: '8px', overflow: 'hidden' }} />
+      <div className="map-canvas" style={{ position: 'relative', minHeight: isExpanded ? '100vh' : '480px', height: isExpanded ? '100vh' : 'auto', background: '#09131d' }}>
+        <div ref={mapContainerRef} style={{ width: '100%', height: isExpanded ? '100vh' : '480px', borderRadius: isExpanded ? '0' : '8px', overflow: 'hidden' }} />
 
         {/* Real-time Static Canvas Flow Overlay for Ocean Currents */}
         <StaticOceanCurrentCanvas
@@ -575,38 +620,172 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
           observationPoints={oceanCurrentPoints}
         />
 
-        {/* Basemap Mode Quick Toggle Button */}
-        <div style={{ position: 'absolute', top: '12px', left: '12px', zIndex: 10, display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <button
-            type="button"
-            onClick={() => setBaseMapMode((m) => (m === 'satellite' ? 'standard' : 'satellite'))}
-            title={baseMapMode === 'satellite' ? 'Switch to Standard Cartography' : 'Switch to ESRI High-Resolution Satellite Basemap with Boundaries'}
+        {/* FULLSCREEN FLOATING TOP CONTROLS BAR */}
+        {isExpanded ? (
+          <div
+            className="fullscreen-map-header"
             style={{
+              position: 'absolute',
+              top: '14px',
+              left: '14px',
+              right: '14px',
+              zIndex: 1000,
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
-              padding: '6px 12px',
-              background: baseMapMode === 'satellite' ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : 'rgba(15, 23, 42, 0.92)',
-              color: baseMapMode === 'satellite' ? '#ffffff' : '#93c5fd',
-              border: baseMapMode === 'satellite' ? '1px solid #38bdf8' : '1px solid rgba(147, 197, 253, 0.3)',
-              borderRadius: '20px',
-              fontSize: '11px',
-              fontWeight: 700,
-              cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
-              backdropFilter: 'blur(6px)',
-              transition: 'all 0.2s ease',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '10px',
+              background: 'rgba(15, 23, 42, 0.92)',
+              backdropFilter: 'blur(12px)',
+              border: '1px solid rgba(255, 255, 255, 0.18)',
+              borderRadius: '12px',
+              padding: '8px 16px',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
             }}
           >
-            <span>{baseMapMode === 'satellite' ? '🌍' : '🛰️'}</span>
-            {baseMapMode === 'satellite' ? 'Satellite Basemap' : 'Satellite View'}
-          </button>
-        </div>
+            {/* Left: Location & Basemap Switch */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '15px' }}>📍</span>
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: 800, color: '#f8fafc' }}>
+                    {location.name || 'Visakhapatnam'}
+                  </div>
+                  <div style={{ fontSize: '10px', color: '#94a3b8', fontFamily: 'monospace' }}>
+                    {location.coordinates || '17.6868°N, 83.2185°E'}
+                  </div>
+                </div>
+              </div>
 
-        <div className="map-controls" style={{ position: 'absolute', right: '12px', top: '12px', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <button
+                type="button"
+                onClick={() => setBaseMapMode((m) => (m === 'satellite' ? 'standard' : 'satellite'))}
+                title={baseMapMode === 'satellite' ? 'Switch to Standard Cartography' : 'Switch to ESRI High-Resolution Satellite Basemap with Boundaries'}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '5px 12px',
+                  background: baseMapMode === 'satellite' ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : 'rgba(255, 255, 255, 0.1)',
+                  color: '#ffffff',
+                  border: baseMapMode === 'satellite' ? '1px solid #38bdf8' : '1px solid rgba(255, 255, 255, 0.25)',
+                  borderRadius: '16px',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <span>{baseMapMode === 'satellite' ? '🌍' : '🛰️'}</span>
+                {baseMapMode === 'satellite' ? 'Satellite Basemap' : 'Satellite View'}
+              </button>
+            </div>
+
+            {/* Center: Layer Toggles in Fullscreen */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+              {Object.entries(layerLabels).map(([id, label]) => {
+                const active = id === 'temperature' ? layers.temperature !== false : Boolean(layers[id])
+                return (
+                  <button
+                    type="button"
+                    key={id}
+                    onClick={() => onToggleLayer(id)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '5px 12px',
+                      borderRadius: '6px',
+                      border: active ? '1px solid #38bdf8' : '1px solid rgba(255, 255, 255, 0.15)',
+                      background: active ? '#0284c7' : 'rgba(255, 255, 255, 0.08)',
+                      color: active ? '#ffffff' : '#cbd5e1',
+                      fontSize: '11px',
+                      fontWeight: active ? 700 : 500,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: active ? '#ffffff' : '#64748b' }}></span>
+                    {label}
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Right: Sync Status & Exit Fullscreen Button */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              {lastUpdatedTime && (
+                <span style={{ fontSize: '10px', color: '#94a3b8', background: 'rgba(255,255,255,0.06)', padding: '3px 8px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                  {lastUpdatedTime}
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => setIsExpanded(false)}
+                title="Exit Fullscreen (ESC)"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 14px',
+                  background: '#dc2626',
+                  color: '#ffffff',
+                  border: '1px solid #ef4444',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 10px rgba(220, 38, 38, 0.45)',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                ✕ Exit Fullscreen (ESC)
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* Standard Basemap Mode Quick Toggle Button */
+          <div style={{ position: 'absolute', top: '12px', left: '12px', zIndex: 10, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button
+              type="button"
+              onClick={() => setBaseMapMode((m) => (m === 'satellite' ? 'standard' : 'satellite'))}
+              title={baseMapMode === 'satellite' ? 'Switch to Standard Cartography' : 'Switch to ESRI High-Resolution Satellite Basemap with Boundaries'}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 12px',
+                background: baseMapMode === 'satellite' ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : 'rgba(15, 23, 42, 0.92)',
+                color: baseMapMode === 'satellite' ? '#ffffff' : '#93c5fd',
+                border: baseMapMode === 'satellite' ? '1px solid #38bdf8' : '1px solid rgba(147, 197, 253, 0.3)',
+                borderRadius: '20px',
+                fontSize: '11px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                backdropFilter: 'blur(6px)',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <span>{baseMapMode === 'satellite' ? '🌍' : '🛰️'}</span>
+              {baseMapMode === 'satellite' ? 'Satellite Basemap' : 'Satellite View'}
+            </button>
+          </div>
+        )}
+
+        <div className="map-controls" style={{ position: 'absolute', right: '12px', top: isExpanded ? '76px' : '12px', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '4px' }}>
           <button type="button" onClick={handleZoomIn} aria-label="Zoom in">+</button>
           <button type="button" onClick={handleZoomOut} aria-label="Zoom out">&minus;</button>
           <button type="button" onClick={onReset} aria-label="Reset map view">⌖</button>
+          <button
+            type="button"
+            onClick={() => setIsExpanded((prev) => !prev)}
+            title={isExpanded ? 'Exit Fullscreen (ESC)' : 'Fullscreen'}
+            aria-label={isExpanded ? 'Exit Fullscreen' : 'Fullscreen'}
+            style={isExpanded ? { background: '#dc2626', color: '#ffffff', fontWeight: 800 } : {}}
+          >
+            {isExpanded ? '✕' : '⛶'}
+          </button>
         </div>
 
         {/* Dynamic Context Legend Overlay */}
@@ -616,7 +795,7 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
             position: 'absolute',
             bottom: '12px',
             left: '12px',
-            zIndex: 10,
+            zIndex: 1000,
             background: 'rgba(15, 23, 42, 0.92)',
             backdropFilter: 'blur(8px)',
             border: '1px solid rgba(255, 255, 255, 0.1)',
