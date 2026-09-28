@@ -538,6 +538,11 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
     if (mapRef.current) mapRef.current.zoomIn()
   }
 
+  const handleZoomOut = () => {
+    onZoom(-0.15)
+    if (mapRef.current) mapRef.current.zoomOut()
+  }
+
   // Listen for ESC key to exit fullscreen
   useEffect(() => {
     if (!isExpanded) return undefined
