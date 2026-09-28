@@ -360,28 +360,42 @@ export default function Personalization({ navigate }) {
   }
 
   const roleIdentity = getRoleIdentity(user?.role, user?.user_category)
+  const isAdmin = user?.role === 'admin' || user?.user_category === 'admin'
 
   return (
     <div className="font-sans" style={{ maxWidth: 1360, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20, padding: '0 8px 32px' }}>
       
-      {/* PAGE HEADER PANEL WITH DYNAMIC ROLE IDENTITY & SWITCHER */}
+      {/* PAGE HEADER PANEL WITH ROLE CONTEXT */}
       <div className="panel font-sans" style={{ padding: '20px 24px', background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)', border: '1px solid #dce7f0', borderRadius: 14, boxShadow: '0 4px 16px rgba(0,0,0,0.04)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, marginBottom: isAdmin ? 16 : 0 }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 22 }}>🧭</span>
+              <span style={{ fontSize: 22 }}>{roleIdentity.icon}</span>
               <span style={{ fontSize: 12, fontWeight: 800, color: '#0284c7', letterSpacing: 1.2, textTransform: 'uppercase' }}>
-                WORKSPACE PERSONALIZATION
+                {roleIdentity.label.toUpperCase()} WORKSPACE
               </span>
             </div>
             <h1 style={{ margin: '4px 0 0', fontSize: 22, fontWeight: 800, color: 'var(--ink)', fontFamily: 'Sora, sans-serif' }}>
-              Personalized Maritime Portals & Operational Desks
+              {selectedRole === 'coastal_authority'
+                ? 'Coastal Authority Command & Maritime Surveillance Desk'
+                : selectedRole === 'researcher_scientist'
+                ? 'Oceanographic Research & Scientific Analysis Lab'
+                : selectedRole === 'marine_disaster_ops'
+                ? 'Marine & Disaster Operations Response Center'
+                : selectedRole === 'fisher_marine_operator'
+                ? 'Fisherman & Mariner Operational Safety Portal'
+                : 'Personalized Coastal Monitoring & Activity Hub'}
             </h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 6, fontSize: 12, color: '#64748b' }}>
+              <span>👤 Officer/User: <strong style={{ color: '#0f172a' }}>{user?.name || user?.email || 'Authorized User'}</strong></span>
+              {user?.organization && <span>• 🏛️ {user.organization}</span>}
+              {user?.designation && <span>({user.designation})</span>}
+            </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#f0f9ff', border: '1px solid #bae6fd', padding: '6px 14px', borderRadius: 8 }}>
-              <span style={{ fontSize: 12, color: '#0369a1', fontWeight: 700 }}>Active Profile:</span>
+              <span style={{ fontSize: 12, color: '#0369a1', fontWeight: 700 }}>Profile Role:</span>
               <span style={{ fontSize: 13, fontWeight: 800, color: '#0284c7' }}>
                 {roleIdentity.icon} {roleIdentity.label}
               </span>
@@ -407,43 +421,48 @@ export default function Personalization({ navigate }) {
           </div>
         </div>
 
-        {/* Persona Switcher Tabs */}
-        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingTop: 12, borderTop: '1px solid #e2e8f0', flexWrap: 'wrap' }}>
-          {ROLE_CATEGORIES.map((role) => {
-            const isSelected = selectedRole === role.value
-            return (
-              <button
-                key={role.value}
-                type="button"
-                onClick={() => changeRoleCategory(role.value)}
-                disabled={savingRole}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  padding: '9px 16px',
-                  borderRadius: 8,
-                  border: isSelected ? '1.5px solid #0284c7' : '1px solid #cbd5e1',
-                  background: isSelected ? '#0284c7' : '#ffffff',
-                  color: isSelected ? '#ffffff' : '#334155',
-                  fontSize: 13,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  boxShadow: isSelected ? '0 3px 10px rgba(2, 132, 199, 0.25)' : 'none',
-                }}
-              >
-                <span style={{ fontSize: 15 }}>{role.icon}</span>
-                <span>{role.name}</span>
-                {isSelected && (
-                  <span style={{ fontSize: 10, background: '#ffffff', color: '#0284c7', padding: '1px 6px', borderRadius: 4, fontWeight: 800 }}>
-                    ACTIVE
-                  </span>
-                )}
-              </button>
-            )
-          })}
-        </div>
+        {/* Admin Multi-Persona Switcher Tabs (Only visible to Admin) */}
+        {isAdmin && (
+          <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingTop: 12, borderTop: '1px solid #e2e8f0', flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginRight: 4 }}>
+              🛡️ Admin Workspace View:
+            </span>
+            {ROLE_CATEGORIES.map((role) => {
+              const isSelected = selectedRole === role.value
+              return (
+                <button
+                  key={role.value}
+                  type="button"
+                  onClick={() => changeRoleCategory(role.value)}
+                  disabled={savingRole}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '7px 14px',
+                    borderRadius: 8,
+                    border: isSelected ? '1.5px solid #0284c7' : '1px solid #cbd5e1',
+                    background: isSelected ? '#0284c7' : '#ffffff',
+                    color: isSelected ? '#ffffff' : '#334155',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    boxShadow: isSelected ? '0 3px 10px rgba(2, 132, 199, 0.25)' : 'none',
+                  }}
+                >
+                  <span style={{ fontSize: 14 }}>{role.icon}</span>
+                  <span>{role.name}</span>
+                  {isSelected && (
+                    <span style={{ fontSize: 9, background: '#ffffff', color: '#0284c7', padding: '1px 5px', borderRadius: 4, fontWeight: 800 }}>
+                      ACTIVE
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {/* TOAST SUCCESS BANNER */}
