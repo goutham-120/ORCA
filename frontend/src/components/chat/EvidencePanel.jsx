@@ -305,40 +305,128 @@ export default function EvidencePanel({ evidence = [], rag = null }) {
                 const observedDate = item.observed_at ? new Date(item.observed_at).toLocaleString() : null
 
                 return (
-                  <div key={`${item.source}-${index}`} className="evidence-item-card" style={{ minWidth: 0, overflow: 'hidden', boxSizing: 'border-box' }}>
-                    <div className="item-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                      <span className="source-name font-sans" style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.source}</span>
-                      <span className={`evidence-badge font-mono ${badgeClass}`} style={{ flexShrink: 0 }}>
-                        {status.toUpperCase()}
-                      </span>
+                  <div
+                    key={`${item.source}-${index}`}
+                    className="evidence-item-card"
+                    style={{
+                      minWidth: 0,
+                      boxSizing: 'border-box',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      background: '#ffffff',
+                      border: '1px solid #bae6fd',
+                      borderRadius: '10px',
+                      padding: '12px 14px',
+                      boxShadow: '0 2px 6px rgba(2, 132, 199, 0.04)',
+                    }}
+                  >
+                    <div>
+                      <div className="item-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: '6px' }}>
+                        <span
+                          className="source-name font-sans"
+                          style={{
+                            fontSize: '13px',
+                            fontWeight: 700,
+                            color: '#0f172a',
+                            lineHeight: 1.35,
+                            wordBreak: 'break-word',
+                          }}
+                        >
+                          {item.source}
+                        </span>
+                        <span className={`evidence-badge font-mono ${badgeClass}`} style={{ flexShrink: 0 }}>
+                          {status.toUpperCase()}
+                        </span>
+                      </div>
+
+                      {item.satellite_mission && (
+                        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '5px', margin: '4px 0 8px 0' }}>
+                          <span
+                            style={{
+                              background: '#f0f9ff',
+                              border: '1px solid #bae6fd',
+                              color: '#0284c7',
+                              padding: '2px 8px',
+                              borderRadius: '5px',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              lineHeight: 1.3,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                            }}
+                          >
+                            <span>🛰️</span> {item.satellite_mission}
+                          </span>
+                          {item.metadata?.satellite_payload && (
+                            <span
+                              style={{
+                                color: '#475569',
+                                background: '#f1f5f9',
+                                border: '1px solid #e2e8f0',
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                fontSize: '10.5px',
+                                fontWeight: 600,
+                              }}
+                            >
+                              {item.metadata.satellite_payload}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      <p className="item-summary font-sans" style={{ color: '#334155', fontSize: '12px', lineHeight: 1.45, margin: '0 0 10px', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
+                        {item.summary}
+                      </p>
                     </div>
 
-                    {item.satellite_mission && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', margin: '4px 0 6px 0', minWidth: 0 }}>
-                        <span style={{ background: 'rgba(34, 185, 242, 0.15)', border: '1px solid rgba(34, 185, 242, 0.35)', color: '#38bdf8', padding: '2px 7px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 700, flexShrink: 0 }}>
-                          🛰️ {item.satellite_mission}
+                    <div
+                      className="item-footer font-mono"
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        gap: '6px',
+                        paddingTop: '8px',
+                        borderTop: '1px solid #f1f5f9',
+                        fontSize: '10.5px',
+                        color: '#64748b',
+                      }}
+                    >
+                      {observedDate ? (
+                        <span className="timestamp" style={{ fontSize: '10.5px' }}>
+                          Observed: {observedDate}
                         </span>
-                        {item.metadata?.satellite_payload && (
-                          <span style={{ color: '#94a3b8', fontSize: '0.72rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            [{item.metadata.satellite_payload}]
-                          </span>
-                        )}
-                      </div>
-                    )}
-
-                    <p className="item-summary font-sans" style={{ overflowWrap: 'anywhere', wordBreak: 'break-word', minWidth: 0 }}>{item.summary}</p>
-
-                    <div className="item-footer font-mono" style={{ minWidth: 0, overflow: 'hidden' }}>
-                      {observedDate && <span className="timestamp" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Observed: {observedDate}</span>}
+                      ) : (
+                        <span style={{ fontSize: '10.5px', color: '#94a3b8' }}>Real-time Feed</span>
+                      )}
                       {item.url && (
-                        <a href={item.url} target="_blank" rel="noreferrer" className="source-link" style={{ flexShrink: 0 }}>
+                        <a
+                          href={item.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="source-link"
+                          style={{
+                            marginLeft: 'auto',
+                            color: '#0284c7',
+                            fontWeight: 700,
+                            fontSize: '11px',
+                            textDecoration: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '3px',
+                          }}
+                        >
                           Source API ↗
                         </a>
                       )}
                     </div>
 
                     {item.metadata?.error && (
-                      <div className="evidence-error-text font-sans" style={{ overflowWrap: 'anywhere', wordBreak: 'break-word', minWidth: 0 }}>
+                      <div className="evidence-error-text font-sans" style={{ marginTop: '6px', fontSize: '11px', color: '#b91c1c', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                         ⚠️ {item.metadata.error}
                       </div>
                     )}
