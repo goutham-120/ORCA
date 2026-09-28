@@ -239,8 +239,13 @@ export default function ScenarioSimulator({ navigate }) {
   }
 
   const handleLaunchDemoScenario = (presetKey) => {
+    try {
+      sessionStorage.setItem('orca_active_demo_scenario', presetKey)
+    } catch (e) {}
     if (navigate) {
       navigate(`/map-explorer?scenario=${presetKey}`)
+    } else {
+      window.location.href = `/map-explorer?scenario=${presetKey}`
     }
   }
 

@@ -723,7 +723,7 @@ const DEMO_PRESETS = {
 }
 
 export default function MapExplorer({ navigate }) {
-  const searchParams = useMemo(() => new URLSearchParams(window.location.search), [])
+  const searchParams = new URLSearchParams(window.location.search)
   const initialLatitudeValue = searchParams.get('latitude') || searchParams.get('lat')
   const initialLongitudeValue = searchParams.get('longitude') || searchParams.get('lon')
   const initialLatitude = Number(initialLatitudeValue)
@@ -736,12 +736,17 @@ export default function MapExplorer({ navigate }) {
     Number.isFinite(initialLatitude) &&
     Number.isFinite(initialLongitude)
 
-  const scenarioParam = searchParams.get('scenario') || searchParams.get('condition') || searchParams.get('preset')
+  const scenarioParam = (searchParams.get('scenario') || searchParams.get('demo') || searchParams.get('preset') || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('orca_active_demo_scenario') : null))?.toLowerCase()?.trim()
+  const activeDemoInitialPreset = scenarioParam && DEMO_PRESETS[scenarioParam] ? DEMO_PRESETS[scenarioParam] : null
+
   const [isSimulatedCycloneActive, setIsSimulatedCycloneActive] = useState(() => {
     return scenarioParam === 'cyclone' || scenarioParam === 'pre_cyclone'
   })
 
   const defaultLocationId = useMemo(() => {
+    if (activeDemoInitialPreset) {
+      return activeDemoInitialPreset.locationId
+    }
     if (initialLocationId) {
       const match = (dashboardLocations || []).find((item) => item.id === initialLocationId || item.name?.toLowerCase() === initialLocationId)
       if (match) return match.id
@@ -750,9 +755,16 @@ export default function MapExplorer({ navigate }) {
       if (coastalMatch) return coastalMatch.id
     }
     return 'visakhapatnam'
-  }, [initialLocationId])
+  }, [initialLocationId, activeDemoInitialPreset])
 
   const initialCoordinate = useMemo(() => {
+    if (activeDemoInitialPreset) {
+      return {
+        latitude: activeDemoInitialPreset.center.latitude,
+        longitude: activeDemoInitialPreset.center.longitude,
+        label: activeDemoInitialPreset.center.label,
+      }
+    }
     if (hasInitialCoordinate) {
       return { latitude: initialLatitude, longitude: initialLongitude, label: initialLabel }
     }
@@ -767,7 +779,7 @@ export default function MapExplorer({ navigate }) {
       }
     }
     return null
-  }, [hasInitialCoordinate, initialLatitude, initialLongitude, initialLabel, initialLocationId])
+  }, [activeDemoInitialPreset, hasInitialCoordinate, initialLatitude, initialLongitude, initialLabel, initialLocationId])
 
   const [locationId, setLocationId] = useState(defaultLocationId)
   const [layers, setLayers] = useState([])
@@ -822,11 +834,19 @@ export default function MapExplorer({ navigate }) {
   const [pfzSync, setPFZSync] = useState({ loading: false, error: '', message: '' })
 
   // Nearest Suitable PFZ state
-  const [searchRadius, setSearchRadius] = useState(50)
-  const [nearestPFZ, setNearestPFZ] = useState({ loading: false, error: '', data: null })
+  const [searchRadius, setSearchRadius] = useState(() => activeDemoInitialPreset?.searchRadius || 50)
+  const [nearestPFZ, setNearestPFZ] = useState(() => ({
+    loading: false,
+    error: '',
+    data: activeDemoInitialPreset ? activeDemoInitialPreset.pfzEvaluationData : null,
+  }))
 
   // Detailed Route Analysis state
-  const [detailedRoute, setDetailedRoute] = useState({ loading: false, error: '', data: null })
+  const [detailedRoute, setDetailedRoute] = useState(() => ({
+    loading: false,
+    error: '',
+    data: activeDemoInitialPreset ? activeDemoInitialPreset.navigationData?.route : null,
+  }))
   const [selectedDestinationPFZId, setSelectedDestinationPFZId] = useState('auto_nearest')
 
   // Sprint 1: Hydrodynamic Tide & Marine Safety Index
@@ -841,22 +861,26 @@ export default function MapExplorer({ navigate }) {
   const [isPickerOpen, setIsPickerOpen] = useState(false)
 
   // Live Navigation & Real-time GPS Vessel Tracking State
-  const [liveNavigation, setLiveNavigation] = useState({ loading: false, error: '', data: null })
-  const [isRouteVisible, setIsRouteVisible] = useState(false)
-  const [isHudOpen, setIsHudOpen] = useState(false)
+  const [liveNavigation, setLiveNavigation] = useState(() => ({
+    loading: false,
+    error: '',
+    data: activeDemoInitialPreset ? activeDemoInitialPreset.navigationData : null,
+  }))
+  const [isRouteVisible, setIsRouteVisible] = useState(() => Boolean(activeDemoInitialPreset?.isRouteVisible))
+  const [isHudOpen, setIsHudOpen] = useState(() => Boolean(activeDemoInitialPreset?.isRouteVisible))
   const [liveVesselLocation, setLiveVesselLocation] = useState(null)
   const [isGpsTracking, setIsGpsTracking] = useState(false)
   const [isSatelliteHudOpen, setIsSatelliteHudOpen] = useState(false)
   const [isNavICModalOpen, setIsNavICModalOpen] = useState(false)
-  const [baseMapMode, setBaseMapMode] = useState('standard') // 'standard' | 'satellite'
-  const [isCloudIRVisible, setIsCloudIRVisible] = useState(false)
-  const [cloudMode, setCloudMode] = useState('natural') // 'natural' | 'thermal_ir'
+  const [baseMapMode, setBaseMapMode] = useState(() => activeDemoInitialPreset?.baseMapMode || 'standard')
+  const [isCloudIRVisible, setIsCloudIRVisible] = useState(() => Boolean(activeDemoInitialPreset?.isCloudIRVisible))
+  const [cloudMode, setCloudMode] = useState(() => activeDemoInitialPreset?.cloudMode || 'natural')
   const [cloudIROpacity, setCloudIROpacity] = useState(0.75)
   const watchIdRef = useRef(null)
 
   // Interactive Demo Mode State for Evaluators & Judges
-  const [isDemoMode, setIsDemoMode] = useState(false)
-  const [activeDemoPreset, setActiveDemoPreset] = useState(null)
+  const [isDemoMode, setIsDemoMode] = useState(() => Boolean(activeDemoInitialPreset))
+  const [activeDemoPreset, setActiveDemoPreset] = useState(() => (activeDemoInitialPreset ? scenarioParam : null))
 
   const fetchLayers = useCallback(async (signal) => {
     try {
@@ -931,6 +955,19 @@ export default function MapExplorer({ navigate }) {
           return { ...layer, enabled: Boolean(layerMap[id]), available: true }
         }
         return layer
+      })
+
+      // Ensure base standard layers exist
+      const defaultLayerDefs = [
+        { id: 'marine_areas', name: 'Marine Areas', layer_type: 'vector', available: true, enabled: Boolean(layerMap['marine_areas']), features: [] },
+        { id: 'pfz', name: 'Potential Fishing Zones', layer_type: 'vector', available: true, enabled: true, features: [] },
+        { id: 'hazards', name: 'Hazards & Cyclones', layer_type: 'vector', available: true, enabled: Boolean(layerMap['hazards']), features: [] },
+        { id: 'restricted_zones', name: 'Restricted Zones', layer_type: 'vector', available: true, enabled: Boolean(layerMap['restricted_zones']), features: [] },
+      ]
+      defaultLayerDefs.forEach((defL) => {
+        if (!updated.some((l) => String(l.id).toLowerCase() === defL.id)) {
+          updated.push(defL)
+        }
       })
 
       // Ensure PFZ layer exists, is enabled, and has preset.extraPFZs
@@ -1030,6 +1067,17 @@ export default function MapExplorer({ navigate }) {
     setLocationId('visakhapatnam')
     fetchLayers().then((nextLayers) => setLayers(Array.isArray(nextLayers) ? nextLayers : []))
   }, [fetchLayers])
+
+  // Auto-launch demo scenario on mount or when scenario/demo query parameter is present
+  useEffect(() => {
+    const demoKey = (searchParams.get('scenario') || searchParams.get('demo') || searchParams.get('preset') || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('orca_active_demo_scenario') : null))?.toLowerCase()?.trim()
+    if (demoKey && DEMO_PRESETS[demoKey]) {
+      try {
+        sessionStorage.removeItem('orca_active_demo_scenario')
+      } catch (e) {}
+      loadDemoScenario(demoKey)
+    }
+  }, [loadDemoScenario])
 
   const pfzEvaluations = useMemo(() => {
     const map = {}
