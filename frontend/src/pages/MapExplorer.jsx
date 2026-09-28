@@ -1920,257 +1920,6 @@ export default function MapExplorer({ navigate }) {
         <div className="map-primary-col">
           <ComponentErrorBoundary name="Map Canvas">
             <div className="map-canvas-wrapper" style={{ position: 'relative' }}>
-              {isSimulatedCycloneActive && (
-                <div
-                  className="simulated-cyclone-banner"
-                  style={{
-                    background: 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%)',
-                    color: '#ffffff',
-                    padding: '12px 18px',
-                    borderRadius: '8px',
-                    marginBottom: '14px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    border: '1.5px solid #ef4444',
-                    boxShadow: '0 4px 12px rgba(220, 38, 38, 0.25)',
-                    flexWrap: 'wrap',
-                    gap: '10px'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '24px' }}>🌀</span>
-                    <div>
-                      <strong style={{ fontSize: '13px', display: 'block', letterSpacing: '0.02em' }}>
-                        ACTIVE SIMULATION: CYCLONIC STORM SURGE & HAZARD CONE (RED OVERLAY)
-                      </strong>
-                      <span style={{ fontSize: '12px', opacity: 0.95 }}>
-                        Displaying projected 35 km offshore cyclone hazard zone ({searchParams.get('wind_kts') || '45'} kts gale, +{searchParams.get('delta_wave') || '3.8'}m surge). Vessel navigation prohibited inside this perimeter.
-                      </span>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsSimulatedCycloneActive(false)}
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.15)',
-                      color: '#ffffff',
-                      border: '1px solid rgba(255, 255, 255, 0.4)',
-                      borderRadius: '6px',
-                      padding: '5px 12px',
-                      fontSize: '11px',
-                      fontWeight: 700,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    ✕ Dismiss Simulation Overlay
-                  </button>
-                </div>
-              )}
-              {isRouteVisible && isHudOpen && (
-                <LiveNavigationHUD
-                  navigationData={liveNavigation.data}
-                  currentLocation={liveVesselLocation || selectedLocation}
-                  isTracking={isGpsTracking}
-                  onToggleTracking={toggleGpsTracking}
-                  onRecenter={() => {
-                    const loc = liveVesselLocation || selectedLocation
-                    if (loc?.latitude && loc?.longitude) {
-                      setSelectedCoordinate({ ...loc })
-                    }
-                  }}
-                  onStopNavigation={() => setIsHudOpen(false)}
-                  onRecalculate={startLivePFZNavigation}
-                  isLoading={liveNavigation.loading}
-                />
-              )}
-              {isRouteVisible && !isHudOpen && (
-                <button
-                  type="button"
-                  className="reopen-hud-pill-btn"
-                  onClick={() => setIsHudOpen(true)}
-                  title="Open Live Navigation HUD panel"
-                  style={{
-                    position: 'absolute',
-                    top: '12px',
-                    left: '12px',
-                    zIndex: 10,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '7px 14px',
-                    background: '#0f172a',
-                    color: '#38bdf8',
-                    border: '1px solid #0284c7',
-                    borderRadius: '20px',
-                    fontSize: '11.5px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 14px rgba(0,0,0,0.35)',
-                    transition: 'all 0.2s ease',
-                  }}
-                >
-                  <span>🧭</span> Show Navigation HUD
-                </button>
-              )}
-
-              {/* ISRO Space Assets & NavIC Quick Action Toolbar */}
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '12px',
-                  right: '12px',
-                  zIndex: 10,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  flexWrap: 'wrap',
-                }}
-              >
-                {/* ESRI Satellite Basemap Switcher Pill */}
-                <button
-                  type="button"
-                  onClick={() => setBaseMapMode((m) => (m === 'satellite' ? 'standard' : 'satellite'))}
-                  title={baseMapMode === 'satellite' ? 'Switch to Standard Nautical Cartography' : 'Switch to ESRI High-Resolution World Satellite Imagery'}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '7px 13px',
-                    background: baseMapMode === 'satellite' ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : 'rgba(15, 23, 42, 0.92)',
-                    color: baseMapMode === 'satellite' ? '#ffffff' : '#93c5fd',
-                    border: baseMapMode === 'satellite' ? '1px solid #38bdf8' : '1px solid rgba(147, 197, 253, 0.3)',
-                    borderRadius: '20px',
-                    fontSize: '11.5px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 14px rgba(0,0,0,0.4)',
-                    backdropFilter: 'blur(6px)',
-                    transition: 'all 0.2s ease',
-                  }}
-                >
-                  <span>{baseMapMode === 'satellite' ? '🌍' : '🛰️'}</span>
-                  {baseMapMode === 'satellite' ? 'Satellite Basemap' : 'Satellite View'}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setIsSatelliteHudOpen((v) => !v)}
-                  title="Toggle ISRO EOS-06 & INSAT-3DS Orbit HUD"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '7px 13px',
-                    background: isSatelliteHudOpen ? '#0284c7' : 'rgba(15, 23, 42, 0.92)',
-                    color: isSatelliteHudOpen ? '#ffffff' : '#38bdf8',
-                    border: '1px solid rgba(56, 189, 248, 0.4)',
-                    borderRadius: '20px',
-                    fontSize: '11.5px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 14px rgba(0,0,0,0.4)',
-                    backdropFilter: 'blur(6px)',
-                    transition: 'all 0.2s ease',
-                  }}
-                >
-                  <span>🛰️</span> ISRO Satellites
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setIsNavICModalOpen(true)}
-                  title="NavIC / GNSS Location Sync (ISRO NavIC Dual-Frequency & Web Geolocation)"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '7px 13px',
-                    background: 'rgba(6, 78, 59, 0.9)',
-                    color: '#34d399',
-                    border: '1px solid rgba(52, 211, 153, 0.4)',
-                    borderRadius: '20px',
-                    fontSize: '11.5px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 14px rgba(0,0,0,0.4)',
-                    backdropFilter: 'blur(6px)',
-                    transition: 'all 0.2s ease',
-                  }}
-                >
-                  <span>📡</span> NavIC / GNSS Sync
-                </button>
-              </div>
-
-              {/* ISRO Satellite Orbit HUD */}
-              <SatelliteOrbitHUD
-                isOpen={isSatelliteHudOpen}
-                onClose={() => setIsSatelliteHudOpen(false)}
-                location={selectedLocation}
-              />
-
-              {/* Satellite Cloud Layer Legend (Natural vs Thermal IR) */}
-              {isCloudIRVisible && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    bottom: '24px',
-                    left: '12px',
-                    zIndex: 10,
-                    background: 'rgba(15, 23, 42, 0.92)',
-                    backdropFilter: 'blur(8px)',
-                    border: cloudMode === 'natural' ? '1px solid rgba(56, 189, 248, 0.5)' : '1px solid rgba(168, 85, 247, 0.5)',
-                    borderRadius: '10px',
-                    padding: '10px 14px',
-                    color: '#f8fafc',
-                    boxShadow: '0 4px 18px rgba(0,0,0,0.45)',
-                    fontSize: '11px',
-                    maxWidth: '285px',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                    <strong style={{ color: cloudMode === 'natural' ? '#38bdf8' : '#d8b4fe', fontSize: '11.5px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      <span>☁️</span> {cloudMode === 'natural' ? 'Optical Satellite Clouds' : 'INSAT-3D/3DR Thermal IR'}
-                    </strong>
-                    <span style={{ fontSize: '9.5px', background: cloudMode === 'natural' ? '#0369a1' : '#581c87', color: '#e0f2fe', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>
-                      {cloudMode === 'natural' ? 'MODIS / VIIRS' : 'ISRO MOSDAC'}
-                    </span>
-                  </div>
-                  {cloudMode === 'natural' ? (
-                    <div>
-                      <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '4px' }}>
-                        Natural Visible Cloud Canopy (TrueColor Optical Swirls)
-                      </div>
-                      <div style={{ fontSize: '9.5px', color: '#cbd5e1', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span style={{ display: 'inline-block', width: '10px', height: '10px', background: '#ffffff', borderRadius: '2px', border: '1px solid #94a3b8' }}></span>
-                        <span>Dense White / Grey Storm Formations & Vortices</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '6px' }}>
-                        Cloud-Top Brightness Temp (Kelvin / °C)
-                      </div>
-                      <div
-                        style={{
-                          height: '10px',
-                          borderRadius: '4px',
-                          background: 'linear-gradient(to right, #1e293b 0%, #0369a1 25%, #059669 50%, #eab308 65%, #dc2626 80%, #7e22ce 92%, #ffffff 100%)',
-                          marginBottom: '4px',
-                          boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.3)',
-                        }}
-                      />
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#cbd5e1', fontFamily: 'monospace' }}>
-                        <span>Warm (&gt;20°C)</span>
-                        <span>0°C</span>
-                        <span>-40°C</span>
-                        <span style={{ color: '#f0abfc', fontWeight: 700 }}>&lt;-60°C (Convective)</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
               <MapCanvas
                 selectedLocation={selectedLocation}
                 layers={renderedLayers}
@@ -2199,10 +1948,156 @@ export default function MapExplorer({ navigate }) {
                     : null
                 }
                 baseMapMode={baseMapMode}
+                onToggleBaseMapMode={setBaseMapMode}
+                isSatelliteHudOpen={isSatelliteHudOpen}
+                onToggleSatelliteHud={() => setIsSatelliteHudOpen((v) => !v)}
+                onOpenNavICModal={() => setIsNavICModalOpen(true)}
+                isRouteVisible={isRouteVisible}
+                isHudOpen={isHudOpen}
+                onOpenHud={() => setIsHudOpen(true)}
                 isCloudIRVisible={isCloudIRVisible}
                 cloudMode={cloudMode}
                 cloudIROpacity={cloudIROpacity}
-              />
+              >
+                {isSimulatedCycloneActive && (
+                  <div
+                    className="simulated-cyclone-banner"
+                    style={{
+                      position: 'absolute',
+                      top: '60px',
+                      left: '14px',
+                      right: '14px',
+                      zIndex: 15,
+                      background: 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%)',
+                      color: '#ffffff',
+                      padding: '12px 18px',
+                      borderRadius: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      border: '1.5px solid #ef4444',
+                      boxShadow: '0 4px 12px rgba(220, 38, 38, 0.25)',
+                      flexWrap: 'wrap',
+                      gap: '10px'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ fontSize: '24px' }}>🌀</span>
+                      <div>
+                        <strong style={{ fontSize: '13px', display: 'block', letterSpacing: '0.02em' }}>
+                          ACTIVE SIMULATION: CYCLONIC STORM SURGE & HAZARD CONE (RED OVERLAY)
+                        </strong>
+                        <span style={{ fontSize: '12px', opacity: 0.95 }}>
+                          Displaying projected 35 km offshore cyclone hazard zone ({searchParams.get('wind_kts') || '45'} kts gale, +{searchParams.get('delta_wave') || '3.8'}m surge). Vessel navigation prohibited inside this perimeter.
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsSimulatedCycloneActive(false)}
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.15)',
+                        color: '#ffffff',
+                        border: '1px solid rgba(255, 255, 255, 0.4)',
+                        borderRadius: '6px',
+                        padding: '5px 12px',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      ✕ Dismiss Simulation Overlay
+                    </button>
+                  </div>
+                )}
+
+                {isRouteVisible && isHudOpen && (
+                  <LiveNavigationHUD
+                    navigationData={liveNavigation.data}
+                    currentLocation={liveVesselLocation || selectedLocation}
+                    isTracking={isGpsTracking}
+                    onToggleTracking={toggleGpsTracking}
+                    onRecenter={() => {
+                      const loc = liveVesselLocation || selectedLocation
+                      if (loc?.latitude && loc?.longitude) {
+                        setSelectedCoordinate({ ...loc })
+                      }
+                    }}
+                    onStopNavigation={() => setIsHudOpen(false)}
+                    onRecalculate={startLivePFZNavigation}
+                    isLoading={liveNavigation.loading}
+                  />
+                )}
+
+                {/* ISRO Satellite Orbit HUD */}
+                <SatelliteOrbitHUD
+                  isOpen={isSatelliteHudOpen}
+                  onClose={() => setIsSatelliteHudOpen(false)}
+                  location={selectedLocation}
+                />
+
+                {/* Satellite Cloud Layer Legend (Natural vs Thermal IR) */}
+                {isCloudIRVisible && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: '24px',
+                      left: '12px',
+                      zIndex: 10,
+                      background: 'rgba(15, 23, 42, 0.92)',
+                      backdropFilter: 'blur(8px)',
+                      border: cloudMode === 'natural' ? '1px solid rgba(56, 189, 248, 0.5)' : '1px solid rgba(168, 85, 247, 0.5)',
+                      borderRadius: '10px',
+                      padding: '10px 14px',
+                      color: '#f8fafc',
+                      boxShadow: '0 4px 18px rgba(0,0,0,0.45)',
+                      fontSize: '11px',
+                      maxWidth: '285px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                      <strong style={{ color: cloudMode === 'natural' ? '#38bdf8' : '#d8b4fe', fontSize: '11.5px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <span>☁️</span> {cloudMode === 'natural' ? 'Optical Satellite Clouds' : 'INSAT-3D/3DR Thermal IR'}
+                      </strong>
+                      <span style={{ fontSize: '9.5px', background: cloudMode === 'natural' ? '#0369a1' : '#581c87', color: '#e0f2fe', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>
+                        {cloudMode === 'natural' ? 'MODIS / VIIRS' : 'ISRO MOSDAC'}
+                      </span>
+                    </div>
+                    {cloudMode === 'natural' ? (
+                      <div>
+                        <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '4px' }}>
+                          Natural Visible Cloud Canopy (TrueColor Optical Swirls)
+                        </div>
+                        <div style={{ fontSize: '9.5px', color: '#cbd5e1', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ display: 'inline-block', width: '10px', height: '10px', background: '#ffffff', borderRadius: '2px', border: '1px solid #94a3b8' }}></span>
+                          <span>Dense White / Grey Storm Formations & Vortices</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '6px' }}>
+                          Cloud-Top Brightness Temp (Kelvin / °C)
+                        </div>
+                        <div
+                          style={{
+                            height: '10px',
+                            borderRadius: '4px',
+                            background: 'linear-gradient(to right, #1e293b 0%, #0369a1 25%, #059669 50%, #eab308 65%, #dc2626 80%, #7e22ce 92%, #ffffff 100%)',
+                            marginBottom: '4px',
+                            boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.3)',
+                          }}
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#cbd5e1', fontFamily: 'monospace' }}>
+                          <span>Warm (&gt;20°C)</span>
+                          <span>0°C</span>
+                          <span>-40°C</span>
+                          <span style={{ color: '#f0abfc', fontWeight: 700 }}>&lt;-60°C (Convective)</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </MapCanvas>
             </div>
           </ComponentErrorBoundary>
 
