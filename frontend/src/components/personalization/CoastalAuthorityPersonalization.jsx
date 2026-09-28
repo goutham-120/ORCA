@@ -395,32 +395,53 @@ export default function CoastalAuthorityPersonalization({ user, userKey }) {
     }
   ])
 
+  const [activeActionId, setActiveActionId] = useState({ id: null, type: null })
+
   const handlePingTransponder = (vesselId) => {
-    setVessels(prev => prev.map(v => {
+    setActiveActionId({ id: vesselId, type: 'ping' })
+    const updateFn = (list) => list.map(v => {
       if (v.id === vesselId) {
-        return { ...v, lastPing: 'Just now (100% signal strength)' }
+        return { ...v, lastPing: 'Just now (100% signal strength - Ack Received)' }
       }
       return v
-    }))
-    setToastMessage('🛰️ NavIC Transponder Ping Verified: Handshake confirmed with vessel terminal.')
-    setTimeout(() => setToastMessage(''), 3500)
+    })
+    setVessels(prev => updateFn(prev))
+    setLiveAisVessels(prev => updateFn(prev))
+    setToastMessage('🛰️ NavIC / AIS Transponder Ping Verified: Two-way handshake confirmed with vessel terminal (Signal 100%).')
+    setTimeout(() => setActiveActionId({ id: null, type: null }), 2200)
+    setTimeout(() => setToastMessage(''), 4000)
   }
 
   const handleSendImblWarning = (vesselId, regNo) => {
-    const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    setVessels(prev => prev.map(v => {
+    setActiveActionId({ id: vesselId, type: 'warning' })
+    const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    const updateFn = (list) => list.map(v => {
       if (v.id === vesselId) {
         return { ...v, lastAlertSent: `NavIC IMBL Audio-Visual Warning Dispatched (${timeNow})` }
       }
       return v
-    }))
-    setToastMessage(`🚨 URGENT IMBL ALERT: Dispatched NavIC emergency geofence warning to vessel ${regNo}!`)
-    setTimeout(() => setToastMessage(''), 4500)
+    })
+    setVessels(prev => updateFn(prev))
+    setLiveAisVessels(prev => updateFn(prev))
+    setToastMessage(`🚨 URGENT IMBL ALERT: Dispatched NavIC emergency boundary proximity alarm to vessel ${regNo}!`)
+    setTimeout(() => setActiveActionId({ id: null, type: null }), 2500)
+    setTimeout(() => setToastMessage(''), 5000)
   }
 
-  const handleRequestCatchLog = (regNo) => {
-    setToastMessage(`📋 Catch Log Submission request dispatched via NavIC satellite messaging to ${regNo}.`)
-    setTimeout(() => setToastMessage(''), 3500)
+  const handleRequestCatchLog = (vesselId, regNo) => {
+    setActiveActionId({ id: vesselId, type: 'log' })
+    const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    const updateFn = (list) => list.map(v => {
+      if (v.id === vesselId) {
+        return { ...v, lastAlertSent: `Catch Log Request Dispatched (${timeNow})` }
+      }
+      return v
+    })
+    setVessels(prev => updateFn(prev))
+    setLiveAisVessels(prev => updateFn(prev))
+    setToastMessage(`📋 Electronic Catch Log (e-Logbook) submission request dispatched via satellite data uplink to ${regNo}.`)
+    setTimeout(() => setActiveActionId({ id: null, type: null }), 2200)
+    setTimeout(() => setToastMessage(''), 4000)
   }
 
   // Derived datasets for Maritime & Regional Security section
@@ -544,25 +565,48 @@ export default function CoastalAuthorityPersonalization({ user, userKey }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }} className="font-sans">
       
-      {/* TOAST BANNER */}
+      {/* FLOATING TOAST NOTIFICATION */}
       {toastMessage && (
         <div
           style={{
-            padding: '12px 18px',
-            borderRadius: 8,
-            background: toastMessage.includes('✓') ? '#f0fdf4' : '#fef2f2',
-            color: toastMessage.includes('✓') ? '#166534' : '#991b1b',
-            border: `1px solid ${toastMessage.includes('✓') ? '#bbf7d0' : '#fecaca'}`,
+            position: 'fixed',
+            top: 24,
+            right: 24,
+            zIndex: 99999,
+            maxWidth: 480,
+            padding: '14px 18px',
+            borderRadius: 10,
+            background: toastMessage.includes('✓') ? '#f0fdf4' : (toastMessage.includes('🚨') ? '#fef2f2' : '#f0f9ff'),
+            color: toastMessage.includes('✓') ? '#166534' : (toastMessage.includes('🚨') ? '#991b1b' : '#0369a1'),
+            border: `1.5px solid ${toastMessage.includes('✓') ? '#86efac' : (toastMessage.includes('🚨') ? '#fca5a5' : '#7dd3fc')}`,
             fontWeight: 600,
             fontSize: 13,
             display: 'flex',
             alignItems: 'center',
-            justify: 'space-between',
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
+            justifyContent: 'space-between',
+            gap: 12,
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.25)',
           }}
         >
-          <span>{toastMessage}</span>
-          <small style={{ fontSize: 11, background: '#dc2626', color: '#ffffff', padding: '3px 9px', borderRadius: 6, fontWeight: 700, letterSpacing: 0.5 }}>COASTAL AUTHORITY DESK</small>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, lineHeight: 1.4 }}>
+            <span>{toastMessage}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setToastMessage('')}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'currentColor',
+              fontSize: 16,
+              fontWeight: 800,
+              cursor: 'pointer',
+              padding: '0 4px',
+              lineHeight: 1
+            }}
+          >
+            ✕
+          </button>
         </div>
       )}
 
@@ -869,50 +913,54 @@ export default function CoastalAuthorityPersonalization({ user, userKey }) {
                         padding: '6px 10px',
                         fontSize: 11,
                         fontWeight: 700,
-                        background: '#f1f5f9',
-                        color: '#334155',
+                        background: activeActionId.id === v.id && activeActionId.type === 'ping' ? '#059669' : '#f1f5f9',
+                        color: activeActionId.id === v.id && activeActionId.type === 'ping' ? '#ffffff' : '#334155',
                         border: '1px solid #cbd5e1',
                         borderRadius: 6,
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
                       }}
                     >
-                      🛰️ Ping Transponder
+                      {activeActionId.id === v.id && activeActionId.type === 'ping' ? '✓ Ping Acked!' : '🛰️ Ping Transponder'}
                     </button>
                     {v.imblStatus === 'warning' ? (
                       <button
                         type="button"
-                        onClick={() => handleSendImblWarning(v.id, v.regNo)}
+                        onClick={() => handleSendImblWarning(v.id, v.regNo || v.name)}
                         style={{
                           flex: 1.2,
                           padding: '6px 10px',
                           fontSize: 11,
                           fontWeight: 800,
-                          background: '#dc2626',
+                          background: activeActionId.id === v.id && activeActionId.type === 'warning' ? '#991b1b' : '#dc2626',
                           color: '#ffffff',
                           border: 'none',
                           borderRadius: 6,
-                          cursor: 'pointer'
+                          cursor: 'pointer',
+                          boxShadow: activeActionId.id === v.id && activeActionId.type === 'warning' ? '0 0 10px rgba(220, 38, 38, 0.6)' : 'none',
+                          transition: 'all 0.2s ease',
                         }}
                       >
-                        🚨 Send Warning
+                        {activeActionId.id === v.id && activeActionId.type === 'warning' ? '🚨 Warning Sent!' : '🚨 Send Warning'}
                       </button>
                     ) : (
                       <button
                         type="button"
-                        onClick={() => handleRequestCatchLog(v.regNo)}
+                        onClick={() => handleRequestCatchLog(v.id, v.regNo || v.name)}
                         style={{
                           flex: 1,
                           padding: '6px 10px',
                           fontSize: 11,
                           fontWeight: 700,
-                          background: '#0284c7',
+                          background: activeActionId.id === v.id && activeActionId.type === 'log' ? '#0369a1' : '#0284c7',
                           color: '#ffffff',
                           border: 'none',
                           borderRadius: 6,
-                          cursor: 'pointer'
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
                         }}
                       >
-                        📋 Request Log
+                        {activeActionId.id === v.id && activeActionId.type === 'log' ? '📋 Request Sent!' : '📋 Request Log'}
                       </button>
                     )}
                   </div>
