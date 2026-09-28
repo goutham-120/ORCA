@@ -33,10 +33,14 @@ export default function App() {
   const [currentPath, setCurrentPath] = useState(() => {
     return window.location.pathname
   })
+  const [currentSearch, setCurrentSearch] = useState(() => {
+    return window.location.search
+  })
 
   useEffect(() => {
     const listener = () => {
       setCurrentPath(window.location.pathname)
+      setCurrentSearch(window.location.search)
     }
 
     window.addEventListener('popstate', listener)
@@ -48,6 +52,7 @@ export default function App() {
 
     const url = new URL(to, window.location.origin)
     setCurrentPath(url.pathname)
+    setCurrentSearch(url.search)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -68,11 +73,11 @@ export default function App() {
     if (user) {
       return (
         <MainLayout path={currentPath} navigate={navigate}>
-          <MapExplorer key={window.location.search} navigate={navigate} />
+          <MapExplorer key={`${currentPath}${currentSearch}`} navigate={navigate} />
         </MainLayout>
       )
     }
-    return <MapExplorer key={window.location.search} navigate={navigate} />
+    return <MapExplorer key={`${currentPath}${currentSearch}`} navigate={navigate} />
   }
 
   return (
