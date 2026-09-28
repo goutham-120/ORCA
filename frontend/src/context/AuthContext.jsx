@@ -114,8 +114,35 @@ export function AuthProvider({ children }) {
     [saveSession, session]
   )
 
+  const guestLogin = useCallback(
+    (role = 'fisherman') => {
+      const isResearcher = role === 'researcher'
+      const guestUser = {
+        id: isResearcher ? 'guest-researcher' : 'guest-fisherman',
+        email: isResearcher ? 'guest.researcher@orca.marine' : 'guest.fisherman@orca.marine',
+        display_name: isResearcher ? 'Guest Researcher' : 'Guest Fisherman',
+        name: isResearcher ? 'Guest Researcher' : 'Guest Fisherman',
+        role: isResearcher ? 'researcher' : 'fisherman',
+        user_category: isResearcher ? 'researcher_scientist' : 'fisher_marine_operator',
+        organization: isResearcher ? 'National Oceanographic Research Institute' : 'Coastal Fisherfolk Guild',
+      }
+      const guestSession = {
+        user: guestUser,
+        access_token: 'guest-session-token',
+      }
+      try {
+        localStorage.setItem(CHAT_USER_KEY, guestUser.id)
+      } catch {
+        // Ignore storage errors
+      }
+      saveSession(guestSession)
+      return guestUser
+    },
+    [saveSession]
+  )
+
   const logout = useCallback(async () => {
-    if (session?.access_token && session.access_token !== 'active-session-token') {
+    if (session?.access_token && session.access_token !== 'active-session-token' && session.access_token !== 'guest-session-token') {
       try {
         await authService.logout(session.access_token)
       } catch {
@@ -133,10 +160,11 @@ export function AuthProvider({ children }) {
       login,
       adminLogin,
       register,
+      guestLogin,
       updateProfile,
       logout,
     }),
-    [session, loading, login, adminLogin, register, updateProfile, logout]
+    [session, loading, login, adminLogin, register, guestLogin, updateProfile, logout]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

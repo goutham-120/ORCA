@@ -726,31 +726,41 @@ export default function MapCanvas({
             type: 'line',
             source: 'orca-layers',
             filter: ['==', ['get', 'kind'], 'route'],
+            layout: {
+              'line-join': 'round',
+              'line-cap': 'round',
+            },
             paint: {
-              'line-color': '#0f172a',
-              'line-width': 11,
-              'line-opacity': 0.85,
+              'line-color': '#091522',
+              'line-width': 10.5,
+              'line-opacity': 0.9,
             },
           })
         }
 
-        // 13. Active Maritime Navigation Route Main Line
+        // 13. Active Maritime Navigation Route Main Line (Safe Emerald, Caution Detour Amber, Unsafe Crimson)
         if (!map.getLayer('orca-route-line')) {
           map.addLayer({
             id: 'orca-route-line',
             type: 'line',
             source: 'orca-layers',
             filter: ['==', ['get', 'kind'], 'route'],
+            layout: {
+              'line-join': 'round',
+              'line-cap': 'round',
+            },
             paint: {
               'line-color': [
                 'match',
                 ['get', 'status'],
                 'UNSAFE', '#dc2626',
                 'CAUTION', '#f59e0b',
+                'caution', '#f59e0b',
                 'SAFE', '#10b981',
+                'safe', '#10b981',
                 '#10b981',
               ],
-              'line-width': 7.5,
+              'line-width': 6.5,
               'line-opacity': 1.0,
             },
           })
@@ -763,11 +773,15 @@ export default function MapCanvas({
             type: 'line',
             source: 'orca-layers',
             filter: ['==', ['get', 'kind'], 'blocked-direct-route'],
+            layout: {
+              'line-join': 'round',
+              'line-cap': 'round',
+            },
             paint: {
-              'line-color': '#dc2626',
+              'line-color': '#ef4444',
               'line-width': 3.5,
               'line-dasharray': [3, 2],
-              'line-opacity': 0.85,
+              'line-opacity': 0.9,
             },
           })
         }
@@ -1575,23 +1589,27 @@ export default function MapCanvas({
       if (!Number.isFinite(lat) || !Number.isFinite(lon)) return
 
       const isLast = idx === navigationWaypoints.length - 1
-      const label = isLast ? '🎯' : `W${wp.waypoint_number || idx + 1}`
+      const isDetourWp = String(wp.safety_status || '').toUpperCase() === 'CAUTION' || String(wp.name || '').toLowerCase().includes('detour')
+      const label = isLast ? '🎯' : (isDetourWp ? `⚠️ W${wp.waypoint_number || idx + 1}` : `W${wp.waypoint_number || idx + 1}`)
+      const pinBg = isLast ? '#10b981' : (isDetourWp ? '#f59e0b' : '#0284c7')
 
       const el = document.createElement('div')
-      el.className = 'navigation-waypoint-pin'
+      el.className = `navigation-waypoint-pin ${isDetourWp ? 'is-detour-pin' : ''}`
       el.innerHTML = `
-        <div style="background: ${isLast ? '#10b981' : '#0284c7'}; color: white; font-weight: 800; font-size: 11px; padding: 2px 6px; border-radius: 12px; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.35); cursor: pointer; white-space: nowrap;">
+        <div style="background: ${pinBg}; color: white; font-weight: 800; font-size: 11px; padding: 2px 7px; border-radius: 12px; border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.4); cursor: pointer; white-space: nowrap;">
           ${label}
         </div>
       `
 
       const popup = new Popup({ offset: 15 }).setHTML(`
         <div style="font-family: inherit; font-size: 12px; color: #0f172a; padding: 2px;">
-          <strong style="color: ${isLast ? '#059669' : '#0284c7'};">${isLast ? '🎯 Destination PFZ' : `Waypoint ${wp.waypoint_number || idx + 1}`}</strong><br/>
+          <strong style="color: ${isLast ? '#059669' : (isDetourWp ? '#d97706' : '#0284c7')};">
+            ${isLast ? '🎯 Destination PFZ' : (isDetourWp ? `⚠️ Hazard Avoidance Waypoint ${wp.waypoint_number || idx + 1}` : `Waypoint ${wp.waypoint_number || idx + 1}`)}
+          </strong><br/>
           <strong>Coords:</strong> ${lat.toFixed(4)}°N, ${lon.toFixed(4)}°E<br/>
           ${wp.bearing_deg != null ? `<strong>Course:</strong> ${wp.bearing_deg}° ${wp.compass_heading || ''}<br/>` : ''}
           ${wp.leg_distance_nm != null ? `<strong>Leg Distance:</strong> ${wp.leg_distance_nm} NM<br/>` : ''}
-          <strong>Safety:</strong> <span style="color: ${wp.safety_status === 'UNSAFE' ? '#dc2626' : wp.safety_status === 'CAUTION' ? '#d97706' : '#16a34a'}; font-weight: bold;">${wp.safety_status || 'SAFE'}</span>
+          <strong>Safety:</strong> <span style="color: ${wp.safety_status === 'UNSAFE' ? '#dc2626' : wp.safety_status === 'CAUTION' ? '#d97706' : '#16a34a'}; font-weight: bold;">${wp.safety_status || (isDetourWp ? 'CAUTION (Detour Waypoint)' : 'SAFE')}</span>
         </div>
       `)
 
