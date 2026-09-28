@@ -1288,7 +1288,7 @@ export default function CoastalAuthorityPersonalization({ user, userKey }) {
               Issue Official Authority Announcement
             </h3>
             <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--muted)' }}>
-              Publish targeted advisories directly to backend database (`orca.db`).
+              Publish targeted maritime advisories and coastal safety notices to mariners and operators.
             </p>
           </div>
         </div>
