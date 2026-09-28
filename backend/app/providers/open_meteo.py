@@ -223,6 +223,8 @@ INDIAN_COASTAL_REGISTRY = {
 
     # Andhra Pradesh
     "visakhapatnam": (17.6868, 83.2185, "Visakhapatnam, Andhra Pradesh"),
+    "vishakapatnam": (17.6868, 83.2185, "Visakhapatnam, Andhra Pradesh"),
+    "vishakhapatnam": (17.6868, 83.2185, "Visakhapatnam, Andhra Pradesh"),
     "vizag": (17.6868, 83.2185, "Visakhapatnam, Andhra Pradesh"),
     "bheemunipatnam": (17.8914, 83.4475, "Bheemunipatnam, Andhra Pradesh"),
     "kalingapatnam": (18.3370, 84.1260, "Kalingapatnam, Andhra Pradesh"),

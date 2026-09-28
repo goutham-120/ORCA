@@ -25,13 +25,13 @@ class QueryParser:
         "simulation": ("what if", "simulate", "simulation", "if sst", "if wind", "if wave", "scenario", "hypothetical", "what happens if", "increases by", "rises by"),
         "route": ("route", "navigate", "voyage", "path", "safest route", "waypoint"),
         "safety": ("safe", "safety", "risk", "safe to venture"),
-        "weather": ("weather", "wind", "rain", "storm", "temperature", "forecast", "lightning"),
-        "ocean": ("ocean", "marine", "wave", "current", "sea", "swell", "tide", "high tide", "low tide", "currents", "mackerel", "sardine", "tuna", "pomfret", "hilsa", "species", "environmental parameters", "environmental conditions"),
+        "weather": ("weather", "wind", "rain", "storm", "air temperature", "forecast", "lightning"),
+        "ocean": ("ocean", "marine", "wave", "current", "sea", "swell", "tide", "high tide", "low tide", "currents", "mackerel", "sardine", "tuna", "pomfret", "hilsa", "species", "environmental parameters", "environmental conditions", "chlorophyll", "sea surface temperature", "sst", "thermal front", "thermal fronts", "ocean color", "ocean colour", "chlorophyll concentration"),
         "map": ("map", "layer", "area", "zone", "location", "distance", "coordinates", "boundary", "coastal"),
         "gis": ("restricted", "hazard zone", "spatial", "geofence", "mpa", "protected area"),
-        "pfz": ("pfz", "fishing zone", "potential fishing zone", "chlorophyll"),
-        "hazard": ("cyclone", "hurricane", "typhoon"),
-        "anomaly": ("decline", "declined", "productivity", "catch drop", "low catch", "why has fish", "why fish", "heatwave", "hypoxia", "algal bloom", "upwelling"),
+        "pfz": ("pfz", "potential fishing zone", "potential fishing zones", "nearest pfz", "nearest potential fishing zone"),
+        "hazard": ("cyclone", "hurricane", "typhoon", "lightning", "squall", "storm alert", "cyclone alert", "lightning alert", "thunderstorm", "alerts in my area"),
+        "anomaly": ("decline", "declined", "productivity", "catch drop", "low catch", "why has fish", "why was fish", "why did fish", "why fish", "fish productivity", "fish catch drop", "heatwave", "hypoxia", "algal bloom", "upwelling"),
         "regulations": ("fishing ban", "ban dates", "seasonal ban", "uniform ban", "monsoon ban", "pmmsy", "subsidy", "mpeda", "export", "guidelines"),
     }
 
@@ -199,10 +199,12 @@ class QueryParser:
             )
 
         is_simulation = "simulation" in matches or any(term in lowered for term in ("what if", "what happens if", "simulate", "simulation", "scenario"))
-        explicit_pfz = "pfz" in matches or any(term in lowered for term in ("fishing zone", "potential fishing zone", "potential fishing zones"))
-        is_anomaly = "anomaly" in matches or any(term in lowered for term in ("productivity declined", "why has fish", "catch drop", "productivity drop", "fish decline"))
-        fishing = (any(term in lowered for term in ("fish", "fishing")) or explicit_pfz) and not is_anomaly and not is_simulation
-        safety = "safety" in matches and not is_anomaly and not is_simulation
+        explicit_pfz = any(term in lowered for term in ("pfz", "potential fishing zone", "potential fishing zones", "nearest pfz", "nearest potential fishing zone", "where is pfz"))
+        is_ocean_front = any(term in lowered for term in ("chlorophyll", "thermal front", "thermal fronts", "ocean color", "ocean colour", "chlorophyll concentration"))
+        is_anomaly = "anomaly" in matches or any(term in lowered for term in ("productivity declined", "why has fish", "why was fish", "why did fish", "why fish", "catch drop", "productivity drop", "fish decline", "fish productivity"))
+        is_hazard_avoidance = any(term in lowered for term in ("avoid", "avoided", "geofenc", "restricted zone", "restricted area", "hazard zone", "restrictions", "marine reserve", "exclusion zone", "shallow reef"))
+        fishing = (any(term in lowered for term in ("fish", "fishing")) or explicit_pfz) and not is_anomaly and not is_simulation and not is_ocean_front and not is_hazard_avoidance
+        safety = "safety" in matches and not is_anomaly and not is_simulation and not is_hazard_avoidance
 
         perturbations = None
         if is_simulation:
@@ -212,6 +214,8 @@ class QueryParser:
             decision_type = "anomaly"
         elif "route" in matches:
             decision_type = "route"
+        elif is_hazard_avoidance:
+            decision_type = "hazard"
         elif explicit_pfz and not safety:
             decision_type = "pfz"
         elif fishing:
@@ -223,20 +227,33 @@ class QueryParser:
         else:
             decision_type = None
 
-        if decision_type in {"fishing", "safety", "simulation"}:
-            matches.extend(name for name in ("ocean", "weather") if name not in matches)
+        if decision_type in {"fishing", "safety", "simulation", "anomaly", "hazard"}:
+            matches.extend(name for name in ("ocean", "weather", "gis") if name not in matches)
+
+        if is_ocean_front and not explicit_pfz and not is_anomaly:
+            matches.extend(name for name in ("ocean", "gis") if name not in matches)
 
         # Fishing suitability needs PFZ evidence as well as conditions.
         if decision_type == "fishing" and "pfz" not in matches:
             matches.append("pfz")
 
-        if explicit_pfz and not is_anomaly and not is_simulation:
+        if explicit_pfz and not is_anomaly and not is_simulation and not is_hazard_avoidance:
             matches = [name for name in matches if name != "map"]
 
-        if decision_type in {"safety", "fishing"} and any(term in lowered for term in ("zone", "restricted", "hazard area", "geofence")):
+        if decision_type in {"safety", "fishing", "hazard"} and any(term in lowered for term in ("zone", "restricted", "hazard area", "geofence", "avoid")):
             matches.append("gis") if "gis" not in matches else None
 
-        intent = matches[0] if matches else "general"
+        if is_hazard_avoidance:
+            intent = "gis"
+        elif is_ocean_front and not explicit_pfz and not is_anomaly:
+            intent = "ocean"
+        elif is_anomaly:
+            intent = "anomaly"
+        elif explicit_pfz:
+            intent = "pfz"
+        else:
+            intent = matches[0] if matches else "general"
+
         valid_agent_domains = {"ocean", "weather", "gis", "pfz"}
         domains = sorted({("gis" if match in {"route", "map", "gis", "hazard"} else match) for match in matches if ("gis" if match in {"route", "map", "gis", "hazard"} else match) in valid_agent_domains})
         location = None if query_mode == "knowledge_only" else self._location_mention(normalized)
@@ -417,28 +434,7 @@ class QueryParser:
 
     @staticmethod
     def _location_mention(query: str) -> str | None:
-        # 1. Preposition pattern (e.g. "in Kochi", "at Visakhapatnam", "near Chennai", "off Goa", "for Mumbai", "about Paradip", "of Digha")
-        match = re.search(
-            r"\b(?:near|at|around|off|in|for|of|about)\s+([A-Za-z\u0900-\u097F\u0C00-\u0C7F\u0B80-\u0BFF\u0B00-\u0B7F\u0980-\u09FF\u0C80-\u0CFF\u0A80-\u0AFF][A-Za-z\u0900-\u097F\u0C00-\u0C7F\u0B80-\u0BFF\u0B00-\u0B7F\u0980-\u09FF\u0C80-\u0CFF\u0A80-\u0AFF .'-]{1,60}?)(?=\s+(?:today|tomorrow|tonight|this|next|at|for|and|with|if|when|under|assuming|weather|waves?|wind|sst|risk|safety|simulation|forecast|status|condition|report)\b|[?.!,]|$)",
-            query,
-            re.IGNORECASE,
-        )
-        if match:
-            candidate = match.group(1).strip()
-            if candidate and len(candidate) > 1:
-                return candidate
-
-        # 2. Indic postposition pattern (e.g. "విశాఖపట్నం దగ్గర", "चेन्नई के पास")
-        match_indic = re.search(r"([A-Za-z\u0900-\u097F\u0C00-\u0C7F\u0B80-\u0BFF\u0B00-\u0B7F\u0980-\u09FF\u0C80-\u0CFF\u0A80-\u0AFF][A-Za-z\u0900-\u097F\u0C00-\u0C7F\u0B80-\u0BFF\u0B00-\u0B7F\u0980-\u09FF\u0C80-\u0CFF\u0A80-\u0AFF .'-]{1,60}?)\s+(?:ਕੇ\s+पास|दग्गर|దగ్గర|అరుగిల్|அருகில்|ପାଖରେ|ନିକଟରେ|কাছে|নিকটে|लागीं|ಕೈತಲ್|પાસે|નજીક|जवळ)(?:\s+|[?.!,]|$)", query)
-        if match_indic:
-            raw_loc = match_indic.group(1).strip()
-            for prefix in ("क्या आज", "क्या कल", "क्या", "आज", "कल", "उद्या", "ఈ రోజు", "ఈరోజు", "నేడు", "రేపు", "இன்று", "நாளை", "ଆଜି", "କାଲି", "আজ", "কাল", "आयज", "फाल्यां", "ಇನಿ", "ಎಲ್ಲೆ", "આજે", "કાલે"):
-                if raw_loc.startswith(prefix):
-                    raw_loc = raw_loc[len(prefix):].strip()
-            if raw_loc:
-                return raw_loc
-
-        # 3. Direct matching against known coastal ports & Indic aliases
+        # 1. Direct matching against known coastal ports & Indic aliases (Highest confidence)
         try:
             from app.providers.open_meteo import INDIAN_COASTAL_REGISTRY, INDIC_COASTAL_ALIASES
             lowered = query.lower()
@@ -454,6 +450,33 @@ class QueryParser:
                     return key
         except ImportError:
             pass
+
+        # 2. Indic postposition pattern (e.g. "విశాఖపట్నం దగ్గర", "चेन्नई के पास")
+        match_indic = re.search(r"([A-Za-z\u0900-\u097F\u0C00-\u0C7F\u0B80-\u0BFF\u0B00-\u0B7F\u0980-\u09FF\u0C80-\u0CFF\u0A80-\u0AFF][A-Za-z\u0900-\u097F\u0C00-\u0C7F\u0B80-\u0BFF\u0B00-\u0B7F\u0980-\u09FF\u0C80-\u0CFF\u0A80-\u0AFF .'-]{1,60}?)\s+(?:ਕੇ\s+पास|दग्गर|దగ్గర|అరుగిల్|அருகில்|ପାଖରେ|ନିକଟରେ|কাছে|নিকটে|लागीं|ಕೈತಲ್|પાસે|નજીક|जवळ)(?:\s+|[?.!,]|$)", query)
+        if match_indic:
+            raw_loc = match_indic.group(1).strip()
+            for prefix in ("क्या आज", "क्या कल", "क्या", "आज", "कल", "उद्या", "ఈ రోజు", "ఈరోజు", "నేడు", "రేపు", "இன்று", "நாளை", "ଆଜି", "କାଲି", "আজ", "কাল", "आयज", "फाल्यां", "ಇನಿ", "ಎಲ್ಲೆ", "આજે", "કાલે"):
+                if raw_loc.startswith(prefix):
+                    raw_loc = raw_loc[len(prefix):].strip()
+            if raw_loc:
+                return raw_loc
+
+        # 3. Preposition pattern (e.g. "in Kochi", "at Visakhapatnam", "near Chennai", "off Goa")
+        non_locations = {
+            "a fishing vessel", "fishing vessel", "a vessel", "vessel", "a boat", "boat",
+            "the sea", "sea", "a particular coastal region", "a particular region", "a particular",
+            "my area", "my fishing location", "my location", "this area", "here", "coastal region",
+            "fishing", "navigation", "sailing", "me", "us", "today", "tomorrow", "now", "routine transit"
+        }
+        match = re.search(
+            r"\b(?:near|at|around|off|in|for|of|about)\s+([A-Za-z\u0900-\u097F\u0C00-\u0C7F\u0B80-\u0BFF\u0B00-\u0B7F\u0980-\u09FF\u0C80-\u0CFF\u0A80-\u0AFF][A-Za-z\u0900-\u097F\u0C00-\u0C7F\u0B80-\u0BFF\u0B00-\u0B7F\u0980-\u09FF\u0C80-\u0CFF\u0A80-\u0AFF .'-]{1,60}?)(?=\s+(?:today|tomorrow|tonight|this|next|at|for|and|with|if|when|under|assuming|weather|waves?|wind|sst|risk|safety|simulation|forecast|status|condition|report)\b|[?.!,]|$)",
+            query,
+            re.IGNORECASE,
+        )
+        if match:
+            candidate = match.group(1).strip()
+            if candidate and len(candidate) > 1 and candidate.lower() not in non_locations and not any(candidate.lower().startswith(nl) for nl in ("a fishing", "a vessel", "a boat", "the sea", "a particular")):
+                return candidate
 
         return None
 
