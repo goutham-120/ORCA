@@ -12,6 +12,7 @@ class AisStreamService {
     this.apiKey = localStorage.getItem('orca_aisstream_api_key') || DEFAULT_API_KEY
     this.subscribers = new Set()
     this.vesselsMap = new Map()
+    this.discoveredMmsiSet = new Set()
     this.connectionStatus = 'DISCONNECTED' // 'CONNECTING' | 'LIVE' | 'ERROR' | 'DISCONNECTED'
     this.reconnectTimer = null
     this.messageCount = 0
@@ -43,7 +44,14 @@ class AisStreamService {
   subscribe(callback) {
     this.subscribers.add(callback)
     // Send current cached snapshot immediately
-    callback(Array.from(this.vesselsMap.values()), this.connectionStatus, this.messageCount, this.packetsPerSec, this.isPaused)
+    callback(
+      Array.from(this.vesselsMap.values()),
+      this.connectionStatus,
+      this.messageCount,
+      this.packetsPerSec,
+      this.isPaused,
+      this.discoveredMmsiSet.size
+    )
 
     if (!this.ws || this.ws.readyState === WebSocket.CLOSED) {
       this.connect()
@@ -70,9 +78,10 @@ class AisStreamService {
 
   notifySubscribers() {
     const list = Array.from(this.vesselsMap.values())
+    const totalDiscovered = this.discoveredMmsiSet.size
     for (const sub of this.subscribers) {
       try {
-        sub(list, this.connectionStatus, this.messageCount, this.packetsPerSec, this.isPaused)
+        sub(list, this.connectionStatus, this.messageCount, this.packetsPerSec, this.isPaused, totalDiscovered)
       } catch (err) {
         console.error('Error notifying AIS subscriber:', err)
       }
@@ -157,10 +166,13 @@ class AisStreamService {
   handleAisMessage(payload) {
     this.messageCount++
     this.packetCountLastSec++
-    if (this.isPaused) return
 
     const mmsi = payload.MetaData?.MMSI
     if (!mmsi) return
+
+    this.discoveredMmsiSet.add(mmsi)
+
+    if (this.isPaused) return
 
     const lat = payload.MetaData?.latitude
     const lon = payload.MetaData?.longitude
@@ -170,25 +182,40 @@ class AisStreamService {
 
     const pos = payload.Message?.PositionReport
     const staticData = payload.Message?.ShipStaticData
+    const sog = pos?.Sog !== undefined ? pos.Sog : 0
 
     const existing = this.vesselsMap.get(mmsi) || {}
 
     // Check if ship is in Indian Ocean / Indian EEZ or nearby waters
     const isIndianWaters = lat >= 0 && lat <= 28 && lon >= 60 && lon <= 98
 
-    // Calculate approximate IMBL status
+    // Calculate dynamic boundary & corridor status based on real geographic positions
     let imblStatus = 'safe'
-    let imblDist = 'Within Maritime Corridor'
+    let imblDist = 'Open Navigational Corridor'
     let zone = isIndianWaters ? 'Indian Ocean / Coastal EEZ' : 'International High Seas'
 
-    if (lat >= 8.5 && lat <= 10.5 && lon >= 78.5 && lon <= 80.5) {
+    // Regional boundary & strait triggers
+    if (lat >= 8.0 && lat <= 11.0 && lon >= 78.0 && lon <= 81.0) {
       imblStatus = 'warning'
-      imblDist = '1.8 NM from Palk Strait Boundary'
-      zone = 'Palk Strait / Mannar Sector'
-    } else if (lat >= 22.5 && lat <= 24.5 && lon >= 67.5 && lon <= 69.5) {
+      imblDist = '< 2.5 NM from Indo-Sri Lanka Boundary'
+      zone = 'Palk Strait / Mannar Border Zone'
+    } else if (lat >= 21.5 && lat <= 24.5 && lon >= 67.0 && lon <= 70.0) {
       imblStatus = 'warning'
-      imblDist = '2.3 NM to Sir Creek Sector'
+      imblDist = '< 3.0 NM from Sir Creek Border'
       zone = 'Gujarat / Sir Creek Perimeter'
+    } else if (lat >= 1.0 && lat <= 13.0 && lon >= 92.0 && lon <= 104.0) {
+      imblStatus = 'warning'
+      imblDist = 'Malacca & Andaman Strait Approach'
+      zone = 'Andaman Sea / International Strait'
+    } else if (sog > 15.0 && isIndianWaters) {
+      imblStatus = 'warning'
+      imblDist = 'High Speed Corridor (> 15 kts)'
+      zone = 'High-Speed Coastal Transit'
+    } else if (lat >= 50.0 && lat <= 60.0 && lon >= -5.0 && lon <= 15.0) {
+      // English Channel / North Sea busy channel
+      imblStatus = 'warning'
+      imblDist = 'Busy International Traffic Separation Scheme'
+      zone = 'North Sea / Channel TSS Corridor'
     }
 
     const updatedVessel = {
@@ -197,17 +224,17 @@ class AisStreamService {
       regNo: `MMSI ${mmsi}`,
       name: shipName,
       captain: existing.captain || 'Licensed Master',
-      port: staticData?.Destination || existing.port || (isIndianWaters ? 'Indian Coast Port' : 'Transit Route'),
-      region: isIndianWaters ? 'Indian Coastal Basin' : 'International Transit',
+      port: staticData?.Destination || existing.port || (isIndianWaters ? 'Indian Coast Port' : 'Global Port Destination'),
+      region: isIndianWaters ? 'Indian Coastal Basin' : 'Global Marine Corridor',
       type: this.getVesselTypeDescription(staticData?.Type || existing.rawType),
       rawType: staticData?.Type || existing.rawType,
       coordinates: `${lat ? lat.toFixed(4) : '--'}° N, ${lon ? lon.toFixed(4) : '--'}° E`,
       latitude: lat,
       longitude: lon,
-      speed: pos?.Sog !== undefined ? `${pos.Sog.toFixed(1)} kts` : existing.speed || '0.0 kts',
+      speed: `${sog.toFixed(1)} kts`,
       heading: pos?.TrueHeading !== undefined && pos.TrueHeading !== 511 ? `${pos.TrueHeading}°` : (pos?.Cog ? `${pos.Cog.toFixed(0)}°` : '0°'),
       fuel: existing.fuel || `${Math.floor(65 + (mmsi % 30))}%`,
-      status: pos?.NavigationalStatus === 0 ? 'Underway (Using Engine)' : pos?.NavigationalStatus === 1 ? 'At Anchor' : 'Active AIS Tracking',
+      status: pos?.NavigationalStatus === 0 ? 'Underway (Using Engine)' : pos?.NavigationalStatus === 1 ? 'At Anchor' : pos?.NavigationalStatus === 5 ? 'Moored at Berth' : 'Active AIS Tracking',
       zone: zone,
       imblDist: imblDist,
       imblStatus: imblStatus,
@@ -221,8 +248,8 @@ class AisStreamService {
 
     this.vesselsMap.set(mmsi, updatedVessel)
 
-    // Keep map bounded to the most recent 100 active vessels to prevent memory bloat
-    if (this.vesselsMap.size > 100) {
+    // Keep active tracking memory buffer at 500 active vessels
+    if (this.vesselsMap.size > 500) {
       const oldestKey = this.vesselsMap.keys().next().value
       this.vesselsMap.delete(oldestKey)
     }

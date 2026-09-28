@@ -251,14 +251,16 @@ export default function CoastalAuthorityPersonalization({ user, userKey }) {
   const [aisPacketCount, setAisPacketCount] = useState(0)
   const [aisPacketRate, setAisPacketRate] = useState(0)
   const [isAisPaused, setIsAisPaused] = useState(false)
+  const [aisTotalDiscovered, setAisTotalDiscovered] = useState(0)
 
   useEffect(() => {
-    const unsubscribe = aisStreamService.subscribe((list, status, count, rate, paused) => {
+    const unsubscribe = aisStreamService.subscribe((list, status, count, rate, paused, totalDiscovered) => {
       setLiveAisVessels(list)
       setAisStatus(status)
       setAisPacketCount(count)
       setAisPacketRate(rate || 0)
       setIsAisPaused(Boolean(paused))
+      setAisTotalDiscovered(totalDiscovered || list.length)
     })
     return () => unsubscribe()
   }, [])
@@ -723,22 +725,26 @@ export default function CoastalAuthorityPersonalization({ user, userKey }) {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
               <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}>
                 <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
-                  {vmsSource === 'live_ais' ? 'Live Streamed Ships' : 'Tracked Fleet'}
+                  {vmsSource === 'live_ais' ? 'Live Unique Ships Discovered' : 'Tracked Fleet'}
                 </div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', marginTop: 2 }}>{currentList.length} Vessels</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', marginTop: 2 }}>
+                  {vmsSource === 'live_ais' ? `${aisTotalDiscovered || currentList.length} Vessels` : `${vessels.length} Trawlers`}
+                </div>
                 <div style={{ fontSize: 11, color: '#16a34a', marginTop: 2 }}>
-                  {vmsSource === 'live_ais' ? '● Real-Time AIS Stream' : '● 100% NavIC Link Up'}
+                  {vmsSource === 'live_ais' ? `● ${currentList.length} Active in Memory Pool` : '● 100% NavIC Link Up'}
                 </div>
               </div>
               <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Safe Corridor</div>
+                <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Safe Navigational Zone</div>
                 <div style={{ fontSize: 20, fontWeight: 800, color: '#16a34a', marginTop: 2 }}>{safeCount} Vessels</div>
                 <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>Compliant Trajectory</div>
               </div>
-              <div style={{ background: '#fef2f2', padding: 12, borderRadius: 8, border: '1px solid #fecaca' }}>
-                <div style={{ fontSize: 11, color: '#991b1b', fontWeight: 700, textTransform: 'uppercase' }}>Boundary Warning</div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: '#dc2626', marginTop: 2 }}>{warnCount} Vessels</div>
-                <div style={{ fontSize: 11, color: '#b91c1c', marginTop: 2 }}>Proximity to Maritime Boundary</div>
+              <div style={{ background: warnCount > 0 ? '#fef2f2' : '#f8fafc', padding: 12, borderRadius: 8, border: warnCount > 0 ? '1px solid #fecaca' : '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: 11, color: warnCount > 0 ? '#991b1b' : '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Boundary / Traffic Alert</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: warnCount > 0 ? '#dc2626' : '#64748b', marginTop: 2 }}>{warnCount} Vessels</div>
+                <div style={{ fontSize: 11, color: warnCount > 0 ? '#b91c1c' : '#64748b', marginTop: 2 }}>
+                  {warnCount > 0 ? 'Strait / Border / High-Speed Proximity' : 'No active alerts in current pool'}
+                </div>
               </div>
               <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}>
                 <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Stream Protocol</div>
@@ -746,7 +752,7 @@ export default function CoastalAuthorityPersonalization({ user, userKey }) {
                   {vmsSource === 'live_ais' ? 'AIS Class A/B' : 'NavIC-L5 MSS'}
                 </div>
                 <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
-                  {vmsSource === 'live_ais' ? `${aisPacketCount} packets decoded` : 'Digital Haul Telemetry'}
+                  {vmsSource === 'live_ais' ? `${aisPacketCount.toLocaleString()} packets decoded` : 'Digital Haul Telemetry'}
                 </div>
               </div>
             </div>
