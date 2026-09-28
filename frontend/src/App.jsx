@@ -13,6 +13,7 @@ import ScenarioSimulator from './pages/ScenarioSimulator'
 import Settings from './pages/Settings'
 import AdminLogin from './pages/AdminLogin'
 import AdminDashboard from './pages/AdminDashboard'
+import SatelliteIntelligence from './pages/SatelliteIntelligence'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import AdminProtectedRoute from './components/auth/AdminProtectedRoute'
 import { useAuth } from './hooks/useAuth'
@@ -87,6 +88,8 @@ export default function App() {
           <Dashboard navigate={navigate} />
         ) : currentPath === '/personalization' ? (
           <Personalization navigate={navigate} />
+        ) : currentPath === '/satellite-intelligence' ? (
+          <SatelliteIntelligence navigate={navigate} />
         ) : currentPath === '/ask-orca' ? (
           <AskOrca key={window.location.search} navigate={navigate} />
         ) : currentPath === '/scenario-simulator' || currentPath === '/simulator' ? (

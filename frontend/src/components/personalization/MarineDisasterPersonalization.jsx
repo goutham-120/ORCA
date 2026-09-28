@@ -105,6 +105,74 @@ export default function MarineDisasterPersonalization({ user, userKey }) {
   const [toastMessage, setToastMessage] = useState('')
   const [activeAlertItem, setActiveAlertItem] = useState(null)
 
+  // 4b. OCEAN CLIMATE & MARINE HEATWAVE / DISASTER OBSERVATORY STATE
+  const [mhwHotspots] = useState([
+    {
+      id: 'mhw-1',
+      region: 'Gulf of Mannar & Palk Bay',
+      sstAnomaly: '+2.4 °C',
+      category: 'Category III (Severe)',
+      categoryLevel: 3,
+      dhw: '6.4 °C-weeks',
+      bleachingStatus: 'Bleaching Alert Level 1',
+      duration: '16 days continuous',
+      risk: 'Severe coral bleaching risk for Acropora reef biomes & shallow seagrass beds.',
+    },
+    {
+      id: 'mhw-2',
+      region: 'North-Central Bay of Bengal',
+      sstAnomaly: '+1.8 °C',
+      category: 'Category II (Strong)',
+      categoryLevel: 2,
+      dhw: '3.8 °C-weeks',
+      bleachingStatus: 'Bleaching Watch',
+      duration: '12 days continuous',
+      risk: 'Intensifies latent heat flux, increasing potential cyclone rapid-intensification (RI) frequency.',
+    },
+    {
+      id: 'mhw-3',
+      region: 'Lakshadweep Archipelago',
+      sstAnomaly: '+1.3 °C',
+      category: 'Category I (Moderate)',
+      categoryLevel: 1,
+      dhw: '2.1 °C-weeks',
+      bleachingStatus: 'Elevated Watch',
+      duration: '7 days continuous',
+      risk: 'Atoll lagoon thermal stress; pelagic tuna schools displaced to deeper thermocline.',
+    },
+    {
+      id: 'mhw-4',
+      region: 'Andaman Sea & Nicobar Shelf',
+      sstAnomaly: '+1.6 °C',
+      category: 'Category II (Strong)',
+      categoryLevel: 2,
+      dhw: '4.2 °C-weeks',
+      bleachingStatus: 'Bleaching Warning',
+      duration: '14 days continuous',
+      risk: 'Fringing reef thermal stress; potential macroalgae phase-shift.',
+    },
+  ])
+
+  const [emergencyChecklist, setEmergencyChecklist] = useState({
+    harborVessels: true,
+    navicWarning: true,
+    shelterReadiness: false,
+    backupPower: true,
+    drainagePumps: false,
+    inflatableRafts: true,
+  })
+
+  const toggleChecklistItem = (key) => {
+    setEmergencyChecklist((prev) => ({ ...prev, [key]: !prev[key] }))
+    setToastMessage('✓ Emergency Response Checklist updated.')
+    setTimeout(() => setToastMessage(''), 3000)
+  }
+
+  const handleBroadcastMhwWarning = (regionName) => {
+    setToastMessage(`📢 Emergency MHW Bulletin dispatched for ${regionName} via NavIC and Disaster SMS Gateway.`)
+    setTimeout(() => setToastMessage(''), 4500)
+  }
+
   // 5. COMPLAINT / MESSAGE TO COASTAL AUTHORITY STATE
   const [complaintMsg, setComplaintMsg] = useState('')
   const [complaintLocation, setComplaintLocation] = useState('Visakhapatnam Outer Harbor')
@@ -518,6 +586,161 @@ export default function MarineDisasterPersonalization({ user, userKey }) {
               </button>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* SECTION 2b: 🔥 OCEAN CLIMATE & MARINE HEATWAVE / DISASTER OBSERVATORY */}
+      <div className="panel" style={{ padding: 22, background: '#ffffff', borderRadius: 12, border: '1px solid #cbd5e1', display: 'flex', flexDirection: 'column', gap: 18 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: 12, flexWrap: 'wrap', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 24 }}>🔥</span>
+            <div>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: 'var(--ink)', fontFamily: 'Sora, sans-serif' }}>
+                OCEAN CLIMATE & MARINE HEATWAVE (MHW) OBSERVATORY
+              </h3>
+              <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--muted)' }}>
+                Real-time tracking of extreme thermal anomalies, Degree Heating Weeks (DHW) & coral reef bleaching alerts.
+              </p>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <span style={{ fontSize: 11, fontWeight: 800, background: '#fef2f2', color: '#b91c1c', padding: '4px 10px', borderRadius: 6, border: '1px solid #fecaca' }}>
+              ● 4 ACTIVE HOTSPOTS
+            </span>
+            <span style={{ fontSize: 11, fontWeight: 800, background: '#eff6ff', color: '#1d4ed8', padding: '4px 10px', borderRadius: 6, border: '1px solid #bfdbfe' }}>
+              NOAA / INCOIS CRW STANDARD
+            </span>
+          </div>
+        </div>
+
+        {/* Hotspots Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
+          {mhwHotspots.map((m) => {
+            const isSevere = m.categoryLevel >= 3
+            return (
+              <div
+                key={m.id}
+                style={{
+                  border: isSevere ? '1.5px solid #f87171' : '1px solid #cbd5e1',
+                  borderRadius: 10,
+                  padding: 16,
+                  background: isSevere ? '#fff5f5' : '#f8fafc',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                }}
+              >
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                    <strong style={{ fontSize: 14, color: '#0f172a' }}>{m.region}</strong>
+                    <span
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 800,
+                        padding: '3px 8px',
+                        borderRadius: 4,
+                        background: isSevere ? '#dc2626' : '#ea580c',
+                        color: '#ffffff',
+                      }}
+                    >
+                      {m.category}
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, background: '#ffffff', padding: 10, borderRadius: 6, border: '1px solid #e2e8f0', fontSize: 12, marginBottom: 8 }}>
+                    <div>
+                      <span style={{ fontSize: 10, color: '#64748b', display: 'block' }}>SST ANOMALY</span>
+                      <strong style={{ color: '#dc2626', fontSize: 14 }}>{m.sstAnomaly}</strong>
+                    </div>
+                    <div>
+                      <span style={{ fontSize: 10, color: '#64748b', display: 'block' }}>DEGREE HEATING WEEKS</span>
+                      <strong style={{ color: '#0284c7', fontSize: 14 }}>{m.dhw}</strong>
+                    </div>
+                    <div>
+                      <span style={{ fontSize: 10, color: '#64748b', display: 'block' }}>DURATION</span>
+                      <span style={{ fontWeight: 600 }}>{m.duration}</span>
+                    </div>
+                    <div>
+                      <span style={{ fontSize: 10, color: '#64748b', display: 'block' }}>BLEACHING ALERT</span>
+                      <span style={{ color: isSevere ? '#dc2626' : '#d97706', fontWeight: 700 }}>{m.bleachingStatus}</span>
+                    </div>
+                  </div>
+
+                  <p style={{ margin: 0, fontSize: 11, color: '#475569', lineHeight: 1.45 }}>
+                    <strong>Ecological Impact:</strong> {m.risk}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleBroadcastMhwWarning(m.region)}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    borderRadius: 6,
+                    background: isSevere ? '#dc2626' : '#0284c7',
+                    color: '#ffffff',
+                    border: 'none',
+                    cursor: 'pointer',
+                  }}
+                >
+                  📢 Dispatch MHW Notice to State Units
+                </button>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Emergency Cyclone / Storm Surge Readiness Checklist */}
+        <div style={{ background: '#f8fafc', padding: 16, borderRadius: 10, border: '1px solid #cbd5e1', marginTop: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 18 }}>🛡️</span>
+              <strong style={{ fontSize: 13, color: '#0f172a' }}>
+                Operational Storm Surge & Rapid Deployment Action Checklist
+              </strong>
+            </div>
+            <span style={{ fontSize: 11, color: '#16a34a', fontWeight: 700 }}>
+              {Object.values(emergencyChecklist).filter(Boolean).length} / {Object.keys(emergencyChecklist).length} Protocols Armed
+            </span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 10, fontSize: 12 }}>
+            {[
+              { key: 'harborVessels', label: 'Harbor Craft Relocation to Safe Inner Basins' },
+              { key: 'navicWarning', label: 'NavIC Dual-Band Coastal Warning Broadcast Triggered' },
+              { key: 'shelterReadiness', label: 'Cyclone Multipurpose Shelters Sanitation & Power Check' },
+              { key: 'backupPower', label: 'Emergency VHF Repeater & Satellite Terminal Generator Armed' },
+              { key: 'drainagePumps', label: 'Low-Lying Harbor De-watering High-Capacity Pumps Staged' },
+              { key: 'inflatableRafts', label: 'NDRF / SDRF Inflatable Life Rafts & SAR Crafts Deployed' },
+            ].map((item) => (
+              <label
+                key={item.key}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  background: '#ffffff',
+                  padding: '8px 12px',
+                  borderRadius: 6,
+                  border: emergencyChecklist[item.key] ? '1px solid #86efac' : '1px solid #cbd5e1',
+                  cursor: 'pointer',
+                  color: emergencyChecklist[item.key] ? '#166534' : '#334155',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={emergencyChecklist[item.key]}
+                  onChange={() => toggleChecklistItem(item.key)}
+                  style={{ accentColor: '#16a34a' }}
+                />
+                <span style={{ fontWeight: emergencyChecklist[item.key] ? 600 : 400 }}>{item.label}</span>
+              </label>
+            ))}
+          </div>
         </div>
       </div>
 

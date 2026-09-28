@@ -243,6 +243,165 @@ export default function CoastalAuthorityPersonalization({ user, userKey }) {
   const [submittingResponse, setSubmittingResponse] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
 
+  // 4. FLEET MANAGEMENT & VESSEL MONITORING SYSTEM (VMS) STATE
+  const [vmsFilter, setVmsFilter] = useState('all')
+  const [vessels, setVessels] = useState([
+    {
+      id: 'vms-1',
+      regNo: 'IND-AP-02-MM-104',
+      name: 'Matsya Sagar VI',
+      captain: 'K. Ranga Rao',
+      port: 'Visakhapatnam',
+      region: 'Visakhapatnam Coast',
+      type: 'Mechanized Trawler (24m)',
+      coordinates: '17.62° N, 83.45° E',
+      speed: '9.2 kts',
+      heading: '112° ESE',
+      fuel: '78%',
+      status: 'Active Hauling',
+      zone: 'Within EEZ (28 NM Off Vizag)',
+      imblDist: '54 NM (Safe)',
+      imblStatus: 'safe',
+      transponder: 'NavIC-L5 Transponder Online',
+      lastPing: '2 mins ago',
+      catchEst: '3.4 Tons (Seer fish, Ribbonfish)',
+      lastAlertSent: null,
+    },
+    {
+      id: 'vms-2',
+      regNo: 'IND-TN-07-MM-892',
+      name: 'Samudra Kumari',
+      captain: 'M. Antony Cruz',
+      port: 'Rameswaram / Mandapam',
+      region: 'Chennai Coast',
+      type: 'Motorized Gillnetter',
+      coordinates: '09.28° N, 79.35° E',
+      speed: '6.8 kts',
+      heading: '065° ENE',
+      fuel: '45%',
+      status: 'Approaching Boundary',
+      zone: 'Palk Strait / Mannar Basin',
+      imblDist: '1.4 NM from IMBL',
+      imblStatus: 'warning',
+      transponder: 'NavIC Beacon Active',
+      lastPing: 'Just now',
+      catchEst: '1.8 Tons (Crab, Squid)',
+      lastAlertSent: null,
+    },
+    {
+      id: 'vms-3',
+      regNo: 'IND-GJ-04-TR-512',
+      name: 'Kutch Navik II',
+      captain: 'Devji Bhai',
+      port: 'Porbandar',
+      region: 'Gujarat Coast',
+      type: 'Deep Sea Longliner',
+      coordinates: '21.65° N, 69.12° E',
+      speed: '11.5 kts',
+      heading: '245° WSW',
+      fuel: '82%',
+      status: 'High Seas Transit',
+      zone: 'Arabian Sea Shelf (62 NM Off Okha)',
+      imblDist: '38 NM (Safe)',
+      imblStatus: 'safe',
+      transponder: 'AIS Class-B + NavIC Dual',
+      lastPing: '1 min ago',
+      catchEst: '5.2 Tons (Yellowfin Tuna)',
+      lastAlertSent: null,
+    },
+    {
+      id: 'vms-4',
+      regNo: 'IND-OR-01-FD-331',
+      name: 'Kalinga Deep 09',
+      captain: 'B. Patnaik',
+      port: 'Paradip',
+      region: 'Odisha Coast',
+      type: 'Mechanized Stern Trawler',
+      coordinates: '20.18° N, 86.82° E',
+      speed: '7.4 kts',
+      heading: '140° SE',
+      fuel: '62%',
+      status: 'Active Trawling',
+      zone: 'Bay of Bengal Deep Contour',
+      imblDist: '82 NM (Safe)',
+      imblStatus: 'safe',
+      transponder: 'NavIC Two-Way SMS Terminal',
+      lastPing: '4 mins ago',
+      catchEst: '2.9 Tons (Pomfret, Croaker)',
+      lastAlertSent: null,
+    },
+    {
+      id: 'vms-5',
+      regNo: 'IND-TN-09-CB-115',
+      name: 'Alai Osai III',
+      captain: 'S. Selvam',
+      port: 'Nagapattinam',
+      region: 'Chennai Coast',
+      type: 'Deep-Sea Trawler',
+      coordinates: '10.72° N, 79.98° E',
+      speed: '4.1 kts',
+      heading: '095° E',
+      fuel: '38%',
+      status: 'Proximity Alert',
+      zone: 'Point Calimere EEZ Edge',
+      imblDist: '2.8 NM to Boundary',
+      imblStatus: 'warning',
+      transponder: 'NavIC Beacon Active',
+      lastPing: '30s ago',
+      catchEst: '2.1 Tons (Mackerel, Barracuda)',
+      lastAlertSent: null,
+    },
+    {
+      id: 'vms-6',
+      regNo: 'IND-AP-05-MM-220',
+      name: 'Godavari Queen',
+      captain: 'N. Satyanarayana',
+      port: 'Kakinada',
+      region: 'Andhra Pradesh Coast',
+      type: 'Motorized Trawler',
+      coordinates: '16.92° N, 82.28° E',
+      speed: '8.0 kts',
+      heading: '170° S',
+      fuel: '71%',
+      status: 'Active Hauling',
+      zone: 'Godavari Estuary 15 NM',
+      imblDist: '95 NM (Safe)',
+      imblStatus: 'safe',
+      transponder: 'NavIC-L5 Transponder Online',
+      lastPing: '3 mins ago',
+      catchEst: '4.1 Tons (Tiger Prawn, Mackerel)',
+      lastAlertSent: null,
+    }
+  ])
+
+  const handlePingTransponder = (vesselId) => {
+    setVessels(prev => prev.map(v => {
+      if (v.id === vesselId) {
+        return { ...v, lastPing: 'Just now (100% signal strength)' }
+      }
+      return v
+    }))
+    setToastMessage('🛰️ NavIC Transponder Ping Verified: Handshake confirmed with vessel terminal.')
+    setTimeout(() => setToastMessage(''), 3500)
+  }
+
+  const handleSendImblWarning = (vesselId, regNo) => {
+    const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    setVessels(prev => prev.map(v => {
+      if (v.id === vesselId) {
+        return { ...v, lastAlertSent: `NavIC IMBL Audio-Visual Warning Dispatched (${timeNow})` }
+      }
+      return v
+    }))
+    setToastMessage(`🚨 URGENT IMBL ALERT: Dispatched NavIC emergency geofence warning to vessel ${regNo}!`)
+    setTimeout(() => setToastMessage(''), 4500)
+  }
+
+  const handleRequestCatchLog = (regNo) => {
+    setToastMessage(`📋 Catch Log Submission request dispatched via NavIC satellite messaging to ${regNo}.`)
+    setTimeout(() => setToastMessage(''), 3500)
+  }
+
   // Derived datasets for Maritime & Regional Security section
   const currentFacilities = REGIONAL_MARITIME_FACILITIES[operationalRegion] || REGIONAL_MARITIME_FACILITIES['Visakhapatnam Coast']
   const currentDevelopments = REGIONAL_NAV_DEVELOPMENTS[operationalRegion] || REGIONAL_NAV_DEVELOPMENTS['Visakhapatnam Coast']
@@ -430,7 +589,207 @@ export default function CoastalAuthorityPersonalization({ user, userKey }) {
         </div>
       </div>
 
-      {/* 2. 🌐 MARITIME & REGIONAL SECURITY */}
+      {/* 2. 🚢 FLEET MANAGEMENT & VESSEL MONITORING SYSTEM (VMS) */}
+      <div className="panel" style={{ padding: 22, background: '#ffffff', borderRadius: 12, border: '1px solid #cbd5e1', display: 'flex', flexDirection: 'column', gap: 18 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: 12, flexWrap: 'wrap', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 22 }}>🚢</span>
+            <div>
+              <h3 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: 'var(--ink)', fontFamily: 'Sora, sans-serif', letterSpacing: 0.5 }}>
+                FLEET MANAGEMENT & VESSEL MONITORING SYSTEM (VMS)
+              </h3>
+              <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--muted)' }}>
+                Real-time NavIC/AIS transponder roster, IMBL boundary geofencing, and digital catch telemetry.
+              </p>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <span style={{ fontSize: 11, fontWeight: 800, background: '#eff6ff', color: '#1d4ed8', padding: '4px 10px', borderRadius: 6, border: '1px solid #bfdbfe' }}>
+              📡 NAVIC-L5 DUAL LINK ACTIVE
+            </span>
+            <span style={{ fontSize: 11, fontWeight: 800, background: '#fef2f2', color: '#b91c1c', padding: '4px 10px', borderRadius: 6, border: '1px solid #fecaca' }}>
+              ⚠️ IMBL GEOFENCE ARMED
+            </span>
+          </div>
+        </div>
+
+        {/* Quick VMS KPI Bar */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+          <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+            <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Tracked Fleet</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', marginTop: 2 }}>{vessels.length} Trawlers</div>
+            <div style={{ fontSize: 11, color: '#16a34a', marginTop: 2 }}>● 100% NavIC Link Up</div>
+          </div>
+          <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+            <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Safe EEZ Zone</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#16a34a', marginTop: 2 }}>{vessels.filter(v => v.imblStatus === 'safe').length} Vessels</div>
+            <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>Compliant Fishing Trajectory</div>
+          </div>
+          <div style={{ background: '#fef2f2', padding: 12, borderRadius: 8, border: '1px solid #fecaca' }}>
+            <div style={{ fontSize: 11, color: '#991b1b', fontWeight: 700, textTransform: 'uppercase' }}>IMBL Proximity Alert</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#dc2626', marginTop: 2 }}>{vessels.filter(v => v.imblStatus === 'warning').length} Vessels</div>
+            <div style={{ fontSize: 11, color: '#b91c1c', marginTop: 2 }}>&lt; 3 NM to International Boundary</div>
+          </div>
+          <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+            <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Reported Haul Est.</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#0284c7', marginTop: 2 }}>19.5 Tons</div>
+            <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>Across all active trips</div>
+          </div>
+        </div>
+
+        {/* Filter Controls */}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {[
+            { id: 'all', label: `All Vessels (${vessels.length})` },
+            { id: 'imbl-warning', label: `⚠️ IMBL Warning (${vessels.filter(v => v.imblStatus === 'warning').length})` },
+            { id: 'safe', label: `✓ Safe EEZ (${vessels.filter(v => v.imblStatus === 'safe').length})` },
+          ].map(tab => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setVmsFilter(tab.id)}
+              style={{
+                padding: '7px 14px',
+                borderRadius: 6,
+                fontSize: 12,
+                fontWeight: 700,
+                border: vmsFilter === tab.id ? '1px solid #0284c7' : '1px solid #cbd5e1',
+                background: vmsFilter === tab.id ? '#0284c7' : '#ffffff',
+                color: vmsFilter === tab.id ? '#ffffff' : '#334155',
+                cursor: 'pointer'
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Vessels Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 14 }}>
+          {vessels
+            .filter(v => {
+              if (vmsFilter === 'imbl-warning') return v.imblStatus === 'warning'
+              if (vmsFilter === 'safe') return v.imblStatus === 'safe'
+              return true
+            })
+            .map(v => (
+              <div
+                key={v.id}
+                style={{
+                  padding: 16,
+                  borderRadius: 10,
+                  border: v.imblStatus === 'warning' ? '1.5px solid #f87171' : '1px solid #cbd5e1',
+                  background: v.imblStatus === 'warning' ? '#fffaf0' : '#ffffff',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 10,
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.03)'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontSize: 16 }}>🚢</span>
+                      <strong style={{ fontSize: 14, color: '#0f172a' }}>{v.name}</strong>
+                    </div>
+                    <span style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>{v.regNo} • {v.type}</span>
+                  </div>
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 800,
+                      padding: '3px 8px',
+                      borderRadius: 4,
+                      background: v.imblStatus === 'warning' ? '#fee2e2' : '#dcfce7',
+                      color: v.imblStatus === 'warning' ? '#991b1b' : '#166534',
+                      border: v.imblStatus === 'warning' ? '1px solid #fca5a5' : '1px solid #86efac'
+                    }}
+                  >
+                    {v.imblStatus === 'warning' ? 'IMBL PROXIMITY' : 'EEZ COMPLIANT'}
+                  </span>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 12, background: '#f8fafc', padding: 10, borderRadius: 6 }}>
+                  <div><strong>Captain:</strong> {v.captain}</div>
+                  <div><strong>Home Port:</strong> {v.port}</div>
+                  <div><strong>Coords:</strong> {v.coordinates}</div>
+                  <div><strong>Speed / Hdg:</strong> {v.speed} / {v.heading}</div>
+                  <div><strong>Fuel:</strong> {v.fuel}</div>
+                  <div><strong>Distance to IMBL:</strong> <span style={{ color: v.imblStatus === 'warning' ? '#dc2626' : '#16a34a', fontWeight: 700 }}>{v.imblDist}</span></div>
+                </div>
+
+                <div style={{ fontSize: 11, color: '#334155' }}>
+                  <div><strong>Catch Logbook:</strong> {v.catchEst}</div>
+                  <div style={{ marginTop: 2, color: '#64748b' }}><strong>Transponder:</strong> {v.transponder} ({v.lastPing})</div>
+                  {v.lastAlertSent && (
+                    <div style={{ marginTop: 4, color: '#b91c1c', fontWeight: 700 }}>
+                      ⚡ {v.lastAlertSent}
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', gap: 8, marginTop: 'auto', paddingTop: 6, borderTop: '1px solid #f1f5f9' }}>
+                  <button
+                    type="button"
+                    onClick={() => handlePingTransponder(v.id)}
+                    style={{
+                      flex: 1,
+                      padding: '6px 10px',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      background: '#f1f5f9',
+                      color: '#334155',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: 6,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    🛰️ Ping Transponder
+                  </button>
+                  {v.imblStatus === 'warning' ? (
+                    <button
+                      type="button"
+                      onClick={() => handleSendImblWarning(v.id, v.regNo)}
+                      style={{
+                        flex: 1.2,
+                        padding: '6px 10px',
+                        fontSize: 11,
+                        fontWeight: 800,
+                        background: '#dc2626',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: 6,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      🚨 Send IMBL Warning
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleRequestCatchLog(v.regNo)}
+                      style={{
+                        flex: 1,
+                        padding: '6px 10px',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        background: '#0284c7',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: 6,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      📋 Request Catch Log
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+        </div>
+      </div>
+
+      {/* 3. 🌐 MARITIME & REGIONAL SECURITY */}
       <div className="panel" style={{ padding: 22, background: '#ffffff', borderRadius: 12, border: '1px solid #cbd5e1', display: 'flex', flexDirection: 'column', gap: 20 }}>
         
         {/* Section Header */}
