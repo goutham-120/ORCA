@@ -15,6 +15,10 @@ class AisStreamService {
     this.connectionStatus = 'DISCONNECTED' // 'CONNECTING' | 'LIVE' | 'ERROR' | 'DISCONNECTED'
     this.reconnectTimer = null
     this.messageCount = 0
+    this.packetsPerSec = 0
+    this.packetCountLastSec = 0
+    this.isPaused = false
+    this.rateInterval = null
   }
 
   getApiKey() {
@@ -30,18 +34,35 @@ class AisStreamService {
     }
   }
 
+  togglePause() {
+    this.isPaused = !this.isPaused
+    this.notifySubscribers()
+    return this.isPaused
+  }
+
   subscribe(callback) {
     this.subscribers.add(callback)
     // Send current cached snapshot immediately
-    callback(Array.from(this.vesselsMap.values()), this.connectionStatus, this.messageCount)
+    callback(Array.from(this.vesselsMap.values()), this.connectionStatus, this.messageCount, this.packetsPerSec, this.isPaused)
 
     if (!this.ws || this.ws.readyState === WebSocket.CLOSED) {
       this.connect()
     }
 
+    if (!this.rateInterval) {
+      this.rateInterval = setInterval(() => {
+        this.packetsPerSec = this.packetCountLastSec
+        this.packetCountLastSec = 0
+      }, 1000)
+    }
+
     return () => {
       this.subscribers.delete(callback)
       if (this.subscribers.size === 0) {
+        if (this.rateInterval) {
+          clearInterval(this.rateInterval)
+          this.rateInterval = null
+        }
         this.disconnect()
       }
     }
@@ -51,7 +72,7 @@ class AisStreamService {
     const list = Array.from(this.vesselsMap.values())
     for (const sub of this.subscribers) {
       try {
-        sub(list, this.connectionStatus, this.messageCount)
+        sub(list, this.connectionStatus, this.messageCount, this.packetsPerSec, this.isPaused)
       } catch (err) {
         console.error('Error notifying AIS subscriber:', err)
       }
@@ -135,6 +156,9 @@ class AisStreamService {
 
   handleAisMessage(payload) {
     this.messageCount++
+    this.packetCountLastSec++
+    if (this.isPaused) return
+
     const mmsi = payload.MetaData?.MMSI
     if (!mmsi) return
 
@@ -203,12 +227,12 @@ class AisStreamService {
       this.vesselsMap.delete(oldestKey)
     }
 
-    // Debounce notify subscribers every 100ms
+    // Throttle notify subscribers to 1000ms (1 second) for smooth 60fps UI
     if (!this.notifyTimeout) {
       this.notifyTimeout = setTimeout(() => {
         this.notifyTimeout = null
         this.notifySubscribers()
-      }, 150)
+      }, 1000)
     }
   }
 

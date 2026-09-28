@@ -249,12 +249,16 @@ export default function CoastalAuthorityPersonalization({ user, userKey }) {
   const [liveAisVessels, setLiveAisVessels] = useState([])
   const [aisStatus, setAisStatus] = useState('CONNECTING')
   const [aisPacketCount, setAisPacketCount] = useState(0)
+  const [aisPacketRate, setAisPacketRate] = useState(0)
+  const [isAisPaused, setIsAisPaused] = useState(false)
 
   useEffect(() => {
-    const unsubscribe = aisStreamService.subscribe((list, status, count) => {
+    const unsubscribe = aisStreamService.subscribe((list, status, count, rate, paused) => {
       setLiveAisVessels(list)
       setAisStatus(status)
       setAisPacketCount(count)
+      setAisPacketRate(rate || 0)
+      setIsAisPaused(Boolean(paused))
     })
     return () => unsubscribe()
   }, [])
@@ -619,10 +623,33 @@ export default function CoastalAuthorityPersonalization({ user, userKey }) {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 11, fontWeight: 800, background: aisStatus === 'LIVE' ? '#dcfce7' : '#eff6ff', color: aisStatus === 'LIVE' ? '#15803d' : '#1d4ed8', padding: '4px 10px', borderRadius: 6, border: aisStatus === 'LIVE' ? '1px solid #86efac' : '1px solid #bfdbfe', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ width: 7, height: 7, borderRadius: '50%', background: aisStatus === 'LIVE' ? '#16a34a' : '#0284c7', display: 'inline-block' }}></span>
-              {aisStatus === 'LIVE' ? `LIVE AIS FEED (${aisPacketCount} PACKETS)` : `AIS: ${aisStatus}`}
+            <span style={{ fontSize: 11, fontWeight: 800, background: aisStatus === 'LIVE' ? (isAisPaused ? '#fef3c7' : '#dcfce7') : '#eff6ff', color: aisStatus === 'LIVE' ? (isAisPaused ? '#b45309' : '#15803d') : '#1d4ed8', padding: '4px 10px', borderRadius: 6, border: aisStatus === 'LIVE' ? (isAisPaused ? '1px solid #fde68a' : '1px solid #86efac') : '1px solid #bfdbfe', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ width: 7, height: 7, borderRadius: '50%', background: isAisPaused ? '#f59e0b' : (aisStatus === 'LIVE' ? '#16a34a' : '#0284c7'), display: 'inline-block' }}></span>
+              {aisStatus === 'LIVE' ? (
+                isAisPaused ? `STREAM PAUSED (${aisPacketCount.toLocaleString()} PACKETS)` : `LIVE AIS (${aisPacketRate} pkts/s • ${aisPacketCount > 1000 ? (aisPacketCount / 1000).toFixed(1) + 'k' : aisPacketCount} pkts)`
+              ) : `AIS: ${aisStatus}`}
             </span>
+            {aisStatus === 'LIVE' && vmsSource === 'live_ais' && (
+              <button
+                type="button"
+                onClick={() => aisStreamService.togglePause()}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: 6,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  background: isAisPaused ? '#16a34a' : '#f1f5f9',
+                  color: isAisPaused ? '#ffffff' : '#334155',
+                  border: '1px solid #cbd5e1',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                }}
+              >
+                <span>{isAisPaused ? '▶ Resume' : '⏸ Pause Feed'}</span>
+              </button>
+            )}
             <span style={{ fontSize: 11, fontWeight: 800, background: '#fef2f2', color: '#b91c1c', padding: '4px 10px', borderRadius: 6, border: '1px solid #fecaca' }}>
               ⚠️ IMBL GEOFENCE ARMED
             </span>
