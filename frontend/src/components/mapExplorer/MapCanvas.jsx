@@ -322,9 +322,17 @@ export default function MapCanvas({
   landTransit = null,
   blockedDirectRoute = null,
   baseMapMode = 'standard',
+  onToggleBaseMapMode,
+  isSatelliteHudOpen = false,
+  onToggleSatelliteHud,
+  onOpenNavICModal,
+  isRouteVisible = false,
+  isHudOpen = false,
+  onOpenHud,
   isCloudIRVisible = false,
   cloudMode = 'natural',
   cloudIROpacity = 0.75,
+  children,
 }) {
   const containerRef = useRef(null)
   const mapRef = useRef(null)
@@ -1691,70 +1699,145 @@ export default function MapCanvas({
       }`}
     >
       <div className="canvas-toolbar">
-        <span className="demo-indicator">
-          {mapStatus === 'ready'
-            ? 'MapLibre basemap • GIS overlays are source-backed'
-            : mapStatus === 'error'
-              ? 'PFZ overlay view • basemap unavailable'
-              : 'Loading map…'}
-        </span>
+        <div className="canvas-toolbar-left">
+          {isRouteVisible && !isHudOpen && onOpenHud && (
+            <button
+              type="button"
+              className="reopen-hud-pill-btn"
+              onClick={onOpenHud}
+              title="Open Live Navigation HUD panel"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '7px 14px',
+                background: '#0f172a',
+                color: '#38bdf8',
+                border: '1px solid #0284c7',
+                borderRadius: '20px',
+                fontSize: '11.5px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: '0 4px 14px rgba(0,0,0,0.35)',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <span>🧭</span> Show Navigation HUD
+            </button>
+          )}
+        </div>
 
         <div className="canvas-actions">
-          <button
-            type="button"
-            className="canvas-btn"
-            onClick={() => {
-              try { mapRef.current?.zoomIn() } catch {}
-            }}
-            aria-label="Zoom in"
-          >
-            +
-          </button>
+          {onToggleBaseMapMode && (
+            <button
+              type="button"
+              className="canvas-satellite-pill-btn"
+              onClick={() => onToggleBaseMapMode((m) => (m === 'satellite' ? 'standard' : 'satellite'))}
+              title={baseMapMode === 'satellite' ? 'Switch to Standard Nautical Cartography' : 'Switch to ESRI High-Resolution World Satellite Imagery'}
+              style={{
+                background: baseMapMode === 'satellite' ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : 'rgba(15, 23, 42, 0.92)',
+                color: baseMapMode === 'satellite' ? '#ffffff' : '#93c5fd',
+                border: baseMapMode === 'satellite' ? '1px solid #38bdf8' : '1px solid rgba(147, 197, 253, 0.3)',
+              }}
+            >
+              <span>{baseMapMode === 'satellite' ? '🌍' : '🛰️'}</span>
+              <span>{baseMapMode === 'satellite' ? 'Satellite Basemap' : 'Satellite View'}</span>
+            </button>
+          )}
 
-          <button
-            type="button"
-            className="canvas-btn"
-            onClick={() => {
-              try { mapRef.current?.zoomOut() } catch {}
-            }}
-            aria-label="Zoom out"
-          >
-            −
-          </button>
+          {onToggleSatelliteHud && (
+            <button
+              type="button"
+              className="canvas-satellite-pill-btn"
+              onClick={onToggleSatelliteHud}
+              title="Toggle ISRO EOS-06 & INSAT-3DS Orbit HUD"
+              style={{
+                background: isSatelliteHudOpen ? '#0284c7' : 'rgba(15, 23, 42, 0.92)',
+                color: isSatelliteHudOpen ? '#ffffff' : '#38bdf8',
+                border: '1px solid rgba(56, 189, 248, 0.4)',
+              }}
+            >
+              <span>🛰️</span>
+              <span>ISRO Satellites</span>
+            </button>
+          )}
 
-          <button
-            type="button"
-            className="canvas-btn"
-            onClick={() => {
-              try {
-                const lat = Number(selectedLocation?.latitude || DEFAULT_LOCATION.latitude)
-                const lon = Number(selectedLocation?.longitude || DEFAULT_LOCATION.longitude)
-                mapRef.current?.flyTo({
-                  center: [
-                    Number.isFinite(lon) ? lon : DEFAULT_LOCATION.longitude,
-                    Number.isFinite(lat) ? lat : DEFAULT_LOCATION.latitude,
-                  ],
-                  zoom: 7,
-                })
-              } catch {}
-            }}
-            aria-label="Center map"
-          >
-            ⌖
-          </button>
+          {onOpenNavICModal && (
+            <button
+              type="button"
+              className="canvas-satellite-pill-btn"
+              onClick={onOpenNavICModal}
+              title="NavIC / GNSS Location Sync (ISRO NavIC Dual-Frequency & Web Geolocation)"
+              style={{
+                background: 'rgba(6, 78, 59, 0.9)',
+                color: '#34d399',
+                border: '1px solid rgba(52, 211, 153, 0.4)',
+              }}
+            >
+              <span>📡</span>
+              <span>NavIC / GNSS Sync</span>
+            </button>
+          )}
 
-          <button
-            type="button"
-            className={`canvas-btn canvas-btn-expand ${isExpanded ? 'is-active-expanded' : ''}`}
-            onClick={onToggleExpanded}
-            title={isExpanded ? 'Restore map (Press ESC)' : 'Fullscreen map'}
-            aria-label={isExpanded ? 'Restore map' : 'Fullscreen map'}
-          >
-            <span className="expand-btn-text">{isExpanded ? '✕ Exit Fullscreen (ESC)' : '⛶ Fullscreen'}</span>
-            <span className="expand-btn-icon" aria-hidden="true">{isExpanded ? '✕' : '⛶'}</span>
-          </button>
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <button
+              type="button"
+              className="canvas-btn"
+              onClick={() => {
+                try { mapRef.current?.zoomIn() } catch {}
+              }}
+              aria-label="Zoom in"
+            >
+              +
+            </button>
+
+            <button
+              type="button"
+              className="canvas-btn"
+              onClick={() => {
+                try { mapRef.current?.zoomOut() } catch {}
+              }}
+              aria-label="Zoom out"
+            >
+              −
+            </button>
+
+            <button
+              type="button"
+              className="canvas-btn"
+              onClick={() => {
+                try {
+                  const lat = Number(selectedLocation?.latitude || DEFAULT_LOCATION.latitude)
+                  const lon = Number(selectedLocation?.longitude || DEFAULT_LOCATION.longitude)
+                  mapRef.current?.flyTo({
+                    center: [
+                      Number.isFinite(lon) ? lon : DEFAULT_LOCATION.longitude,
+                      Number.isFinite(lat) ? lat : DEFAULT_LOCATION.latitude,
+                    ],
+                    zoom: 7,
+                  })
+                } catch {}
+              }}
+              aria-label="Center map"
+            >
+              ⌖
+            </button>
+
+            <button
+              type="button"
+              className={`canvas-btn canvas-btn-expand ${isExpanded ? 'is-active-expanded' : ''}`}
+              onClick={onToggleExpanded}
+              title={isExpanded ? 'Restore map (Press ESC)' : 'Fullscreen map'}
+              aria-label={isExpanded ? 'Restore map' : 'Fullscreen map'}
+            >
+              <span className="expand-btn-text">{isExpanded ? '✕ Exit Fullscreen (ESC)' : '⛶ Fullscreen'}</span>
+              <span className="expand-btn-icon" aria-hidden="true">{isExpanded ? '✕' : '⛶'}</span>
+            </button>
+          </div>
         </div>
       </div>
+
+      {children}
 
       <div
         ref={containerRef}

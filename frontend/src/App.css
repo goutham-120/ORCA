@@ -813,9 +813,26 @@
   background: #b91c1c !important;
   border-color: #f87171 !important;
 }
-.canvas-toolbar { position: absolute; top: 14px; left: 14px; right: 14px; z-index: 5; display: flex; align-items: center; justify-content: space-between; pointer-events: none; }
-.demo-indicator { padding: 5px 10px; border: 1px solid #ffffff44; border-radius: 5px; color: #e5f7ff; background: #051d38bb; font-size: 10px; font-weight: 600; backdrop-filter: blur(4px); pointer-events: auto; }
-.canvas-actions { display: flex; gap: 6px; pointer-events: auto; }
+.canvas-toolbar { position: absolute; top: 14px; left: 14px; right: 14px; z-index: 20; display: flex; align-items: center; justify-content: space-between; pointer-events: none; }
+.canvas-toolbar-left { pointer-events: auto; display: flex; align-items: center; gap: 8px; }
+.canvas-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; pointer-events: auto; }
+.canvas-satellite-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(6px);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+.canvas-satellite-pill-btn:hover {
+  transform: translateY(-1px);
+}
 .canvas-btn { display: grid; place-items: center; min-width: 32px; height: 32px; padding: 0 8px; border: 1px solid #ffffff44; border-radius: 6px; color: #fff; background: #051d38cc; font-size: 13px; font-weight: 700; cursor: pointer; backdrop-filter: blur(4px); transition: all .2s ease; }
 .canvas-btn:hover { border-color: #ffffff88; background: #0a335ecc; }
 .canvas-btn.is-active-btn { border-color: #79d6f0; color: #0b2f54; background: #9ee6f8; }
@@ -1149,12 +1166,14 @@
     top: 8px !important;
     left: 8px !important;
     right: 8px !important;
-    justify-content: flex-end !important;
-  }
-  .canvas-toolbar .demo-indicator {
-    display: none !important;
+    justify-content: space-between !important;
   }
   .canvas-actions {
+    gap: 4px !important;
+  }
+  .canvas-satellite-pill-btn {
+    padding: 5px 8px !important;
+    font-size: 10.5px !important;
     gap: 4px !important;
   }
   .canvas-btn {
