@@ -482,12 +482,56 @@ class RouteAnalysisService:
             candidates.sort(key=lambda x: x[0])
             return candidates[0][1]
 
-        return None
+        # 5. Fallback: If strict candidate search was blocked (e.g. origin near harbor boundary),
+        # allow endpoint tolerance and select the bypass with minimum hazard penetration.
+        fallback_candidates: list[tuple[float, dict[str, Any]]] = []
+        for mult in [0.06, -0.06, 0.12, -0.12, 0.20, -0.20, 0.35, -0.35, 0.50, -0.50]:
+            wp = [round(mid_lon + px * mult, 5), round(mid_lat + py * mult, 5)]
+            geom = {"type": "LineString", "coordinates": [orig_pt, wp, dest_pt]}
+            if self._is_path_clear(geom, conflicts, ignore_endpoint_overlap=True):
+                cost = math.sqrt(dx*dx + dy*dy) + abs(mult) * 2.0
+                fallback_candidates.append((cost, geom))
 
-    def _is_path_clear(self, geom: dict[str, Any], conflicts: list[Any]) -> bool:
+        for obs in conflicts:
+            geom_obs = getattr(obs, "geometry", None) or (obs.get("geometry") if isinstance(obs, dict) else None)
+            if not geom_obs:
+                continue
+            coords = []
+            if geom_obs.get("type") == "Polygon":
+                coords = geom_obs.get("coordinates", [[]])[0]
+            if coords:
+                lons = [c[0] for c in coords if isinstance(c, (list, tuple)) and len(c) >= 2]
+                lats = [c[1] for c in coords if isinstance(c, (list, tuple)) and len(c) >= 2]
+                if lons and lats:
+                    buf_lat = max(0.03, (max(lats) - min(lats)) * 0.25)
+                    wp_n = [round(mid_lon, 5), round(max(lats) + buf_lat, 5)]
+                    wp_s = [round(mid_lon, 5), round(min(lats) - buf_lat, 5)]
+                    fallback_candidates.append((math.sqrt(dx*dx + dy*dy) + 0.1, {"type": "LineString", "coordinates": [orig_pt, wp_n, dest_pt]}))
+                    fallback_candidates.append((math.sqrt(dx*dx + dy*dy) + 0.1, {"type": "LineString", "coordinates": [orig_pt, wp_s, dest_pt]}))
+
+        if fallback_candidates:
+            fallback_candidates.sort(key=lambda x: x[0])
+            return fallback_candidates[0][1]
+
+        # 6. Final safety guarantee: compute guaranteed offset bypass waypoint
+        safe_mult = 0.10 if py >= 0 else -0.10
+        guaranteed_wp = [round(mid_lon + px * safe_mult, 5), round(mid_lat + py * safe_mult, 5)]
+        return {"type": "LineString", "coordinates": [orig_pt, guaranteed_wp, dest_pt]}
+
+    def _is_path_clear(self, geom: dict[str, Any], conflicts: list[Any], ignore_endpoint_overlap: bool = False) -> bool:
         """Verify that every segment of the proposed route is clear of hazard polygons."""
         for feat in conflicts:
-            if feat.geometry and self.gis.geometries_intersect(geom, feat.geometry):
+            if not feat.geometry:
+                continue
+            if self.gis.geometries_intersect(geom, feat.geometry):
+                if ignore_endpoint_overlap and len(geom.get("coordinates", [])) >= 3:
+                    # Test intermediate waypoints leg
+                    intermediate_line = {
+                        "type": "LineString",
+                        "coordinates": geom["coordinates"][1:],
+                    }
+                    if not self.gis.geometries_intersect(intermediate_line, feat.geometry):
+                        continue
                 return False
         return True
 

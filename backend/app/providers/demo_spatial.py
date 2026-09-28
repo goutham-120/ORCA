@@ -81,7 +81,7 @@ def ensure_demo_gis(repository: SpatialFeatureRepository = spatial_features) -> 
                     "ORCA_DEMO_GIS",
                     "restricted_zones",
                     "demo-restricted-vizag",
-                    _make_circle_polygon(83.30, 17.68, radius_km=5.0),
+                    _make_circle_polygon(83.27, 17.69, radius_km=2.2),
                     "Visakhapatnam naval base & inner harbor security zone",
                     DEMO_SOURCE,
                 ),
@@ -89,7 +89,7 @@ def ensure_demo_gis(repository: SpatialFeatureRepository = spatial_features) -> 
                     "ORCA_DEMO_GIS",
                     "hazards",
                     "demo-hazard-vizag",
-                    _make_circle_polygon(83.35, 17.65, radius_km=5.5),
+                    _make_circle_polygon(83.35, 17.64, radius_km=3.2),
                     "Visakhapatnam harbor approach shallow shoal & dredging hazard",
                     DEMO_SOURCE,
                 ),
@@ -156,18 +156,17 @@ def ensure_demo_gis(repository: SpatialFeatureRepository = spatial_features) -> 
                     DEMO_SOURCE,
                 ),
             )
-        if not existing:
-            for record in records:
-                repository.create(record)
+        # Always synchronize latest demo features
+        repository.delete_dataset("ORCA_DEMO_GIS")
+        for record in records:
+            repository.create(record)
 
-            # Ensure PFZs are also seeded
-            pfz_records = repository.list(dataset="PFZ")
-            if not pfz_records:
-                replace_demo_pfz(repository)
+        # Ensure PFZs are also seeded
+        pfz_records = repository.list(dataset="PFZ")
+        if not pfz_records:
+            replace_demo_pfz(repository)
 
-            return len(records)
-
-        return 0
+        return len(records)
     except Exception:
         return 0
 
