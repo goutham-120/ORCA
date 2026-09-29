@@ -25,6 +25,8 @@ export default function ChatHeader({
   isLocationOpen,
   onOpenSOS,
   onOpenNavIC,
+  isFullscreen,
+  onToggleFullscreen,
 }) {
   const [systemOnline, setSystemOnline] = useState(true)
   const [isLangOpen, setIsLangOpen] = useState(false)
@@ -68,7 +70,7 @@ export default function ChatHeader({
   }, [isLangOpen])
 
   return (
-    <header className="ask-orca-header-bar font-inter">
+    <header className={`ask-orca-header-bar font-inter ${isFullscreen ? 'in-fullscreen' : ''}`}>
       <div className="header-identity">
         <div className="orca-logo-badge">
           <img src={orcaLogo} alt="ORCA Logo" className="logo-img" />
@@ -84,17 +86,17 @@ export default function ChatHeader({
               title={
                 systemOnline
                   ? 'Systems Online (Internet / Terrestrial) • Click for ISRO NavIC Satellite Diagnostics'
-                  : '⚠️ Offline Mode: ISRO NavIC Satellite Transceiver Active • Click to Inspect'
+                  : 'Offline Mode: ISRO NavIC Satellite Transceiver Active • Click to Inspect'
               }
             >
               <span className={`status-dot ${systemOnline ? 'online' : 'offline-navic-pulse'}`}></span>
               {systemOnline ? (
                 <span className="status-text">
-                  Systems Online <span className="navic-sat-subtext">🛰️ NavIC</span>
+                  Systems Online <span className="navic-sat-subtext">NavIC</span>
                 </span>
               ) : (
                 <span className="status-text navic-highlight">
-                  🛰️ NavIC Sat Mode (Active)
+                  NavIC Sat Mode (Active)
                 </span>
               )}
             </button>
@@ -113,7 +115,10 @@ export default function ChatHeader({
           onClick={onToggleLocation}
           title="Toggle Location Context Panel"
         >
-          <span className="icon">📍</span>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#0284c7' }}>
+            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+            <circle cx="12" cy="10" r="3" />
+          </svg>
           <span className="label-text">{locationLabel || 'Select Location'}</span>
           <span className="chevron">{isLocationOpen ? '▲' : '▼'}</span>
         </button>
@@ -128,7 +133,11 @@ export default function ChatHeader({
             aria-expanded={isLangOpen}
             title="Select response language"
           >
-            <span className="lang-icon">🌐</span>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#0284c7' }}>
+              <circle cx="12" cy="12" r="10" />
+              <line x1="2" y1="12" x2="22" y2="12" />
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+            </svg>
             <span className="current-lang-text">{currentLang.label}</span>
             <svg
               className={`dropdown-chevron-svg ${isLangOpen ? 'rotated' : ''}`}
@@ -194,7 +203,11 @@ export default function ChatHeader({
               fontWeight: 700
             }}
           >
-            <span className="icon">🆘</span>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
             <span className="btn-label">SOS VHF 16</span>
           </button>
         )}
@@ -206,9 +219,33 @@ export default function ChatHeader({
           onClick={onClearSession}
           title="Start new analysis session"
         >
-          <span className="icon">↻</span>
-          <span className="btn-label">New Session</span>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          <span className="btn-label">New Chat</span>
         </button>
+
+        {/* Fullscreen Toggle Button */}
+        {onToggleFullscreen && (
+          <button
+            type="button"
+            className={`header-action-btn fullscreen-btn font-inter ${isFullscreen ? 'is-fullscreen-active' : ''}`}
+            onClick={onToggleFullscreen}
+            title={isFullscreen ? 'Exit Fullscreen (Esc)' : 'Enter Fullscreen Mode'}
+          >
+            {isFullscreen ? (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3" />
+              </svg>
+            ) : (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+              </svg>
+            )}
+            <span className="btn-label">{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</span>
+          </button>
+        )}
       </div>
     </header>
   )

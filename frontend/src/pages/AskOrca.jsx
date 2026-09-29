@@ -120,8 +120,24 @@ export default function AskOrca({ navigate }) {
   const [isSimulatorOpen, setIsSimulatorOpen] = useState(false)
   const [isSOSOpen, setIsSOSOpen] = useState(false)
   const [isNavICOpen, setIsNavICOpen] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
   const [activeSpeech, setActiveSpeech] = useState(null)
   const autoSentRef = useRef(false)
+
+  // Fullscreen keyboard escape listener
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isFullscreen])
+
+  const toggleFullscreen = () => {
+    setIsFullscreen((prev) => !prev)
+  }
 
   useEffect(() => {
     const handleSpeechStart = (e) => {
@@ -360,7 +376,7 @@ export default function AskOrca({ navigate }) {
   }
 
   return (
-    <section className="ask-orca-command-center font-sans">
+    <section className={`ask-orca-command-center font-sans ${isFullscreen ? 'is-fullscreen' : ''}`}>
       {/* 1. TOP HEADER */}
       <ChatHeader
         language={language}
@@ -371,6 +387,8 @@ export default function AskOrca({ navigate }) {
         isLocationOpen={isLocationOpen}
         onOpenSOS={() => setIsSOSOpen(true)}
         onOpenNavIC={() => setIsNavICOpen(true)}
+        isFullscreen={isFullscreen}
+        onToggleFullscreen={toggleFullscreen}
       />
 
       {/* 2. LOCATION CONTEXT PANEL */}
