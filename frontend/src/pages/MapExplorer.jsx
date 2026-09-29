@@ -858,6 +858,7 @@ export default function MapExplorer({ navigate }) {
 
   const [destinationId, setDestinationId] = useState('nearest_pfz')
   const [isExpanded, setIsExpanded] = useState(false)
+  const [isFullscreenLayersExpanded, setIsFullscreenLayersExpanded] = useState(true)
   const [isPickerOpen, setIsPickerOpen] = useState(false)
 
   // Live Navigation & Real-time GPS Vessel Tracking State
@@ -2155,7 +2156,7 @@ export default function MapExplorer({ navigate }) {
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                       <strong style={{ color: cloudMode === 'natural' ? '#38bdf8' : '#d8b4fe', fontSize: '11.5px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <span>☁️</span> {cloudMode === 'natural' ? 'Optical Satellite Clouds' : 'INSAT-3D/3DR Thermal IR'}
+                        {cloudMode === 'natural' ? 'Optical Satellite Clouds' : 'INSAT-3D/3DR Thermal IR'}
                       </strong>
                       <span style={{ fontSize: '9.5px', background: cloudMode === 'natural' ? '#0369a1' : '#581c87', color: '#e0f2fe', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>
                         {cloudMode === 'natural' ? 'MODIS / VIIRS' : 'ISRO MOSDAC'}
@@ -2194,6 +2195,63 @@ export default function MapExplorer({ navigate }) {
                       </div>
                     )}
                   </div>
+                )}
+
+                {/* FULLSCREEN FLOATING GIS LAYERS OVERLAY (ACTIVE ONLY IN FULLSCREEN MODE) */}
+                {isExpanded && (
+                  isFullscreenLayersExpanded ? (
+                    <div className="fullscreen-layers-container">
+                      <div className="fullscreen-layers-card-wrapper">
+                        <div className="fullscreen-layers-topbar">
+                          <span className="fullscreen-layers-topbar-title">
+                            GIS Layers & Cartography
+                          </span>
+                          <button
+                            type="button"
+                            className="fullscreen-layers-minimize-btn"
+                            onClick={() => setIsFullscreenLayersExpanded(false)}
+                            title="Collapse GIS layers panel"
+                          >
+                            ▲ Collapse
+                          </button>
+                        </div>
+                        <MapLayersControl
+                          layers={renderedLayers}
+                          loading={layersState.loading}
+                          error={layersState.error}
+                          onToggleLayer={handleToggleLayer}
+                          isRouteVisible={isRouteVisible}
+                          isRouteLoading={liveNavigation.loading}
+                          onToggleRoute={toggleRouteVisibility}
+                          routeData={liveNavigation.data}
+                          isPFZSyncing={pfzSync.loading}
+                          searchRadius={searchRadius}
+                          onRadiusChange={(val) => setSearchRadius(val)}
+                          baseMapMode={baseMapMode}
+                          onToggleBaseMapMode={setBaseMapMode}
+                          isCloudIRVisible={isCloudIRVisible}
+                          onToggleCloudIR={() => setIsCloudIRVisible((v) => !v)}
+                          cloudMode={cloudMode}
+                          onToggleCloudMode={setCloudMode}
+                          cloudIROpacity={cloudIROpacity}
+                          onCloudIROpacityChange={setCloudIROpacity}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="fullscreen-layers-toggle-pill"
+                      onClick={() => setIsFullscreenLayersExpanded(true)}
+                      title="Expand GIS Cartography & Overlays Panel"
+                    >
+                      <span>GIS Layers</span>
+                      <span style={{ fontSize: '11px', background: '#0284c7', color: '#ffffff', padding: '1px 6px', borderRadius: '10px' }}>
+                        {renderedLayers.filter((l) => l?.enabled).length + (isRouteVisible ? 1 : 0) + (isCloudIRVisible ? 1 : 0)} Active
+                      </span>
+                      <span style={{ fontSize: '10px', color: '#38bdf8' }}>▼ Expand</span>
+                    </button>
+                  )
                 )}
               </MapCanvas>
             </div>
