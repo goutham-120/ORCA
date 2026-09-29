@@ -3,6 +3,22 @@ import { stopSpeech } from '../../utils/speech'
 
 const speechApi = () => window.SpeechRecognition || window.webkitSpeechRecognition
 
+export function getSpeechLocale(language) {
+  const langCode = (language || 'en').toLowerCase().replace('_', '-')
+  if (langCode.startsWith('hi')) return 'hi-IN'
+  if (langCode.startsWith('te')) return 'te-IN'
+  if (langCode.startsWith('ta')) return 'ta-IN'
+  if (langCode.startsWith('ml')) return 'ml-IN'
+  if (langCode.startsWith('kn')) return 'kn-IN'
+  if (langCode.startsWith('or')) return 'or-IN'
+  if (langCode.startsWith('bn')) return 'bn-IN'
+  if (langCode.startsWith('kok')) return 'kok-IN'
+  if (langCode.startsWith('tcy') || langCode.startsWith('tulu')) return 'tcy-IN'
+  if (langCode.startsWith('gu')) return 'gu-IN'
+  if (langCode.startsWith('mr')) return 'mr-IN'
+  return 'en-IN'
+}
+
 export default function QueryInput({ value, onChange, onSend, loading, language }) {
   const [voiceState, setVoiceState] = useState('idle') // 'idle' | 'listening' | 'processing' | 'error'
   const [voiceError, setVoiceError] = useState('')
@@ -35,7 +51,7 @@ export default function QueryInput({ value, onChange, onSend, loading, language 
     try {
       const instance = new Recognition()
       recognitionRef.current = instance
-      instance.lang = language === 'hi' ? 'hi-IN' : language === 'te' ? 'te-IN' : language === 'ta' ? 'ta-IN' : language === 'or' ? 'or-IN' : language === 'bn' ? 'bn-IN' : language === 'kok' ? 'kok-IN' : language === 'tcy' ? 'tcy-IN' : language === 'gu' ? 'gu-IN' : language === 'mr' ? 'mr-IN' : 'en-IN'
+      instance.lang = getSpeechLocale(language)
       instance.interimResults = true
       instance.continuous = false
 
@@ -57,14 +73,15 @@ export default function QueryInput({ value, onChange, onSend, loading, language 
 
       instance.onerror = (event) => {
         setVoiceState('error')
+        const currentLocale = getSpeechLocale(language)
         if (event.error === 'language-not-supported') {
-          setVoiceError(language === 'mr' ? 'Marathi (mr-IN) speech recognition is not supported by your browser.' : language === 'gu' ? 'Gujarati (gu-IN) speech recognition is not supported by your browser.' : 'Selected language speech recognition is not supported by your browser.')
+          setVoiceError(`Speech recognition for selected language (${currentLocale}) is not supported by your browser.`)
         } else if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
           setVoiceError('Microphone permission was denied. Please click the camera/mic lock icon in your browser address bar and allow Microphone access.')
         } else if (event.error === 'network') {
           setVoiceError('Network connection issue. Voice recognition requires an active internet connection.')
         } else if (event.error === 'no-speech') {
-          setVoiceError(language === 'tcy' ? 'No speech detected or Tulu voice input is unsupported on this browser.' : language === 'gu' ? 'No speech detected or Gujarati voice input is unsupported on this browser.' : language === 'mr' ? 'No speech detected or Marathi voice input is unsupported on this browser.' : 'No speech detected. Please check your microphone and try speaking again.')
+          setVoiceError('No speech detected. Please check your microphone and try speaking again.')
         } else if (event.error === 'audio-capture') {
           setVoiceError('No microphone detected. Please plug in or select a valid microphone.')
         } else {
