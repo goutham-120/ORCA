@@ -385,13 +385,31 @@ export default function Message({ message }) {
     }
   }
 
+  const detectLanguage = () => {
+    if (response?.language) return response.language
+    if (response?.context?.response_language) return response.context.response_language
+    if (message?.language) return message.language
+    const text = String(response?.answer || message?.text || '')
+    if (/[\u0900-\u097F]/.test(text)) return 'hi'
+    if (/[\u0C00-\u0C7F]/.test(text)) return 'te'
+    if (/[\u0B80-\u0BFF]/.test(text)) return 'ta'
+    if (/[\u0D00-\u0D7F]/.test(text)) return 'ml'
+    if (/[\u0C80-\u0CFF]/.test(text)) return 'kn'
+    if (/[\u0B00-\u0B7F]/.test(text)) return 'or'
+    if (/[\u0980-\u09FF]/.test(text)) return 'bn'
+    if (/[\u0A80-\u0AFF]/.test(text)) return 'gu'
+    return 'en'
+  }
+
+  const spokenLang = detectLanguage()
+  const ui = getUILabels(spokenLang)
+
   const handleToggleSpeech = () => {
     if (isSpeakingThis) {
       stopSpeech()
       setIsSpeakingThis(false)
     } else {
       const textToSpeak = response?.answer || message.text || ''
-      const spokenLang = response?.language || 'en'
       setIsSpeakingThis(true)
       speakResponse(
         textToSpeak,
@@ -420,9 +438,6 @@ export default function Message({ message }) {
 
   const assessment = response?.assessment
   const decision = response?.decision
-
-  const spokenLang = response?.language || response?.context?.response_language || 'en'
-  const ui = getUILabels(spokenLang)
 
   const isChlorophyllOrSST = /chlorophyll|sea surface temperature|thermal front|thermal breaks/i.test(message.text || '')
   const isAvoidanceQuery = /avoid|avoided|geofenc|restricted zone|restricted area|hazard zone|restriction|exclusion zone/i.test(message.text || '')
@@ -961,11 +976,11 @@ export default function Message({ message }) {
             type="button"
             className={`action-btn speak-btn ${isSpeakingThis ? 'is-speaking' : ''}`}
             onClick={handleToggleSpeech}
-            title={isSpeakingThis ? 'Stop speech synthesis' : 'Replay spoken response in selected language'}
+            title={isSpeakingThis ? 'Stop speech synthesis' : `Listen to spoken response in ${spokenLang.toUpperCase()}`}
           >
             {isSpeakingThis
               ? '⏹️ Stop Speech'
-              : `🔊 Listen (${(response?.language || 'en').toUpperCase()})`}
+              : `🔊 Listen (${spokenLang.toUpperCase()})`}
           </button>
           <button
             type="button"

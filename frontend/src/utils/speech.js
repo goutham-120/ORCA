@@ -1,27 +1,35 @@
 /**
  * Multilingual Text-to-Speech synthesis helper for ORCA.
- * Supports English (en-IN / en-US), Hindi (hi-IN), Telugu (te-IN), and Tamil (ta-IN).
+ * Supports English (en-IN / en-US), Hindi (hi-IN), Telugu (te-IN), Tamil (ta-IN), etc.
  */
 
 let speechSynth = typeof window !== 'undefined' ? window.speechSynthesis : null
 let cachedVoices = []
 
 if (speechSynth) {
-  cachedVoices = speechSynth.getVoices()
-  if (typeof speechSynth.addEventListener === 'function') {
-    speechSynth.addEventListener('voiceschanged', () => {
-      cachedVoices = speechSynth.getVoices()
-    })
-  } else {
-    speechSynth.onvoiceschanged = () => {
-      cachedVoices = speechSynth.getVoices()
+  try {
+    cachedVoices = speechSynth.getVoices()
+    if (typeof speechSynth.addEventListener === 'function') {
+      speechSynth.addEventListener('voiceschanged', () => {
+        cachedVoices = speechSynth.getVoices()
+      })
+    } else {
+      speechSynth.onvoiceschanged = () => {
+        cachedVoices = speechSynth.getVoices()
+      }
     }
+  } catch (e) {
+    console.warn('SpeechSynthesis voice init warning:', e)
   }
 }
 
 export function getVoiceForLanguage(langCode) {
-  if (!speechSynth) return null
-  const voices = (cachedVoices && cachedVoices.length > 0) ? cachedVoices : speechSynth.getVoices()
+  if (typeof window === 'undefined' || !window.speechSynthesis) return null
+  const synth = window.speechSynthesis
+  let voices = synth.getVoices()
+  if (!voices || voices.length === 0) {
+    voices = cachedVoices || []
+  }
   if (!voices || voices.length === 0) return null
 
   const targetLang = (langCode || 'en').toLowerCase()
@@ -63,12 +71,12 @@ export function getVoiceForLanguage(langCode) {
       ? 'mr-in'
       : 'en-in'
 
-  // 1. Match exact locale (e.g. te-IN)
+  // 1. Match exact locale (e.g. hi-IN / hi-in)
   let matched = voices.find(
     (v) => v.lang && v.lang.toLowerCase().replace('_', '-') === exactLocale
   )
 
-  // 2. Match language prefix (e.g. te-*)
+  // 2. Match language prefix (e.g. hi, hi-*, hi_*)
   if (!matched) {
     matched = voices.find((v) => v.lang && v.lang.toLowerCase().startsWith(langPrefix))
   }
@@ -76,21 +84,25 @@ export function getVoiceForLanguage(langCode) {
   // 3. Match voice name keywords
   if (!matched) {
     const nameKeywords = {
-      ml: ['malayalam'],
-      kn: ['kannada'],
-      te: ['telugu'],
-      ta: ['tamil'],
-      hi: ['hindi'],
-      or: ['odia', 'oriya'],
-      bn: ['bengali', 'bangla'],
-      kok: ['konkani', 'kokani'],
-      tcy: ['tulu'],
-      gu: ['gujarati'],
-      mr: ['marathi'],
-      en: ['english', 'en_']
+      ml: ['malayalam', 'ml-in', 'ml_in'],
+      kn: ['kannada', 'kn-in', 'kn_in'],
+      te: ['telugu', 'te-in', 'te_in', 'mohan', 'shruti'],
+      ta: ['tamil', 'ta-in', 'ta_in', 'valluvar'],
+      hi: ['hindi', 'hi-in', 'hi_in', 'swara', 'madhur', 'kalpana', 'hemant', 'lekha', 'हिन्दी', 'devanagari'],
+      or: ['odia', 'oriya', 'or-in', 'or_in'],
+      bn: ['bengali', 'bangla', 'bn-in', 'bn_in', 'bashkar'],
+      kok: ['konkani', 'kokani', 'kok-in', 'kok_in'],
+      tcy: ['tulu', 'tcy-in', 'tcy_in'],
+      gu: ['gujarati', 'gu-in', 'gu_in', 'dhwani', 'niranjan'],
+      mr: ['marathi', 'mr-in', 'mr_in', 'aarohi'],
+      en: ['english', 'en-in', 'en_in', 'en-us', 'en_us', 'en-gb', 'en_gb', 'india']
     }
     const keywords = nameKeywords[langPrefix] || []
-    matched = voices.find((v) => keywords.some((kw) => v.name.toLowerCase().includes(kw)))
+    matched = voices.find((v) => {
+      const vName = (v.name || '').toLowerCase()
+      const vLang = (v.lang || '').toLowerCase()
+      return keywords.some((kw) => vName.includes(kw) || vLang.includes(kw))
+    })
   }
 
   return matched || null
@@ -152,14 +164,17 @@ export function distillVoiceResponse(text, language = 'en', response = null) {
     .replace(/\([\d.]+\s*°\s*[NSEW],?\s*[\d.]+\s*°\s*[NSEW]\)/gi, '')
     .replace(/Confidence:\s*[\d.]+/gi, '')
 
-  // 3. Spoken pronunciation replacements for units
-  cleaned = cleaned
-    .replace(/(\d+(?:\.\d+)?)\s*m\/s/gi, '$1 meters per second')
-    .replace(/(\d+(?:\.\d+)?)\s*kts?/gi, '$1 knots')
-    .replace(/(\d+(?:\.\d+)?)\s*°C/gi, '$1 degrees Celsius')
-    .replace(/(\d+(?:\.\d+)?)\s*m\b/gi, '$1 meters')
-    .replace(/(\d+(?:\.\d+)?)\s*s\b/gi, '$1 seconds')
-    .replace(/;\s*/g, ', ')
+  // 3. Spoken pronunciation replacements for English units (only if not Indic script)
+  const isIndic = /[\u0900-\u0DFF]/.test(cleaned)
+  if (!isIndic) {
+    cleaned = cleaned
+      .replace(/(\d+(?:\.\d+)?)\s*m\/s/gi, '$1 meters per second')
+      .replace(/(\d+(?:\.\d+)?)\s*kts?/gi, '$1 knots')
+      .replace(/(\d+(?:\.\d+)?)\s*°C/gi, '$1 degrees Celsius')
+      .replace(/(\d+(?:\.\d+)?)\s*m\b/gi, '$1 meters')
+      .replace(/(\d+(?:\.\d+)?)\s*s\b/gi, '$1 seconds')
+      .replace(/;\s*/g, ', ')
+  }
 
   // 4. Split into natural sentences (handles English and Indic terminators . ! ? ।)
   const sentenceDelimiters = /([.!?।]+[\s\n]+|\n\n+|\n(?=[A-Z\u0900-\u0DFF]))/g
@@ -173,7 +188,7 @@ export function distillVoiceResponse(text, language = 'en', response = null) {
       if (sentences.length > 0) {
         sentences[sentences.length - 1] += trimmed
       }
-    } else if (trimmed.length > 3) {
+    } else if (trimmed.length > 2) {
       sentences.push(trimmed)
     }
   }
@@ -191,7 +206,7 @@ export function distillVoiceResponse(text, language = 'en', response = null) {
   // 6. Combine all substantive answer sentences cleanly
   let finalVoiceText = filtered.join(' ').replace(/\s+/g, ' ').trim()
   if (!finalVoiceText) {
-    finalVoiceText = cleaned.slice(0, 300)
+    finalVoiceText = cleaned
   }
 
   // 7. If risk is high or critical, ensure direct safety recommendation is voiced
@@ -210,40 +225,72 @@ export function distillVoiceResponse(text, language = 'en', response = null) {
   }
 
   if (!/[.!?।]$/.test(finalVoiceText)) {
-    finalVoiceText += '.'
+    finalVoiceText += isIndic ? '।' : '.'
   }
 
   return finalVoiceText
 }
 
 export function speakResponse(text, language = 'en', onEnd = null, onError = null, messageId = null, response = null) {
-  if (!speechSynth || (!text && !response)) return false
+  if (typeof window === 'undefined' || !window.speechSynthesis) return false
 
-  stopSpeech()
+  const synth = window.speechSynthesis
+
+  // Reset speech synthesis state and cancel previous sounds to avoid browser mute stall
+  try {
+    synth.cancel()
+    if (synth.paused) {
+      synth.resume()
+    }
+  } catch (e) {
+    console.warn('SpeechSynthesis resume warning:', e)
+  }
+
+  // Automatically detect Hindi and other Indic scripts from text if language is omitted or generic
+  let effectiveLang = (language || 'en').toLowerCase()
+  const rawText = String(text || response?.answer || '')
+  if (/[\u0900-\u097F]/.test(rawText)) {
+    effectiveLang = 'hi'
+  } else if (/[\u0C00-\u0C7F]/.test(rawText)) {
+    effectiveLang = 'te'
+  } else if (/[\u0B80-\u0BFF]/.test(rawText)) {
+    effectiveLang = 'ta'
+  } else if (/[\u0D00-\u0D7F]/.test(rawText)) {
+    effectiveLang = 'ml'
+  } else if (/[\u0C80-\u0CFF]/.test(rawText)) {
+    effectiveLang = 'kn'
+  } else if (/[\u0B00-\u0B7F]/.test(rawText)) {
+    effectiveLang = 'or'
+  } else if (/[\u0980-\u09FF]/.test(rawText)) {
+    effectiveLang = 'bn'
+  } else if (/[\u0A80-\u0AFF]/.test(rawText)) {
+    effectiveLang = 'gu'
+  }
 
   // Distill full chat answer into a direct, concise voice assistant answer
-  const cleanVoiceText = distillVoiceResponse(text, language, response)
+  const cleanVoiceText = distillVoiceResponse(text, effectiveLang, response)
   if (!cleanVoiceText) return false
 
   const utterance = new SpeechSynthesisUtterance(cleanVoiceText)
 
-  const langCode = (language || 'en').toLowerCase()
   let targetLocale = 'en-IN'
-  if (langCode.startsWith('ml')) targetLocale = 'ml-IN'
-  else if (langCode.startsWith('kn')) targetLocale = 'kn-IN'
-  else if (langCode.startsWith('te')) targetLocale = 'te-IN'
-  else if (langCode.startsWith('ta')) targetLocale = 'ta-IN'
-  else if (langCode.startsWith('hi')) targetLocale = 'hi-IN'
-  else if (langCode.startsWith('or')) targetLocale = 'or-IN'
-  else if (langCode.startsWith('bn')) targetLocale = 'bn-IN'
-  else if (langCode.startsWith('kok')) targetLocale = 'kok-IN'
-  else if (langCode.startsWith('tcy')) targetLocale = 'tcy-IN'
-  else if (langCode.startsWith('gu')) targetLocale = 'gu-IN'
-  else if (langCode.startsWith('mr')) targetLocale = 'mr-IN'
+  if (effectiveLang.startsWith('ml')) targetLocale = 'ml-IN'
+  else if (effectiveLang.startsWith('kn')) targetLocale = 'kn-IN'
+  else if (effectiveLang.startsWith('te')) targetLocale = 'te-IN'
+  else if (effectiveLang.startsWith('ta')) targetLocale = 'ta-IN'
+  else if (effectiveLang.startsWith('hi')) targetLocale = 'hi-IN'
+  else if (effectiveLang.startsWith('or')) targetLocale = 'or-IN'
+  else if (effectiveLang.startsWith('bn')) targetLocale = 'bn-IN'
+  else if (effectiveLang.startsWith('kok')) targetLocale = 'kok-IN'
+  else if (effectiveLang.startsWith('tcy')) targetLocale = 'tcy-IN'
+  else if (effectiveLang.startsWith('gu')) targetLocale = 'gu-IN'
+  else if (effectiveLang.startsWith('mr')) targetLocale = 'mr-IN'
 
   utterance.lang = targetLocale
+  utterance.rate = 0.95 // Optimal cadence for clear pronunciation
+  utterance.pitch = 1.0
 
-  const voice = getVoiceForLanguage(langCode)
+  const voice = getVoiceForLanguage(effectiveLang)
   if (voice) {
     utterance.voice = voice
   }
@@ -266,6 +313,7 @@ export function speakResponse(text, language = 'en', onEnd = null, onError = nul
   }
 
   utterance.onerror = (e) => {
+    console.warn('Speech synthesis utterance error:', e)
     currentSpeakingMessageId = null
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('orca-speech-end', { detail: { messageId, error: e } }))
@@ -273,20 +321,27 @@ export function speakResponse(text, language = 'en', onEnd = null, onError = nul
     if (onError) onError(e)
   }
 
-  speechSynth.speak(utterance)
+  try {
+    synth.speak(utterance)
+    if (synth.paused) {
+      synth.resume()
+    }
+  } catch (err) {
+    console.error('synth.speak failed:', err)
+    return false
+  }
+
   return true
 }
 
 export function stopSpeech() {
-  if (speechSynth) {
-    speechSynth.cancel()
+  if (typeof window !== 'undefined' && window.speechSynthesis) {
+    window.speechSynthesis.cancel()
     currentSpeakingMessageId = null
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('orca-speech-end', { detail: {} }))
-    }
+    window.dispatchEvent(new CustomEvent('orca-speech-end', { detail: {} }))
   }
 }
 
 export function isSpeaking() {
-  return Boolean(speechSynth && speechSynth.speaking)
+  return Boolean(typeof window !== 'undefined' && window.speechSynthesis && window.speechSynthesis.speaking)
 }
