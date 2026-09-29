@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { coastalService } from '../../services/coastalService'
+import VoiceInputControl from '../common/VoiceInputControl'
 
 const COASTAL_REGIONS = [
   'Visakhapatnam Coast',
@@ -780,10 +781,14 @@ export default function FishermanPersonalization({ user, userKey }) {
         })()}
       </div>
 
-      {/* SECTION 3: 💬 SEND MESSAGE / COMPLAINT TO COASTAL AUTHORITY */}
+      {/* SECTION 3: SEND MESSAGE / COMPLAINT TO COASTAL AUTHORITY */}
       <div style={{ background: '#ffffff', border: '1px solid #dce7f0', borderRadius: 12, padding: 22, boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, borderBottom: '1px solid #f1f5f9', paddingBottom: 12 }}>
-          <span style={{ fontSize: 20 }}>💬</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, borderBottom: '1px solid #f1f5f9', paddingBottom: 12 }}>
+          <div style={{ width: 36, height: 36, borderRadius: 8, background: '#e0f2fe', color: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+          </div>
           <div>
             <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: 'var(--ink)', fontFamily: 'Sora, sans-serif' }}>
               Send Message / Complaint to Coastal Authority
@@ -824,23 +829,35 @@ export default function FishermanPersonalization({ user, userKey }) {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--ink)', marginBottom: 4 }}>
-              Message / Complaint Details *
-            </label>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 6 }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)' }}>
+                Message / Complaint Details *
+              </label>
+              <VoiceInputControl
+                onTranscript={(transcript) => setMessageText(transcript)}
+                currentValue={messageText}
+                defaultRegion={selectedRegion}
+                buttonLabel="Speak Message (Mic)"
+              />
+            </div>
             <textarea
               required
               rows={4}
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}
-              placeholder="Describe your concern, emergency issue, harbor obstruction, or sea hazard in detail..."
+              placeholder="Describe your concern, emergency issue, harbor obstruction, or sea hazard in detail (or click Speak Message above to talk)..."
               style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 13, fontFamily: 'Inter, sans-serif' }}
             />
           </div>
 
           {/* ATTACH PHOTO */}
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--ink)', marginBottom: 4 }}>
-              📷 Attach Hazard Photo (Optional)
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: 'var(--ink)', marginBottom: 6 }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#0284c7' }}>
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                <circle cx="12" cy="13" r="4" />
+              </svg>
+              <span>Attach Hazard Photo (Optional)</span>
             </label>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <label
@@ -858,7 +875,10 @@ export default function FishermanPersonalization({ user, userKey }) {
                   gap: 6,
                 }}
               >
-                📁 Choose File
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                </svg>
+                Choose File
                 <input type="file" accept="image/*" onChange={handlePhotoSelect} style={{ display: 'none' }} />
               </label>
               {photoFile && (
@@ -910,8 +930,12 @@ export default function FishermanPersonalization({ user, userKey }) {
 
         {/* RECENT SUBMITTED COMPLAINTS & AUTHORITY RESPONSES */}
         <div style={{ marginTop: 24, paddingTop: 18, borderTop: '1px solid #f1f5f9' }}>
-          <h3 style={{ margin: '0 0 12px', fontSize: 15, fontWeight: 700, color: 'var(--ink)', fontFamily: 'Sora, sans-serif' }}>
-            📋 Your Submitted Messages & Authority Responses ({complaints.length})
+          <h3 style={{ margin: '0 0 12px', fontSize: 15, fontWeight: 700, color: 'var(--ink)', fontFamily: 'Sora, sans-serif', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#0284c7' }}>
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+            </svg>
+            <span>Your Submitted Messages & Authority Responses ({complaints.length})</span>
           </h3>
 
           {loadingComplaints ? (
@@ -942,7 +966,13 @@ export default function FishermanPersonalization({ user, userKey }) {
                       <span style={{ fontSize: 12, fontWeight: 700, color: '#0369a1' }}>
                         {c.senderName} ({c.senderRole})
                       </span>
-                      <span style={{ fontSize: 11, color: 'var(--muted)' }}>📍 {c.region}</span>
+                      <span style={{ fontSize: 11, color: 'var(--muted)', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                          <circle cx="12" cy="10" r="3" />
+                        </svg>
+                        <span>{c.region}</span>
+                      </span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span
