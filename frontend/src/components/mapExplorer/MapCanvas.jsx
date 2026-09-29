@@ -5,15 +5,12 @@ import {
   Marker,
   NavigationControl,
   Popup,
-  setWorkerUrl,
 } from 'maplibre-gl'
-import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 import 'maplibre-gl/dist/maplibre-gl.css'
 
 import { registerOmProtocol, getSatelliteCloudTileUrl, getVisibleCloudTileUrl } from '../../utils/omProtocolHelper'
 import { renderPFZPopupHTML, getPFZSpeciesAndCatchInfo } from '../../utils/pfzSpeciesData'
 
-setWorkerUrl(workerUrl)
 registerOmProtocol()
 
 export const ESRI_SATELLITE_TILES = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'

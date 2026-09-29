@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Map, Marker, Popup, setWorkerUrl } from 'maplibre-gl'
-import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
+import { Map, Marker, Popup } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import {
   fetchSpatialGrid,
@@ -11,7 +10,6 @@ import {
 import TemperatureLegend from './TemperatureLegend'
 import { registerOmProtocol, OM_TEMPERATURE_URL, OM_WIND_URL, getSatelliteCloudTileUrl, getVisibleCloudTileUrl } from '../../utils/omProtocolHelper'
 
-setWorkerUrl(workerUrl)
 registerOmProtocol()
 
 export const ESRI_SATELLITE_TILES = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
