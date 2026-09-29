@@ -87,17 +87,31 @@ function enrichWeatherMetric(label, value) {
   return { value: cleanVal || value, subtitle: '', statusClass: 'neutral' }
 }
 
+export function cleanChatText(text) {
+  if (!text) return ''
+  return text
+    .replace(/Forecast evidence matching [^.\n]*\./gi, '')
+    .replace(/[“"][^”"\n]*[”"]\s+was requested, but only current observations were retrieved\.?/gi, '')
+    .replace(/View the source-backed features in Map Explorer\.?/gi, '')
+    .replace(/[“"][^”"\n]*[”"]\s+was retained as the requested place[^.\n]*\./gi, '')
+    .replace(/Some requested capability domains remain pending[^.\n]*\./gi, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 function parseOrcaAnswer(rawText) {
   if (!rawText) return { summary: '', sections: [], remaining: '', hasStructuredEvidence: false }
 
-  const hasStructured = /Ocean evidence:|Weather evidence:|GIS checked|Decision intelligence:|Risk factors:|Tide conditions:|Marine Safety Index:/i.test(rawText)
+  const textToParse = cleanChatText(rawText)
+
+  const hasStructured = /Ocean evidence:|Weather evidence:|GIS checked|Decision intelligence:|Risk factors:|Tide conditions:|Marine Safety Index:/i.test(textToParse)
 
   if (!hasStructured) {
-    return { summary: '', sections: [], remaining: rawText, hasStructuredEvidence: false }
+    return { summary: '', sections: [], remaining: textToParse, hasStructuredEvidence: false }
   }
 
   let summary = ''
-  const summaryMatch = rawText.match(/^(?:ORCA's combined assessment[^.\n]*\.|ORCA cannot make[^.\n]*\.|Assessment[^.\n]*\.|Combined risk assessment[^.\n]*\.|Marine Ecosystem Diagnosis[^.\n]*\.)/i)
+  const summaryMatch = textToParse.match(/^(?:ORCA's combined assessment[^.\n]*\.|ORCA cannot make[^.\n]*\.|Assessment[^.\n]*\.|Combined risk assessment[^.\n]*\.|Marine Ecosystem Diagnosis[^.\n]*\.)/i)
   if (summaryMatch) {
     summary = summaryMatch[0].trim()
   }
@@ -232,8 +246,10 @@ function parseOrcaAnswer(rawText) {
 
 function FormattedAnswer({ text }) {
   if (!text) return null
+  const cleanedText = cleanChatText(text)
+  if (!cleanedText) return null
 
-  const paragraphs = text
+  const paragraphs = cleanedText
     .split(/\n\n+/)
     .map((p) => p.trim())
     .filter(Boolean)

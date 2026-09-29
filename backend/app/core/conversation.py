@@ -179,41 +179,10 @@ def synthesize_answer(
         )
 
     # ---------------------------------------------------------
-    # Time expression
+    # Time expression & Context
     # ---------------------------------------------------------
 
     time_expression = context.get("time_expression")
-
-    if time_expression:
-        has_forecast_evidence = any(
-            isinstance(result, dict)
-            and isinstance(result.get("observation"), dict)
-            and result["observation"].get("timestamp")
-            for result in results.values()
-        )
-
-        if has_forecast_evidence:
-            parts.append(
-                f"Forecast evidence matching “{time_expression}” was retrieved."
-            )
-        else:
-            parts.append(
-                f"“{time_expression}” was requested, but only current observations were retrieved."
-            )
-
-    # ---------------------------------------------------------
-    # Pending capability notice
-    # ---------------------------------------------------------
-
-    if pending:
-        parts.append(
-            "Some requested capability domains remain pending: "
-            + ", ".join(pending)
-            + "."
-        )
-
-    if context.get("map_follow_up"):
-        parts.append("View the source-backed features in Map Explorer.")
 
     # ---------------------------------------------------------
     # Decision intelligence
