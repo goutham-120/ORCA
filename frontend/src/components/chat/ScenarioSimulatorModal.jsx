@@ -6,7 +6,7 @@ import './ScenarioSimulatorModal.css'
 const PRESET_SCENARIOS = [
   {
     id: 'heatwave',
-    label: '🔥 Marine Heatwave',
+    label: 'Marine Heatwave',
     description: '+2.0°C SST elevation (thermal stratification & pelagic species dispersal)',
     deltaSst: 2.0,
     deltaWave: 0.2,
@@ -450,7 +450,7 @@ export default function ScenarioSimulatorModal({
             className="primary-btn font-sans"
             onClick={handleLaunchChat}
           >
-            🚀 Ask ORCA to Synthesize Scenario
+            Ask ORCA to Synthesize Scenario
           </button>
         </div>
       </div>

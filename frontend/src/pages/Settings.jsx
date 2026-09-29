@@ -268,7 +268,7 @@ export default function Settings() {
     <div className="settings-page">
       <div className="settings-header">
         <div>
-          <h1>⚙️ Account & Application Settings</h1>
+          <h1>Account & Application Settings</h1>
           <p className="settings-subtitle">
             Manage your credentials, security preferences, favorite ports, and saved marine data.
           </p>
@@ -281,7 +281,7 @@ export default function Settings() {
           <div className="user-profile-details">
             <span className="profile-name">{user?.display_name || user?.name || 'Maritime User'}</span>
             <span className="profile-role">
-              {user?.role === 'researcher' ? '🔬 Ocean Researcher' : '⚓ Fisherman / Marine Operator'}
+              {user?.role === 'researcher' ? 'Ocean Researcher' : 'Fisherman / Marine Operator'}
             </span>
           </div>
         </div>
@@ -293,7 +293,7 @@ export default function Settings() {
           className={`settings-tab-btn ${activeTab === 'security' ? 'active' : ''}`}
           onClick={() => setActiveTab('security')}
         >
-          🔒 Security & Login
+          Security & Login
         </button>
         <button
           type="button"
@@ -307,14 +307,14 @@ export default function Settings() {
           className={`settings-tab-btn ${activeTab === 'preferences' ? 'active' : ''}`}
           onClick={() => setActiveTab('preferences')}
         >
-          🧭 Marine Preferences
+          Marine Preferences
         </button>
         <button
           type="button"
           className={`settings-tab-btn ${activeTab === 'cache' ? 'active' : ''}`}
           onClick={() => setActiveTab('cache')}
         >
-          💾 Data & Cache
+          Data & Cache
         </button>
       </div>
 
@@ -324,7 +324,7 @@ export default function Settings() {
           {/* Change Email Form */}
           <div className="settings-card">
             <div className="settings-card-head">
-              <h3>✉️ Change Email Address</h3>
+              <h3>Change Email Address</h3>
               <p>Update your registered notification and login email address.</p>
             </div>
 
@@ -380,7 +380,7 @@ export default function Settings() {
           {/* Change Password Form */}
           <div className="settings-card">
             <div className="settings-card-head">
-              <h3>🔑 Change Password</h3>
+              <h3>Change Password</h3>
               <p>Enhance the security of your coastal navigation and fleet account.</p>
             </div>
 
@@ -443,7 +443,7 @@ export default function Settings() {
           <div className="saved-section-card">
             <div className="saved-section-header">
               <div>
-                <h3>⚓ Saved Harbors & Ports of Origin</h3>
+                <h3>Saved Harbors & Ports of Origin</h3>
                 <p>Quick-access embarkation harbors for routing and PFZ distance calculations.</p>
               </div>
 
@@ -523,7 +523,7 @@ export default function Settings() {
           <div className="saved-section-card">
             <div className="saved-section-header">
               <div>
-                <h3>🐟 Bookmarked PFZ Waypoints</h3>
+                <h3>Bookmarked PFZ Waypoints</h3>
                 <p>Saved high-yield potential fishing zones for rapid navigation and expedition logging.</p>
               </div>
             </div>
@@ -570,7 +570,7 @@ export default function Settings() {
           <div className="saved-section-card">
             <div className="saved-section-header">
               <div>
-                <h3>📋 Saved Marine Reports</h3>
+                <h3>Saved Marine Reports</h3>
                 <p>Generated expedition advisories and marine safety logs.</p>
               </div>
             </div>
@@ -617,7 +617,7 @@ export default function Settings() {
         <div className="preferences-container">
           <div className="settings-card">
             <div className="settings-card-head">
-              <h3>🧭 Operational & Nautical Units</h3>
+              <h3>Operational & Nautical Units</h3>
               <p>Configure how speeds, distances, and coordinates are formatted throughout ORCA.</p>
             </div>
 
@@ -689,7 +689,7 @@ export default function Settings() {
         <div className="cache-container">
           <div className="settings-card">
             <div className="settings-card-head">
-              <h3>💾 Local Data, Cache & Offline Packets</h3>
+              <h3>Local Data, Cache & Offline Packets</h3>
               <p>Manage browser storage used for high-resolution satellite tiles and cached INCOIS telemetry.</p>
             </div>
 

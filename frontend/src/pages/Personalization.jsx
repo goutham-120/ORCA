@@ -8,18 +8,18 @@ import { coastalService } from '../services/coastalService'
 
 
 const ROLE_CATEGORIES = [
-  { value: 'fisher_marine_operator', name: 'Fisher / Marine Operator', label: 'Marine Operator', icon: '⚓', sub: 'Safer fishing, PFZs, route guidance' },
-  { value: 'researcher_scientist', name: 'Researcher / Scientist', label: 'Researcher', icon: '🔬', sub: 'Marine observation, data study, trends' },
-  { value: 'coastal_authority', name: 'Coastal Authority', label: 'Coastal Authority', icon: '🚨', sub: 'Monitoring, risk assessment, incident reports' },
-  { value: 'marine_disaster_ops', name: 'Marine & Disaster Operations', label: 'Marine & Disaster Ops', icon: '⚡', sub: 'Rapid hazard communication & emergency alerts' },
-  { value: 'general_user', name: 'General User', label: 'General User', icon: '📍', sub: 'Explore coastal conditions & saved spots' },
+  { value: 'fisher_marine_operator', name: 'Fisher / Marine Operator', label: 'Marine Operator', icon: '', sub: 'Safer fishing, PFZs, route guidance' },
+  { value: 'researcher_scientist', name: 'Researcher / Scientist', label: 'Researcher', icon: '', sub: 'Marine observation, data study, trends' },
+  { value: 'coastal_authority', name: 'Coastal Authority', label: 'Coastal Authority', icon: '', sub: 'Monitoring, risk assessment, incident reports' },
+  { value: 'marine_disaster_ops', name: 'Marine & Disaster Operations', label: 'Marine & Disaster Ops', icon: '', sub: 'Rapid hazard communication & emergency alerts' },
+  { value: 'general_user', name: 'General User', label: 'General User', icon: '', sub: 'Explore coastal conditions & saved spots' },
 ]
 
 const ACTIVITY_SUITABILITY_MAP = {
   beach: {
     id: 'beach',
     label: 'Beach Visit',
-    icon: '🏖️',
+    icon: '',
     seaCondition: '1.1 m Wave Height (Calm & Stable)',
     windCondition: '12 km/h (Light Sea Breeze)',
     visibility: 'Excellent, 11 km',
@@ -29,7 +29,7 @@ const ACTIVITY_SUITABILITY_MAP = {
   fishing: {
     id: 'fishing',
     label: 'Fishing',
-    icon: '🎣',
+    icon: '',
     seaCondition: '1.1 m Low Swell (Moderate Shelf Drift)',
     windCondition: '12 km/h (ESE direction)',
     visibility: 'Excellent, 11 km',
@@ -39,7 +39,7 @@ const ACTIVITY_SUITABILITY_MAP = {
   boating: {
     id: 'boating',
     label: 'Boating',
-    icon: '🚤',
+    icon: '',
     seaCondition: '1.1 m Smooth Waters',
     windCondition: '12 km/h Gentle Breeze (Safe Passage)',
     visibility: 'Excellent, 11 km',
@@ -49,7 +49,7 @@ const ACTIVITY_SUITABILITY_MAP = {
   swimming: {
     id: 'swimming',
     label: 'Swimming',
-    icon: '🏊',
+    icon: '',
     seaCondition: '1.1 m Waves (Low Swell)',
     windCondition: '12 km/h Light Sea Breeze',
     visibility: 'Excellent, 11 km',
@@ -59,7 +59,7 @@ const ACTIVITY_SUITABILITY_MAP = {
   sightseeing: {
     id: 'sightseeing',
     label: 'Sightseeing',
-    icon: '📸',
+    icon: '',
     seaCondition: '1.1 m Clear Water Line',
     windCondition: '12 km/h Pleasant Breeze',
     visibility: 'Excellent, 11 km (High Visibility)',
@@ -260,7 +260,7 @@ export default function Personalization({ navigate }) {
     setFieldReport({ category: 'Sea Condition', description: '', location: '', photoName: '' })
     setFieldPhotoPreview(null)
 
-    setToastMessage('📷 Ocean Field Report submitted & stored in workspace history!')
+    setToastMessage('Ocean Field Report submitted & stored in workspace history!')
     setTimeout(() => setToastMessage(''), 4500)
   }
 
@@ -286,7 +286,7 @@ export default function Personalization({ navigate }) {
     // Reset form
     setObservation({ title: '', parameter: 'SST', note: '', location: '' })
 
-    setToastMessage('🔬 Research Observation submitted & saved to observation log!')
+    setToastMessage('Research Observation submitted & saved to observation log!')
     setTimeout(() => setToastMessage(''), 4500)
   }
 
@@ -313,7 +313,7 @@ export default function Personalization({ navigate }) {
     setIncident({ type: 'Coastal Flooding', description: '', location: '', photoName: '' })
     setIncidentPhotoPreview(null)
 
-    setToastMessage('🚨 Coastal Incident Report submitted & stored in incident logs!')
+    setToastMessage('Coastal Incident Report submitted & stored in incident logs!')
     setTimeout(() => setToastMessage(''), 4500)
   }
 
@@ -338,25 +338,25 @@ export default function Personalization({ navigate }) {
       saveUserData('orca_saved_spots', updatedSpots)
     }
 
-    setToastMessage(`📍 Preferred coastal spot saved to "${val}"!`)
+    setToastMessage(`Preferred coastal spot saved to "${val}"!`)
     setTimeout(() => setToastMessage(''), 4500)
   }
 
   const getRoleIdentity = (role, category) => {
     const r = (role || category || '').toLowerCase()
     if (r.includes('fisherman') || r.includes('fisher')) {
-      return { label: 'Fisherman', icon: '🎣' }
+      return { label: 'Fisherman', icon: '' }
     }
     if (r.includes('researcher')) {
-      return { label: 'Researcher', icon: '🔬' }
+      return { label: 'Researcher', icon: '' }
     }
     if (r.includes('coastal_authority') || r.includes('coastal')) {
-      return { label: 'Coastal Authority', icon: '🏛️' }
+      return { label: 'Coastal Authority', icon: '' }
     }
     if (r.includes('marine_disaster_ops') || r.includes('disaster')) {
-      return { label: 'Marine & Disaster Operations', icon: '⚓' }
+      return { label: 'Marine & Disaster Operations', icon: '' }
     }
-    return { label: 'General User', icon: '📍' }
+    return { label: 'General User', icon: '' }
   }
 
   const roleIdentity = getRoleIdentity(user?.role, user?.user_category)
@@ -387,8 +387,8 @@ export default function Personalization({ navigate }) {
                 : 'Personalized Coastal Monitoring & Activity Hub'}
             </h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 6, fontSize: 12, color: '#64748b' }}>
-              <span>👤 Officer/User: <strong style={{ color: '#0f172a' }}>{user?.name || user?.email || 'Authorized User'}</strong></span>
-              {user?.organization && <span>• 🏛️ {user.organization}</span>}
+              <span>Officer/User: <strong style={{ color: '#0f172a' }}>{user?.name || user?.email || 'Authorized User'}</strong></span>
+              {user?.organization && <span>• {user.organization}</span>}
               {user?.designation && <span>({user.designation})</span>}
             </div>
           </div>
@@ -425,7 +425,7 @@ export default function Personalization({ navigate }) {
         {isAdmin && (
           <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingTop: 12, borderTop: '1px solid #e2e8f0', flexWrap: 'wrap', alignItems: 'center' }}>
             <span style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginRight: 4 }}>
-              🛡️ Admin Workspace View:
+              Admin Workspace View:
             </span>
             {ROLE_CATEGORIES.map((role) => {
               const isSelected = selectedRole === role.value
@@ -520,7 +520,7 @@ export default function Personalization({ navigate }) {
           {/* PLAN MY COASTAL VISIT FEATURE */}
           <div style={{ background: '#f4fafc', border: '1px solid #d4ebf5', borderRadius: 12, padding: 22, display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 24 }}>🏖️</span>
+              
               <div>
                 <h3 style={{ margin: 0, fontSize: 17, color: 'var(--ink)', fontFamily: 'Sora, sans-serif' }}>
                   Plan My Coastal Visit
@@ -630,7 +630,7 @@ export default function Personalization({ navigate }) {
           {/* PRIMARY COASTAL LOCATION SETTER */}
           <div style={{ background: '#ffffff', border: '1px solid #dce7f0', borderRadius: 12, padding: 22 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-              <span style={{ fontSize: 20 }}>📍</span>
+              
               <h3 style={{ margin: 0, fontSize: 16, color: 'var(--ink)', fontFamily: 'Sora, sans-serif' }}>
                 Primary Coastal Spot
               </h3>
@@ -656,7 +656,7 @@ export default function Personalization({ navigate }) {
                         cursor: 'pointer',
                       }}
                     >
-                      📍 {spot.split(',')[0]}
+                      {spot.split(',')[0]}
                     </button>
                   )
                 })}
@@ -692,7 +692,7 @@ export default function Personalization({ navigate }) {
 
             {preferredSpot && (
               <div style={{ marginTop: 14, padding: 12, background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: 13, color: 'var(--ink)', fontWeight: 600 }}>Active Location: 📍 {preferredSpot}</span>
+                <span style={{ fontSize: 13, color: 'var(--ink)', fontWeight: 600 }}>Active Location: {preferredSpot}</span>
                 <span style={{ padding: '3px 8px', borderRadius: 4, background: '#e0f2fe', color: '#0369a1', fontSize: 11, fontWeight: 700 }}>
                   MONITORING ACTIVE
                 </span>

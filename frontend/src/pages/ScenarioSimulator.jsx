@@ -6,7 +6,7 @@ import './ScenarioSimulator.css'
 const PRESET_SCENARIOS = [
   {
     id: 'heatwave',
-    label: '🔥 Marine Heatwave',
+    label: 'Marine Heatwave',
     description: '+2.4°C SST elevation, pelagic biomass dispersion offshore & coral bleaching risk',
     deltaSst: 2.4,
     deltaWave: 0.2,
@@ -21,7 +21,7 @@ const PRESET_SCENARIOS = [
   },
   {
     id: 'monsoon_gale',
-    label: '💨 Monsoon Gale & Squall',
+    label: 'Monsoon Gale & Squall',
     description: '38 kts gale gusts, +2.8m rough seas, hazardous drift & low visibility',
     deltaSst: -0.6,
     deltaWave: 2.8,
@@ -36,7 +36,7 @@ const PRESET_SCENARIOS = [
   },
   {
     id: 'cyclone',
-    label: '🌀 Cyclonic Storm Surge',
+    label: 'Cyclonic Storm Surge',
     description: '52 kts severe winds, +4.2m destructive waves, 968 hPa barometric drop',
     deltaSst: 0.4,
     deltaWave: 4.2,
@@ -51,7 +51,7 @@ const PRESET_SCENARIOS = [
   },
   {
     id: 'upwelling',
-    label: '🌱 Coastal Upwelling & PFZ Bloom',
+    label: 'Coastal Upwelling & PFZ Bloom',
     description: '-1.8°C nutrient-rich cold upwelling, +2.8 mg/m³ Chlorophyll-a surge, prime fishing',
     deltaSst: -1.8,
     deltaWave: 0.6,
@@ -66,7 +66,7 @@ const PRESET_SCENARIOS = [
   },
   {
     id: 'long_swell',
-    label: '🌊 Oceanic Swell & High Drift',
+    label: 'Oceanic Swell & High Drift',
     description: '+2.0m long-period shoaling swell, 3.2 kts surface drift, shoaling surf hazard',
     deltaSst: 0.0,
     deltaWave: 2.0,
@@ -84,7 +84,7 @@ const PRESET_SCENARIOS = [
 const DEMO_SCENARIO_CARDS = [
   {
     id: 'visakhapatnam',
-    title: '🐟 Scenario 1: PFZ High-Yield Voyage',
+    title: 'Scenario 1: PFZ High-Yield Voyage',
     location: 'Visakhapatnam Fishing Harbour',
     coords: '17.6970°N, 83.2980°E',
     description: 'Optimal fishing zone convergence route 28.4 km offshore (Depth: 55m, SST: 28.1°C, Chl-a: 0.85 mg/m³). High pelagic fish concentration index with zero navigational hazards.',
@@ -93,7 +93,7 @@ const DEMO_SCENARIO_CARDS = [
   },
   {
     id: 'chennai',
-    title: '⚠️ Scenario 2: Severe Hazard & Naval Bypass',
+    title: 'Scenario 2: Severe Hazard & Naval Bypass',
     location: 'Kasimedu Harbor Wharf, Chennai',
     coords: '13.1250°N, 80.2995°E',
     description: 'Multi-scale collision avoidance navigating around Chennai TSS commercial shipping channel & naval restricted artillery perimeter to reach Kasimedu Offshore PFZ safely.',
@@ -102,7 +102,7 @@ const DEMO_SCENARIO_CARDS = [
   },
   {
     id: 'kochi',
-    title: '🛣️ Scenario 3: Land-to-Shore Multi-Modal Transit',
+    title: 'Scenario 3: Land-to-Shore Multi-Modal Transit',
     location: 'Ernakulam Inland Hub → Kochi Harbor',
     coords: '9.9815°N, 76.2999°E (Inland)',
     description: 'Multi-modal route: drive 14.9 km (23 mins) via NH 966B & Mattancherry Bridge to Kochi Marine Terminal, then seamless oceanic navigation to Arabian Sea PFZ.',
@@ -258,7 +258,7 @@ export default function ScenarioSimulator({ navigate }) {
       {/* 1. PAGE HEADER */}
       <header className="simulator-header-bar">
         <div className="simulator-header-left">
-          <div className="simulator-badge-icon">🧪</div>
+          
           <div>
             <h1 className="simulator-page-title font-sora">Scenario Simulator</h1>
             <p className="simulator-page-sub">
@@ -269,7 +269,7 @@ export default function ScenarioSimulator({ navigate }) {
 
         {/* Sector Picker */}
         <div className="simulator-port-picker">
-          <span className="port-picker-icon">📍</span>
+          
           <div className="port-picker-inner">
             <label htmlFor="sim-port-select" className="port-picker-label">
               Simulation Sector
@@ -297,7 +297,7 @@ export default function ScenarioSimulator({ navigate }) {
           className={`sim-tab-btn ${activeTab === 'whatif' ? 'active' : ''}`}
           onClick={() => setActiveTab('whatif')}
         >
-          <span className="tab-icon">🌊</span>
+          
           <span>What-If Environmental Stress Test</span>
           <span className="tab-pill-count">8 Parameters</span>
         </button>
@@ -355,13 +355,13 @@ export default function ScenarioSimulator({ navigate }) {
             {/* CATEGORY A: HYDRODYNAMICS & SEAS */}
             <div className="param-category-group">
               <div className="param-category-title">
-                <span>🌊 Ocean Hydrodynamics &amp; Drift</span>
+                <span>Ocean Hydrodynamics &amp; Drift</span>
               </div>
 
               {/* SLIDER 1: WAVE SURGE */}
               <div className="sim-slider-group">
                 <div className="slider-label-row">
-                  <span className="slider-label">🌊 Significant Wave Surge (Delta)</span>
+                  <span className="slider-label">Significant Wave Surge (Delta)</span>
                   <span className="slider-val-badge wave">+{deltaWave} m</span>
                 </div>
                 <input
@@ -386,7 +386,7 @@ export default function ScenarioSimulator({ navigate }) {
               {/* SLIDER 2: SURFACE CURRENT / DRIFT */}
               <div className="sim-slider-group">
                 <div className="slider-label-row">
-                  <span className="slider-label">🧭 Ocean Surface Drift Velocity</span>
+                  <span className="slider-label">Ocean Surface Drift Velocity</span>
                   <span className="slider-val-badge current">{currentKts} kts ({Math.round(currentKts * 0.514 * 10) / 10} m/s)</span>
                 </div>
                 <input
@@ -411,7 +411,7 @@ export default function ScenarioSimulator({ navigate }) {
               {/* SELECTOR: TIDAL PHASE */}
               <div className="sim-param-inline-row">
                 <label htmlFor="sim-tide-select" className="inline-label">
-                  🌕 Coastal Tidal Phase:
+                  Coastal Tidal Phase:
                 </label>
                 <select
                   id="sim-tide-select"
@@ -433,13 +433,13 @@ export default function ScenarioSimulator({ navigate }) {
             {/* CATEGORY B: ATMOSPHERE & WEATHER */}
             <div className="param-category-group">
               <div className="param-category-title">
-                <span>💨 Atmospheric &amp; Storm Dynamics</span>
+                <span>Atmospheric &amp; Storm Dynamics</span>
               </div>
 
               {/* SLIDER 3: WIND VELOCITY */}
               <div className="sim-slider-group">
                 <div className="slider-label-row">
-                  <span className="slider-label">💨 Sustained Wind Velocity</span>
+                  <span className="slider-label">Sustained Wind Velocity</span>
                   <span className="slider-val-badge wind">{windKnots} knots ({Math.round(windKnots * 0.5144)} m/s)</span>
                 </div>
                 <input
@@ -489,7 +489,7 @@ export default function ScenarioSimulator({ navigate }) {
               {/* SELECTOR: STORM CONDITION */}
               <div className="sim-param-inline-row">
                 <label htmlFor="sim-condition-select" className="inline-label">
-                  ⛈️ Convective Storm State:
+                  Convective Storm State:
                 </label>
                 <select
                   id="sim-condition-select"
@@ -502,7 +502,7 @@ export default function ScenarioSimulator({ navigate }) {
                 >
                   <option value="normal">Normal / Standard Fair Weather</option>
                   <option value="squall">Monsoonal Squall (Heavy Downpour &amp; Gusts)</option>
-                  <option value="cyclone">🌀 Cyclonic Depression (Dangerous Gale Cone)</option>
+                  <option value="cyclone">Cyclonic Depression (Dangerous Gale Cone)</option>
                 </select>
               </div>
             </div>
@@ -510,13 +510,13 @@ export default function ScenarioSimulator({ navigate }) {
             {/* CATEGORY C: BIO-OCEANOGRAPHY & PFZ */}
             <div className="param-category-group">
               <div className="param-category-title">
-                <span>🐟 Bio-Oceanography, PFZ &amp; Water Clarity</span>
+                <span>Bio-Oceanography, PFZ &amp; Water Clarity</span>
               </div>
 
               {/* SLIDER 5: SST DELTA */}
               <div className="sim-slider-group">
                 <div className="slider-label-row">
-                  <span className="slider-label">🌡️ Sea Surface Temp Delta (SST)</span>
+                  <span className="slider-label">Sea Surface Temp Delta (SST)</span>
                   <span className={`slider-val-badge ${deltaSst > 2.0 ? 'danger' : 'temp'}`}>
                     {deltaSst >= 0 ? `+${deltaSst}` : deltaSst} °C
                   </span>
@@ -543,7 +543,7 @@ export default function ScenarioSimulator({ navigate }) {
               {/* SLIDER 6: CHLOROPHYLL-A DELTA */}
               <div className="sim-slider-group">
                 <div className="slider-label-row">
-                  <span className="slider-label">🌱 Chlorophyll-a Anomaly (PFZ Bloom)</span>
+                  <span className="slider-label">Chlorophyll-a Anomaly (PFZ Bloom)</span>
                   <span className="slider-val-badge bio">
                     {deltaChla >= 0 ? `+${deltaChla}` : deltaChla} mg/m³
                   </span>
@@ -570,7 +570,7 @@ export default function ScenarioSimulator({ navigate }) {
               {/* SLIDER 7: UNDERWATER VISIBILITY */}
               <div className="sim-slider-group">
                 <div className="slider-label-row">
-                  <span className="slider-label">🤿 Underwater Visibility (Secchi Depth)</span>
+                  <span className="slider-label">Underwater Visibility (Secchi Depth)</span>
                   <span className="slider-val-badge vis">{visibilityM} m</span>
                 </div>
                 <input
@@ -600,14 +600,14 @@ export default function ScenarioSimulator({ navigate }) {
                 className="btn-launch-chat"
                 onClick={handleLaunchChat}
               >
-                <span>💬</span> Ask ORCA with this Scenario &rarr;
+                Ask ORCA with this Scenario &rarr;
               </button>
               <button
                 type="button"
                 className="btn-launch-map"
                 onClick={handleInspectMap}
               >
-                <span>🗺️</span> View Simulation on Map Explorer &rarr;
+                View Simulation on Map Explorer &rarr;
               </button>
             </div>
           </div>
@@ -629,14 +629,14 @@ export default function ScenarioSimulator({ navigate }) {
               </div>
             ) : error ? (
               <div className="sim-error-box">
-                <span>⚠️ {error}</span>
+                <span>{error}</span>
               </div>
             ) : (
               <div className="sim-data-container">
                 {/* SAFETY TIER BANNER */}
                 <div className={`sim-safety-banner ${effectiveSafetyLevel.toLowerCase()}`}>
                   <div className="safety-icon-large">
-                    {effectiveSafetyLevel === 'DANGER' ? '🚨' : effectiveSafetyLevel === 'WARNING' ? '⚠️' : '✅'}
+                    
                   </div>
                   <div className="safety-banner-content">
                     <span className="safety-banner-label">
@@ -688,7 +688,7 @@ export default function ScenarioSimulator({ navigate }) {
 
                 {/* OPERATIONAL VESSEL ADVISORY */}
                 <div className="sim-advisory-card">
-                  <h3 className="advisory-title">⚓ Operational Advisory for Vessels &amp; Fleets</h3>
+                  <h3 className="advisory-title">Operational Advisory for Vessels &amp; Fleets</h3>
                   
                   <div className="advisory-row">
                     <div className="vessel-info">
@@ -696,7 +696,7 @@ export default function ScenarioSimulator({ navigate }) {
                       <small className="vessel-sub">Non-motorized or small OBM artisanal vessels</small>
                     </div>
                     <span className={`advisory-pill ${windKnots >= 20 || deltaWave >= 1.6 || currentKts >= 2.5 ? 'pill-danger' : 'pill-safe'}`}>
-                      {windKnots >= 20 || deltaWave >= 1.6 || currentKts >= 2.5 ? '⛔ PROHIBITED FROM SAILING' : '✅ SAFE FOR INSHORE WATERS'}
+                      {windKnots >= 20 || deltaWave >= 1.6 || currentKts >= 2.5 ? 'PROHIBITED FROM SAILING' : '✅ SAFE FOR INSHORE WATERS'}
                     </span>
                   </div>
 
@@ -706,7 +706,7 @@ export default function ScenarioSimulator({ navigate }) {
                       <small className="vessel-sub">Mechanized single/multi-day trawlers</small>
                     </div>
                     <span className={`advisory-pill ${windKnots >= 32 || deltaWave >= 2.6 ? 'pill-danger' : windKnots >= 22 || deltaWave >= 1.8 ? 'pill-warn' : 'pill-safe'}`}>
-                      {windKnots >= 32 || deltaWave >= 2.6 ? '⛔ HARBOR RETURN MANDATORY' : windKnots >= 22 || deltaWave >= 1.8 ? '⚠️ CAUTION - STAY WITHIN 12 NM' : '✅ FAVORABLE FOR VOYAGE'}
+                      {windKnots >= 32 || deltaWave >= 2.6 ? 'HARBOR RETURN MANDATORY' : windKnots >= 22 || deltaWave >= 1.8 ? '⚠️ CAUTION - STAY WITHIN 12 NM' : '✅ FAVORABLE FOR VOYAGE'}
                     </span>
                   </div>
 
@@ -716,14 +716,14 @@ export default function ScenarioSimulator({ navigate }) {
                       <small className="vessel-sub">Offshore vessels &gt;20m with AIS transceiver</small>
                     </div>
                     <span className={`advisory-pill ${windKnots >= 45 || deltaWave >= 4.0 ? 'pill-danger' : windKnots >= 32 ? 'pill-warn' : 'pill-safe'}`}>
-                      {windKnots >= 45 || deltaWave >= 4.0 ? '⛔ GALE DRIFT HAZARD - SEEK SHELTER' : windKnots >= 32 ? '⚠️ MONITOR NAVIC DISTRESS ALERTS' : '✅ ALL-WEATHER OPERATIONS PERMITTED'}
+                      {windKnots >= 45 || deltaWave >= 4.0 ? 'GALE DRIFT HAZARD - SEEK SHELTER' : windKnots >= 32 ? '⚠️ MONITOR NAVIC DISTRESS ALERTS' : '✅ ALL-WEATHER OPERATIONS PERMITTED'}
                     </span>
                   </div>
                 </div>
 
                 {/* FISHERIES IMPACT & HARBOR BERTHING ASSESSMENT */}
                 <div className="sim-fisheries-card">
-                  <h3 className="advisory-title">🐟 Pelagic Biomass &amp; Port Berthing Forecast</h3>
+                  <h3 className="advisory-title">Pelagic Biomass &amp; Port Berthing Forecast</h3>
                   <div className="fisheries-impact-grid">
                     <div className="fishery-item">
                       <span className="fishery-label">Pelagic Fish Dispersal</span>
@@ -778,7 +778,7 @@ export default function ScenarioSimulator({ navigate }) {
                   <h3 className="demo-card-title">{card.title}</h3>
                   <span className="demo-coords-tag">{card.coords}</span>
                 </div>
-                <p className="demo-location-sub">📍 {card.location}</p>
+                <p className="demo-location-sub">{card.location}</p>
                 <p className="demo-card-desc">{card.description}</p>
 
                 <div className="demo-highlights">
@@ -793,7 +793,7 @@ export default function ScenarioSimulator({ navigate }) {
                     className="btn-launch-demo"
                     onClick={() => handleLaunchDemoScenario(card.presetKey)}
                   >
-                    <span>🚀 Launch Scenario on Map Explorer</span>
+                    <span>Launch Scenario on Map Explorer</span>
                     <span className="btn-arrow">&rarr;</span>
                   </button>
                 </div>

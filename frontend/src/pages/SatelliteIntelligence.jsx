@@ -15,7 +15,7 @@ const SATELLITE_MISSIONS = [
     swath: '1,420 km',
     status: 'OPERATIONAL',
     statusColor: '#10b981',
-    icon: '🛰️',
+    icon: '',
     description: 'Premier Indian oceanographic satellite measuring biogeochemical ocean colour, high-resolution Sea Surface Temperature (SST), and surface wind vectors.',
     payloads: [
       { name: 'OCM-3 (Ocean Colour Monitor)', type: '13 Spectral Bands (VNIR)', res: '360 m', role: 'Chlorophyll-a, Total Suspended Matter, Phytoplankton Blooms' },
@@ -34,7 +34,7 @@ const SATELLITE_MISSIONS = [
     swath: 'Full Earth Disk (12,000 km)',
     status: 'OPERATIONAL (15-min Rapid Scan)',
     statusColor: '#0284c7',
-    icon: '🌍',
+    icon: '',
     description: 'Third-generation geostationary meteorological satellite providing continuous real-time storm monitoring, sea surface temperature, and atmospheric soundings over the Indian Ocean.',
     payloads: [
       { name: '6-Channel Multi-Spectral Imager', type: 'VIS, SWIR, MIR, TIR-1, TIR-2, WV', res: '1 km - 4 km', role: 'Convective cloud tracking, cyclone core tracking, fog & vortex detection' },
@@ -53,7 +53,7 @@ const SATELLITE_MISSIONS = [
     swath: 'Full Disk',
     status: 'OPERATIONAL',
     statusColor: '#0284c7',
-    icon: '📡',
+    icon: '',
     description: 'Dedicated meteorological observation platform operating concurrently with INSAT-3DS to deliver 30-minute interleaved multi-spectral atmospheric scanning over India.',
     payloads: [
       { name: 'Multi-Spectral Optical Imager', type: 'Visible & Thermal IR', res: '1 km (VIS) / 4 km (IR)', role: 'Night-time cloud top temperature and coastal marine fog profiling' },
@@ -71,7 +71,7 @@ const SATELLITE_MISSIONS = [
     swath: '1,270 km',
     status: 'GLOBAL SYNCED',
     statusColor: '#8b5cf6',
-    icon: '🌐',
+    icon: '',
     description: 'High-precision European marine observation mission sharing calibrated ocean color and dual-view radiometry with INCOIS for enhanced PFZ composite generation.',
     payloads: [
       { name: 'OLCI (Ocean & Land Colour Instrument)', type: '21 Optical Bands', res: '300 m', role: 'High-precision Chlorophyll bio-productivity & sediment transport' },
@@ -196,7 +196,7 @@ export default function SatelliteIntelligence({ navigate }) {
 
           <div className="sat-hero-stats-row">
             <div className="sat-stat-chip">
-              <span className="sat-stat-icon">🛰️</span>
+              
               <div>
                 <strong>4 Constellations</strong>
                 <small>ISRO EOS-06 · INSAT-3DS · INSAT-3DR · Sentinel-3</small>
@@ -210,7 +210,7 @@ export default function SatelliteIntelligence({ navigate }) {
               </div>
             </div>
             <div className="sat-stat-chip">
-              <span className="sat-stat-icon">🎯</span>
+              
               <div>
                 <strong>360 m Bio-Resolution</strong>
                 <small>OCM-3 Ocean Chlorophyll & Suspended Matter</small>
@@ -222,7 +222,7 @@ export default function SatelliteIntelligence({ navigate }) {
         {/* HARBOR SELECTOR CARD */}
         <div className="sat-harbor-selector-card">
           <div className="sat-selector-header">
-            <span className="sat-selector-label">📍 ACTIVE MONITORING HARBOR</span>
+            <span className="sat-selector-label">ACTIVE MONITORING HARBOR</span>
             <span className="sat-selector-badge">{activeLocation.name}</span>
           </div>
 
@@ -255,7 +255,7 @@ export default function SatelliteIntelligence({ navigate }) {
               >
                 {stateLocations.map((loc) => (
                   <option key={loc.id} value={loc.id}>
-                    ⚓ {loc.name}
+                    {loc.name}
                   </option>
                 ))}
               </select>
@@ -275,7 +275,7 @@ export default function SatelliteIntelligence({ navigate }) {
             className="sat-view-map-btn"
             onClick={() => navigate(`/map-explorer?locationId=${selectedHarborId}`)}
           >
-            🗺️ Inspect Satellite Layers on Map Explorer
+            Inspect Satellite Layers on Map Explorer
           </button>
         </div>
       </section>
@@ -287,7 +287,7 @@ export default function SatelliteIntelligence({ navigate }) {
           className={`sat-tab-btn ${activeTab === 'missions' ? 'is-active' : ''}`}
           onClick={() => setActiveTab('missions')}
         >
-          <span>🛰️</span> Active Satellite Missions
+          <span>Active Satellite Missions</span>
         </button>
         <button
           type="button"
@@ -301,14 +301,14 @@ export default function SatelliteIntelligence({ navigate }) {
           className={`sat-tab-btn ${activeTab === 'telemetry' ? 'is-active' : ''}`}
           onClick={() => setActiveTab('telemetry')}
         >
-          <span>🔬</span> Sensor Telemetry & Health
+          <span>Sensor Telemetry & Health</span>
         </button>
         <button
           type="button"
           className={`sat-tab-btn ${activeTab === 'products' ? 'is-active' : ''}`}
           onClick={() => setActiveTab('products')}
         >
-          <span>📦</span> MOSDAC & Ocean Data Products
+          <span>MOSDAC & Ocean Data Products</span>
         </button>
       </div>
 
@@ -353,7 +353,7 @@ export default function SatelliteIntelligence({ navigate }) {
               </div>
 
               <div className="sat-payloads-section">
-                <h4 className="sat-payloads-heading">🔬 ONBOARD SENSOR PAYLOADS</h4>
+                <h4 className="sat-payloads-heading">ONBOARD SENSOR PAYLOADS</h4>
                 <div className="sat-payload-list">
                   {m.payloads.map((p, idx) => (
                     <div key={idx} className="sat-payload-item">
@@ -362,7 +362,7 @@ export default function SatelliteIntelligence({ navigate }) {
                         <span className="sat-payload-res">{p.res}</span>
                       </div>
                       <div className="sat-payload-type">{p.type}</div>
-                      <p className="sat-payload-role">⚡ {p.role}</p>
+                      <p className="sat-payload-role">{p.role}</p>
                     </div>
                   ))}
                 </div>
@@ -392,7 +392,7 @@ export default function SatelliteIntelligence({ navigate }) {
                   setTimeout(() => setLoadingOverpasses(false), 600)
                 }}
               >
-                🔄 Refresh Overpass Model
+                Refresh Overpass Model
               </button>
             </div>
 
@@ -457,7 +457,7 @@ export default function SatelliteIntelligence({ navigate }) {
           <div className="sat-sensor-tile ocm">
             <div className="sat-sensor-header">
               <div className="sat-sensor-title-row">
-                <span className="sat-sensor-icon">🌿</span>
+                
                 <div>
                   <h3>OCM-3 (Ocean Colour Monitor)</h3>
                   <small>ISRO EOS-06 · 13 Spectral Bands</small>
@@ -495,7 +495,7 @@ export default function SatelliteIntelligence({ navigate }) {
           <div className="sat-sensor-tile sstm">
             <div className="sat-sensor-header">
               <div className="sat-sensor-title-row">
-                <span className="sat-sensor-icon">🌡️</span>
+                
                 <div>
                   <h3>SSTM (Sea Surface Temperature)</h3>
                   <small>ISRO EOS-06 · Dual Thermal IR</small>
@@ -533,7 +533,7 @@ export default function SatelliteIntelligence({ navigate }) {
           <div className="sat-sensor-tile oscat">
             <div className="sat-sensor-header">
               <div className="sat-sensor-title-row">
-                <span className="sat-sensor-icon">💨</span>
+                
                 <div>
                   <h3>Ku-Band Scatterometer (OSCAT)</h3>
                   <small>ISRO EOS-06 · Active Microwave</small>
@@ -571,7 +571,7 @@ export default function SatelliteIntelligence({ navigate }) {
           <div className="sat-sensor-tile insat">
             <div className="sat-sensor-header">
               <div className="sat-sensor-title-row">
-                <span className="sat-sensor-icon">⚡</span>
+                
                 <div>
                   <h3>INSAT-3DS Multi-Spectral Imager</h3>
                   <small>ISRO / IMD · Geostationary 74°E</small>
@@ -629,7 +629,7 @@ export default function SatelliteIntelligence({ navigate }) {
                 <div className="sat-product-footer">
                   <span className="sat-cadence-pill">⏱️ Daily Revisit</span>
                   <button type="button" className="sat-open-link" onClick={() => navigate('/map-explorer')}>
-                    🗺️ Open in Map Explorer →
+                    Open in Map Explorer →
                   </button>
                 </div>
               </div>
@@ -641,7 +641,7 @@ export default function SatelliteIntelligence({ navigate }) {
                 <div className="sat-product-footer">
                   <span className="sat-cadence-pill">⏱️ Daily Multi-Pass</span>
                   <button type="button" className="sat-open-link" onClick={() => navigate('/map-explorer')}>
-                    🗺️ Open in Map Explorer →
+                    Open in Map Explorer →
                   </button>
                 </div>
               </div>
@@ -653,7 +653,7 @@ export default function SatelliteIntelligence({ navigate }) {
                 <div className="sat-product-footer">
                   <span className="sat-cadence-pill">⏱️ 15-Min Cadence</span>
                   <button type="button" className="sat-open-link" onClick={() => navigate('/dashboard')}>
-                    📊 View in Dashboard →
+                    View in Dashboard →
                   </button>
                 </div>
               </div>
@@ -665,7 +665,7 @@ export default function SatelliteIntelligence({ navigate }) {
                 <div className="sat-product-footer">
                   <span className="sat-cadence-pill">⏱️ Twice Daily</span>
                   <button type="button" className="sat-open-link" onClick={() => navigate('/map-explorer')}>
-                    🗺️ Open in Map Explorer →
+                    Open in Map Explorer →
                   </button>
                 </div>
               </div>
