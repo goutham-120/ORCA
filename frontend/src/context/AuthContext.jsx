@@ -116,15 +116,51 @@ export function AuthProvider({ children }) {
 
   const guestLogin = useCallback(
     (role = 'fisherman') => {
-      const isResearcher = role === 'researcher'
-      const guestUser = {
-        id: isResearcher ? 'guest-researcher' : 'guest-fisherman',
-        email: isResearcher ? 'guest.researcher@orca.marine' : 'guest.fisherman@orca.marine',
-        display_name: isResearcher ? 'Guest Researcher' : 'Guest Fisherman',
-        name: isResearcher ? 'Guest Researcher' : 'Guest Fisherman',
-        role: isResearcher ? 'researcher' : 'fisherman',
-        user_category: isResearcher ? 'researcher_scientist' : 'fisher_marine_operator',
-        organization: isResearcher ? 'National Oceanographic Research Institute' : 'Coastal Fisherfolk Guild',
+      let guestUser
+      if (role === 'researcher') {
+        guestUser = {
+          id: 'guest-researcher',
+          email: 'guest.researcher@orca.marine',
+          display_name: 'Guest Researcher',
+          name: 'Guest Researcher',
+          role: 'researcher',
+          user_category: 'researcher_scientist',
+          organization: 'National Oceanographic Research Institute',
+          designation: 'Senior Oceanographer',
+        }
+      } else if (role === 'coastal_authority') {
+        guestUser = {
+          id: 'guest-coastal-authority',
+          email: 'guest.authority@orca.gov',
+          display_name: 'Guest Coastal Authority',
+          name: 'Guest Coastal Authority',
+          role: 'coastal_authority',
+          user_category: 'coastal_authority',
+          organization: 'Coastal Maritime Patrol & Port Security',
+          designation: 'Port Operations Commander',
+        }
+      } else if (role === 'marine_disaster_ops') {
+        guestUser = {
+          id: 'guest-disaster-ops',
+          email: 'guest.disaster@orca.gov',
+          display_name: 'Guest Disaster Operations Officer',
+          name: 'Guest Disaster Operations Officer',
+          role: 'marine_disaster_ops',
+          user_category: 'marine_disaster_ops',
+          organization: 'National Marine Disaster Response Authority',
+          designation: 'Emergency Response Coordinator',
+        }
+      } else {
+        guestUser = {
+          id: 'guest-fisherman',
+          email: 'guest.fisherman@orca.marine',
+          display_name: 'Guest Fisherman',
+          name: 'Guest Fisherman',
+          role: 'fisherman',
+          user_category: 'fisher_marine_operator',
+          organization: 'Coastal Fisherfolk Guild',
+          designation: 'Master Mariner',
+        }
       }
       const guestSession = {
         user: guestUser,

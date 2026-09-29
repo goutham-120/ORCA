@@ -430,6 +430,84 @@ export default function Home({ navigate }) {
                   Continue as Researcher &rarr;
                 </button>
               </div>
+
+              {/* PERSONA 3: MARINE & DISASTER OPERATIONS */}
+              <div
+                className="guest-persona-card"
+                onClick={() => handleGuestSelect('marine_disaster_ops')}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleGuestSelect('marine_disaster_ops')
+                }}
+              >
+                <div className="persona-icon-circle persona-disaster">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                  </svg>
+                </div>
+                <div className="persona-details">
+                  <h3 className="persona-name font-sora">Marine &amp; Disaster Ops</h3>
+                  <span className="persona-pill pill-disaster">Emergency Response &amp; Ports</span>
+                  <p className="persona-desc">
+                    Coordinate rapid maritime hazard advisories, cyclone &amp; tsunami warnings, emergency harbor broadcasts, and port readiness status.
+                  </p>
+                  <ul className="persona-features">
+                    <li>✓ Regional emergency hazard broadcast bulletins</li>
+                    <li>✓ Cyclone &amp; extreme storm alert coordination</li>
+                    <li>✓ Rapid distress report logging &amp; response</li>
+                  </ul>
+                </div>
+                <button
+                  type="button"
+                  className="btn-persona-select btn-persona-disaster font-inter"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleGuestSelect('marine_disaster_ops')
+                  }}
+                >
+                  Continue as Disaster Ops &rarr;
+                </button>
+              </div>
+
+              {/* PERSONA 4: COASTAL AUTHORITY */}
+              <div
+                className="guest-persona-card"
+                onClick={() => handleGuestSelect('coastal_authority')}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleGuestSelect('coastal_authority')
+                }}
+              >
+                <div className="persona-icon-circle persona-authority">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  </svg>
+                </div>
+                <div className="persona-details">
+                  <h3 className="persona-name font-sora">Coastal Authority</h3>
+                  <span className="persona-pill pill-authority">Surveillance &amp; Enforcement</span>
+                  <p className="persona-desc">
+                    Monitor territorial maritime safety, verify citizen incident reports, patrol zone enforcement, and coastal vulnerability metrics.
+                  </p>
+                  <ul className="persona-features">
+                    <li>✓ Real-time coastal incident reports &amp; dispatch</li>
+                    <li>✓ Coastal erosion &amp; boundary enforcement</li>
+                    <li>✓ Multi-agency coordination desk</li>
+                  </ul>
+                </div>
+                <button
+                  type="button"
+                  className="btn-persona-select btn-persona-authority font-inter"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleGuestSelect('coastal_authority')
+                  }}
+                >
+                  Continue as Authority &rarr;
+                </button>
+              </div>
             </div>
           </div>
         </div>

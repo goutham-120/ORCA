@@ -617,7 +617,9 @@
   background: #ffffff;
   border-radius: 20px;
   padding: 32px;
-  max-width: 780px;
+  max-width: 960px;
+  max-height: 90vh;
+  overflow-y: auto;
   width: 100%;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   border: 1px solid #e2e8f0;
@@ -684,7 +686,7 @@
 
 .guest-persona-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 20px;
 }
 
@@ -727,6 +729,18 @@
   border: 1px solid #bbf7d0;
 }
 
+.persona-disaster {
+  background: #fff1f2;
+  color: #e11d48;
+  border: 1px solid #fecdd3;
+}
+
+.persona-authority {
+  background: #f5f3ff;
+  color: #7c3aed;
+  border: 1px solid #ddd6fe;
+}
+
 .persona-name {
   font-size: 1.15rem;
   font-weight: 700;
@@ -751,6 +765,16 @@
 .pill-researcher {
   background: #dcfce7;
   color: #15803d;
+}
+
+.pill-disaster {
+  background: #ffe4e6;
+  color: #be123c;
+}
+
+.pill-authority {
+  background: #ede9fe;
+  color: #6d28d9;
 }
 
 .persona-desc {
@@ -800,6 +824,24 @@
 
 .btn-persona-researcher:hover {
   background: #15803d;
+}
+
+.btn-persona-disaster {
+  background: #e11d48;
+  color: #ffffff;
+}
+
+.btn-persona-disaster:hover {
+  background: #be123c;
+}
+
+.btn-persona-authority {
+  background: #7c3aed;
+  color: #ffffff;
+}
+
+.btn-persona-authority:hover {
+  background: #6d28d9;
 }
 
 /* Responsive */

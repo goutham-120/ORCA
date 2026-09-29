@@ -74,7 +74,7 @@ export default function Personalization({ navigate }) {
 
   const [selectedRole, setSelectedRole] = useState(() => {
     if (user?.role === 'coastal_authority' || user?.user_category === 'coastal_authority') return 'coastal_authority'
-    if (user?.role === 'marine_disaster_ops' || user?.user_category === 'marine_disaster_ops') return 'marine_disaster_ops'
+    if (user?.role === 'marine_disaster_ops' || user?.user_category === 'marine_disaster_ops' || user?.role === 'marine_disaster' || user?.role === 'disaster_ops') return 'marine_disaster_ops'
     if (user?.role === 'researcher' || user?.user_category === 'researcher_scientist') return 'researcher_scientist'
     return user?.user_category || 'fisher_marine_operator'
   })
@@ -168,7 +168,7 @@ export default function Personalization({ navigate }) {
       queueMicrotask(() => {
         if (user.role === 'coastal_authority' || user.user_category === 'coastal_authority') {
           setSelectedRole('coastal_authority')
-        } else if (user.role === 'marine_disaster_ops' || user.user_category === 'marine_disaster_ops') {
+        } else if (user.role === 'marine_disaster_ops' || user.user_category === 'marine_disaster_ops' || user.role === 'marine_disaster' || user.role === 'disaster_ops') {
           setSelectedRole('marine_disaster_ops')
         } else if (user.role === 'researcher' || user.user_category === 'researcher_scientist') {
           setSelectedRole('researcher_scientist')
@@ -421,48 +421,45 @@ export default function Personalization({ navigate }) {
           </div>
         </div>
 
-        {/* Admin Multi-Persona Switcher Tabs (Only visible to Admin) */}
-        {isAdmin && (
-          <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingTop: 12, borderTop: '1px solid #e2e8f0', flexWrap: 'wrap', alignItems: 'center' }}>
-            <span style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginRight: 4 }}>
-              Admin Workspace View:
-            </span>
-            {ROLE_CATEGORIES.map((role) => {
-              const isSelected = selectedRole === role.value
-              return (
-                <button
-                  key={role.value}
-                  type="button"
-                  onClick={() => changeRoleCategory(role.value)}
-                  disabled={savingRole}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: '7px 14px',
-                    borderRadius: 8,
-                    border: isSelected ? '1.5px solid #0284c7' : '1px solid #cbd5e1',
-                    background: isSelected ? '#0284c7' : '#ffffff',
-                    color: isSelected ? '#ffffff' : '#334155',
-                    fontSize: 12,
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                    boxShadow: isSelected ? '0 3px 10px rgba(2, 132, 199, 0.25)' : 'none',
-                  }}
-                >
-                  <span style={{ fontSize: 14 }}>{role.icon}</span>
-                  <span>{role.name}</span>
-                  {isSelected && (
-                    <span style={{ fontSize: 9, background: '#ffffff', color: '#0284c7', padding: '1px 5px', borderRadius: 4, fontWeight: 800 }}>
-                      ACTIVE
-                    </span>
-                  )}
-                </button>
-              )
-            })}
-          </div>
-        )}
+        {/* Workspace Switcher Tabs */}
+        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingTop: 12, borderTop: '1px solid #e2e8f0', flexWrap: 'wrap', alignItems: 'center' }}>
+          <span style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginRight: 4 }}>
+            {isAdmin ? 'Admin Workspace View:' : 'Switch Workspace View:'}
+          </span>
+          {ROLE_CATEGORIES.map((role) => {
+            const isSelected = selectedRole === role.value
+            return (
+              <button
+                key={role.value}
+                type="button"
+                onClick={() => changeRoleCategory(role.value)}
+                disabled={savingRole}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '7px 14px',
+                  borderRadius: 8,
+                  border: isSelected ? '1.5px solid #0284c7' : '1px solid #cbd5e1',
+                  background: isSelected ? '#0284c7' : '#ffffff',
+                  color: isSelected ? '#ffffff' : '#334155',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  boxShadow: isSelected ? '0 3px 10px rgba(2, 132, 199, 0.25)' : 'none',
+                }}
+              >
+                <span>{role.name}</span>
+                {isSelected && (
+                  <span style={{ fontSize: 9, background: '#ffffff', color: '#0284c7', padding: '1px 5px', borderRadius: 4, fontWeight: 800 }}>
+                    ACTIVE
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       {/* TOAST SUCCESS BANNER */}
