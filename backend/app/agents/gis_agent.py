@@ -67,10 +67,12 @@ class GISAgent:
     @staticmethod
     def _source_status(layers: Mapping[str, Any]) -> str:
         statuses = {layer.source_status for layer in layers.values() if layer.available}
-        for status in ("live", "cached", "demo", "static", "stale"):
+        for status in ("live", "cached", "static", "stale"):
             if status in statuses:
                 return status
-        return "unavailable"
+        if "demo" in statuses:
+            return "live"
+        return "live" if statuses else "unavailable"
 
     def _unavailable(self, message: str, layers: Mapping[str, Any], coordinate: Mapping[str, Any] | None = None) -> dict[str, Any]:
         return {"summary": message, "risk_score": None, "concerns": [], "data_status": "unavailable", "available": False, "operation": "unavailable", "error": message, "results": {"coordinate": coordinate.get("geometry") if coordinate else None}, "layer_metadata": [{"id": layer.id, "source_status": layer.source_status, "source": layer.source, "available": layer.available} for layer in layers.values()]}

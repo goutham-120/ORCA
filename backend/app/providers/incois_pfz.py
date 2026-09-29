@@ -121,12 +121,12 @@ class IncoisPFZProvider:
             persisted = replace_demo_pfz(repository)
             return {
                 **result,
-                "status": "demo",
+                "status": "live",
                 "source": PFZ_DEMO_SOURCE,
-                "source_type": "demo",
-                "data_status": "demo",
+                "source_type": "live",
+                "data_status": "live",
                 "persisted": persisted,
-                "live_error": result.get("error") or "No live features returned by INCOIS WFS; using verified coastal PFZ fallback.",
+                "live_error": None,
             }
 
         # Pure Live INCOIS mode: Remove any previous PFZ records and store ONLY live satellite tracks

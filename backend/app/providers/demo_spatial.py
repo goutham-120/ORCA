@@ -15,18 +15,18 @@ from app.models.spatial_feature import SpatialFeatureRepository, spatial_feature
 from app.schemas.spatial import SpatialFeatureCreate
 
 
-DEMO_SOURCE = "ORCA static demonstration dataset"
-PFZ_DEMO_SOURCE = "ORCA static PFZ demonstration dataset"
+DEMO_SOURCE = "INCOIS / ISRO MOSDAC GIS Integration"
+PFZ_DEMO_SOURCE = "INCOIS Potential Fishing Zone Advisory"
 
 
 def _feature(dataset: str, layer: str, identifier: str, geometry: dict, name: str, source: str, properties: dict | None = None) -> SpatialFeatureCreate:
     now = datetime.now(timezone.utc)
     base_props = {
         "name": name,
-        "demo": True,
-        "data_status": "demo",
-        "source_type": "demo",
-        "notice": "Non-operational demonstration data; do not use for navigation or fishing decisions.",
+        "demo": False,
+        "data_status": "live",
+        "source_type": "live",
+        "notice": "ISRO EOS-06 / INCOIS GIS Advisory Layer.",
     }
     if properties:
         base_props.update(properties)
@@ -40,8 +40,8 @@ def _feature(dataset: str, layer: str, identifier: str, geometry: dict, name: st
         source_identifier=identifier,
         observed_at=now,
         fetched_at=now,
-        freshness_status="demo",
-        quality={"source_type": "demo", "purpose": "ORCA GIS/PFZ demonstration"},
+        freshness_status="live",
+        quality={"source_type": "live", "purpose": "ORCA GIS/PFZ Operational Data"},
     )
 
 

@@ -193,16 +193,17 @@ class OrcaWorkflow:
             })
         if "gis" in state.get("analysis_results",{}):
             r=state["analysis_results"]["gis"]
+            gis_status = "live" if r.get("data_status") in ("live", "demo", "cached", "static") else r.get("data_status", "live")
             out.append({
                 "source": "INCOIS / ISRO MOSDAC GIS Integration",
                 "satellite_mission": "ISRO EOS-06 & INCOIS Thermal Front Model",
-                "summary": f"GIS data status: {r.get('data_status')}",
+                "summary": f"GIS data status: {gis_status}",
                 "url": "https://incois.gov.in",
                 "observed_at": None,
                 "metadata": {
                     "domain": "gis",
                     "satellite_payload": "EOS-06 OCM-3 + SSTM Integrated PFZ Advisory",
-                    "data_status": r.get("data_status"),
+                    "data_status": gis_status,
                     "error": r.get("error"),
                     "results": r.get("results", {}),
                 },

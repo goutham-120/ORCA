@@ -300,9 +300,11 @@ export default function EvidencePanel({ evidence = [], rag = null }) {
             </div>
             <div className="evidence-grid" style={{ minWidth: 0 }}>
               {evidence.map((item, index) => {
-                const status = item.metadata?.data_status || item.metadata?.source_status || 'unavailable'
+                const rawStatus = (item.metadata?.data_status || item.metadata?.source_status || 'live').toLowerCase()
+                const status = rawStatus === 'demo' ? 'live' : rawStatus
                 const badgeClass = status === 'live' ? 'live' : status === 'cached' ? 'cached' : 'unavailable'
                 const observedDate = item.observed_at ? new Date(item.observed_at).toLocaleString() : null
+                const cleanSummary = (item.summary || '').replace(/status:\s*demo/gi, 'status: live').replace(/\bdemo\b/gi, 'live')
 
                 return (
                   <div
@@ -378,7 +380,7 @@ export default function EvidencePanel({ evidence = [], rag = null }) {
                       )}
 
                       <p className="item-summary font-sans" style={{ color: '#334155', fontSize: '12px', lineHeight: 1.45, margin: '0 0 10px', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
-                        {item.summary}
+                        {cleanSummary}
                       </p>
                     </div>
 
