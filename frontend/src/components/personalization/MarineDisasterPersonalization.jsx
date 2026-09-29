@@ -1094,7 +1094,7 @@ export default function MarineDisasterPersonalization({ user, userKey }) {
               <VoiceInputControl
                 onTranscript={(transcript) => setComplaintMsg(transcript)}
                 currentValue={complaintMsg}
-                defaultRegion={selectedRegion}
+                defaultRegion={operationalRegion}
                 buttonLabel="Speak Message (Mic)"
               />
             </div>

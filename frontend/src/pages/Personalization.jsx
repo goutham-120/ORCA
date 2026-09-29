@@ -68,16 +68,21 @@ const ACTIVITY_SUITABILITY_MAP = {
   },
 }
 
+const resolvePersonaRole = (u) => {
+  const r = String(u?.role || '').toLowerCase()
+  const c = String(u?.user_category || '').toLowerCase()
+  if (r.includes('disaster') || c.includes('disaster') || r === 'marine_disaster_ops' || c === 'marine_disaster_ops') return 'marine_disaster_ops'
+  if (r.includes('coastal') || c.includes('coastal') || r === 'coastal_authority' || c === 'coastal_authority') return 'coastal_authority'
+  if (r.includes('research') || c.includes('research') || r === 'researcher' || c === 'researcher_scientist') return 'researcher_scientist'
+  if (r.includes('general') || c.includes('general')) return 'general_user'
+  return c || 'fisher_marine_operator'
+}
+
 export default function Personalization({ navigate }) {
   const { user, updateProfile } = useAuth()
   const userKey = user?.email || user?.id || 'default'
 
-  const [selectedRole, setSelectedRole] = useState(() => {
-    if (user?.role === 'coastal_authority' || user?.user_category === 'coastal_authority') return 'coastal_authority'
-    if (user?.role === 'marine_disaster_ops' || user?.user_category === 'marine_disaster_ops' || user?.role === 'marine_disaster' || user?.role === 'disaster_ops') return 'marine_disaster_ops'
-    if (user?.role === 'researcher' || user?.user_category === 'researcher_scientist') return 'researcher_scientist'
-    return user?.user_category || 'fisher_marine_operator'
-  })
+  const [selectedRole, setSelectedRole] = useState(() => resolvePersonaRole(user))
   const [savingRole, setSavingRole] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
 
@@ -166,17 +171,11 @@ export default function Personalization({ navigate }) {
   useEffect(() => {
     if (user) {
       queueMicrotask(() => {
-        if (user.role === 'coastal_authority' || user.user_category === 'coastal_authority') {
-          setSelectedRole('coastal_authority')
-        } else if (user.role === 'marine_disaster_ops' || user.user_category === 'marine_disaster_ops' || user.role === 'marine_disaster' || user.role === 'disaster_ops') {
-          setSelectedRole('marine_disaster_ops')
-        } else if (user.role === 'researcher' || user.user_category === 'researcher_scientist') {
-          setSelectedRole('researcher_scientist')
-        } else if (user.role === 'fisherman' || user.user_category === 'fisher_marine_operator') {
-          setSelectedRole('fisher_marine_operator')
-        } else if (user.user_category && user.user_category !== selectedRole) {
-          setSelectedRole(user.user_category)
-        }
+        const resolved = resolvePersonaRole(user)
+        setSelectedRole((prev) => (prev ? prev : resolved))
+        setSavedFieldReports(loadUserData('orca_field_reports', []))
+        setSavedObservations(loadUserData('orca_research_observations', []))
+        setSavedIncidents(loadUserData('orca_incident_reports', []))
         setSavedFieldReports(loadUserData('orca_field_reports', []))
         setSavedObservations(loadUserData('orca_research_observations', []))
         setSavedIncidents(loadUserData('orca_incident_reports', []))
