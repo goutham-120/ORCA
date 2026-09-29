@@ -1361,8 +1361,42 @@ export default function MapExplorer({ navigate }) {
         }
       }
     }
+    const handlePFZNavigate = (event) => {
+      if (isDemoMode) return
+      if (
+        event.detail &&
+        Number.isFinite(event.detail.latitude) &&
+        Number.isFinite(event.detail.longitude)
+      ) {
+        const coord = {
+          latitude: event.detail.latitude,
+          longitude: event.detail.longitude,
+          label: event.detail.label || 'PFZ Destination',
+        }
+        setSelectedCoordinate(coord)
+        setLiveVesselLocation(null)
+        if (watchIdRef.current !== null) {
+          navigator.geolocation?.clearWatch(watchIdRef.current)
+          watchIdRef.current = null
+        }
+        setIsGpsTracking(false)
+
+        setLiveNavigation((prev) => ({ ...prev, data: null }))
+        setDetailedRoute((prev) => ({ ...prev, data: null }))
+        setRoute((prev) => ({ ...prev, data: null }))
+
+        setIsRouteVisible(true)
+        setIsHudOpen(true)
+        startLivePFZNavigation(coord)
+      }
+    }
+
     window.addEventListener('orca-select-coord', handleCustomCoord)
-    return () => window.removeEventListener('orca-select-coord', handleCustomCoord)
+    window.addEventListener('orca-navigate-pfz', handlePFZNavigate)
+    return () => {
+      window.removeEventListener('orca-select-coord', handleCustomCoord)
+      window.removeEventListener('orca-navigate-pfz', handlePFZNavigate)
+    }
   }, [isRouteVisible, startLivePFZNavigation, isDemoMode])
 
   const handleMapLocation = useCallback((coordinate) => {

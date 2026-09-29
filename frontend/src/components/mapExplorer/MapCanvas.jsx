@@ -9,6 +9,7 @@ import {
 import 'maplibre-gl/dist/maplibre-gl.css'
 
 import { registerOmProtocol, getSatelliteCloudTileUrl, getVisibleCloudTileUrl } from '../../utils/omProtocolHelper'
+import { renderPFZPopupHTML, getPFZSpeciesAndCatchInfo } from '../../utils/pfzSpeciesData'
 
 registerOmProtocol()
 
@@ -860,25 +861,66 @@ export default function MapCanvas({
         map.on('mouseenter', 'orca-fill-default', () => { if (map.getCanvas()) map.getCanvas().style.cursor = 'pointer' })
         map.on('mouseleave', 'orca-fill-default', () => { if (map.getCanvas()) map.getCanvas().style.cursor = '' })
 
+        const handlePFZLineClick = (e) => {
+          const feature = e.features?.[0]
+          if (!feature) return
+          if (e.originalEvent) e.originalEvent.cancelBubble = true
+          const props = feature.properties || {}
+          const isStarPFZ = props.kind === 'selected-pfz' || (selectedPFZId && String(props.id || '').toLowerCase() === String(selectedPFZId).toLowerCase())
+          const isInRadius = props.is_in_radius === true || props.is_in_radius === 'true'
+          const borderCol = isStarPFZ ? '#f59e0b' : (isInRadius ? '#22c55e' : '#06b6d4')
+
+          new Popup({ offset: 14, maxWidth: '320px' })
+            .setLngLat(e.lngLat)
+            .setHTML(
+              renderPFZPopupHTML({
+                isStarPFZ,
+                isInRadius,
+                borderCol,
+                feature,
+                props,
+                repLat: e.lngLat.lat,
+                repLon: e.lngLat.lng,
+                distVal: props.distance_km != null ? Number(props.distance_km) : null,
+              })
+            )
+            .addTo(map)
+        }
+
+        map.on('click', 'orca-selected-pfz-highlight', handlePFZLineClick)
+        map.on('click', 'orca-line-pfz-in-radius', handlePFZLineClick)
+        map.on('click', 'orca-line-pfz-default', handlePFZLineClick)
+
+        map.on('mouseenter', 'orca-selected-pfz-highlight', () => { if (map.getCanvas()) map.getCanvas().style.cursor = 'pointer' })
+        map.on('mouseleave', 'orca-selected-pfz-highlight', () => { if (map.getCanvas()) map.getCanvas().style.cursor = '' })
+        map.on('mouseenter', 'orca-line-pfz-in-radius', () => { if (map.getCanvas()) map.getCanvas().style.cursor = 'pointer' })
+        map.on('mouseleave', 'orca-line-pfz-in-radius', () => { if (map.getCanvas()) map.getCanvas().style.cursor = '' })
+        map.on('mouseenter', 'orca-line-pfz-default', () => { if (map.getCanvas()) map.getCanvas().style.cursor = 'pointer' })
+        map.on('mouseleave', 'orca-line-pfz-default', () => { if (map.getCanvas()) map.getCanvas().style.cursor = '' })
+
         map.on('click', 'orca-line', (e) => {
           const feature = e.features?.[0]
           if (!feature) return
           if (e.originalEvent) e.originalEvent.cancelBubble = true
           const props = feature.properties || {}
-          const isPFZ = props.layer === 'pfz' || props.dataset === 'PFZ' || String(props.id || '').toLowerCase().includes('pfz')
+          const isPFZ = props.layer === 'pfz' || props.dataset === 'PFZ' || props.is_pfz || String(props.id || '').toLowerCase().includes('pfz')
+          if (isPFZ) {
+            handlePFZLineClick(e)
+            return
+          }
           new Popup({ offset: 12, maxWidth: '280px' })
             .setLngLat(e.lngLat)
             .setHTML(`
               <div style="font-family: system-ui, sans-serif; color: #0f172a; padding: 4px;">
                 <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                  <span style="font-size: 16px;">${isPFZ ? '🐟' : '📍'}</span>
-                  <strong style="color: ${isPFZ ? '#0891b2' : '#d97706'}; font-size: 13px;">
-                    ${isPFZ ? 'Potential Fishing Zone Track' : 'GIS Line Feature'}
+                  <span style="font-size: 16px;">📍</span>
+                  <strong style="color: #d97706; font-size: 13px;">
+                    GIS Line Feature
                   </strong>
                 </div>
                 <div style="font-size: 12px; line-height: 1.4; color: #334155;">
-                  <p style="margin: 2px 0;"><strong>ID:</strong> ${props.id || 'PFZ Feature'}</p>
-                  <p style="margin: 2px 0;"><strong>Source:</strong> ${props.source || 'INCOIS'} (${props.freshness_status || 'live'})</p>
+                  <p style="margin: 2px 0;"><strong>ID:</strong> ${props.id || 'Feature'}</p>
+                  <p style="margin: 2px 0;"><strong>Source:</strong> ${props.source || 'ORCA GIS'} (${props.freshness_status || 'live'})</p>
                   <p style="margin: 2px 0;"><strong>Position:</strong> ${e.lngLat.lat.toFixed(4)}°N, ${e.lngLat.lng.toFixed(4)}°E</p>
                 </div>
               </div>
@@ -1346,30 +1388,18 @@ export default function MapCanvas({
 
           el.innerHTML = `<div class="gis-marker-bubble pfz-bubble ${isStarPFZ ? 'star-bubble' : ''}" style="background: ${bgCol}; color: ${textCol}; border-color: ${borderCol}; font-weight: ${isStarPFZ || isInRadius ? '800' : '600'}; ${shadowStyle}">${badgeLabel}</div>`
 
-          const popup = new Popup({ offset: 15, maxWidth: '300px' }).setHTML(`
-            <div style="font-family: system-ui, sans-serif; color: #0f172a; padding: 4px;">
-              <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
-                <span style="font-size: 22px;">${isStarPFZ ? '⭐ 🟢' : (isInRadius ? '🟢' : '🐟')}</span>
-                <div>
-                  <strong style="color: ${borderCol}; font-size: 13px; display: block;">${isStarPFZ ? '⭐ NEAREST SUITABLE PFZ' : 'Potential Fishing Zone'}</strong>
-                  <small style="color: ${isStarPFZ ? '#854d0e' : (isInRadius ? '#15803d' : '#64748b')}; font-weight: 700; font-size: 11px;">
-                    ${isStarPFZ ? '⭐ SELECTED OPTIMAL TARGET (Passed Weather + Ocean + GIS)' : (isInRadius ? '🟢 Inside Search Radius (GREEN)' : 'Outside Search Radius')}
-                  </small>
-                </div>
-              </div>
-              <div style="font-size: 12px; line-height: 1.5; border-top: 1px solid #e2e8f0; padding-top: 6px; color: #334155;">
-                <p style="margin: 2px 0;"><strong>Feature ID:</strong> ${feature.id || 'INCOIS-PFZ'}</p>
-                <p style="margin: 2px 0;"><strong>Source:</strong> ${feature.source || props.source || 'INCOIS'} (${feature.freshness_status || props.freshness_status || 'live'})</p>
-                <p style="margin: 2px 0;"><strong>Coordinates:</strong> ${repLat.toFixed(4)}°N, ${repLon.toFixed(4)}°E</p>
-                <p style="margin: 2px 0;"><strong>Distance to Line:</strong> <strong style="color: ${borderCol};">${Number.isFinite(distVal) && distVal !== Infinity ? `${distVal.toFixed(1)} km` : 'N/A'}</strong></p>
-                ${props.depth_m ? `<p style="margin: 2px 0;"><strong>Target Depth:</strong> ${props.depth_m} m</p>` : ''}
-                ${props.bearing_deg ? `<p style="margin: 2px 0;"><strong>Bearing:</strong> ${props.bearing_deg}°</p>` : ''}
-              </div>
-              <div style="margin-top: 8px;">
-                <button style="background: ${borderCol}; color: #fff; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; font-weight: 600; cursor: pointer;" onclick="window.dispatchEvent(new CustomEvent('orca-select-coord', {detail: {latitude: ${repLat}, longitude: ${repLon}, label: 'PFZ: ${feature.id || 'Zone'}'}}))">📍 Focus Here</button>
-              </div>
-            </div>
-          `)
+          const popup = new Popup({ offset: 15, maxWidth: '320px' }).setHTML(
+            renderPFZPopupHTML({
+              isStarPFZ,
+              isInRadius,
+              borderCol,
+              feature,
+              props,
+              repLat,
+              repLon,
+              distVal,
+            })
+          )
           try {
             el.addEventListener('click', () => {
               setInspectedPFZ(feature)
