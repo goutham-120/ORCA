@@ -181,13 +181,13 @@ export function renderPFZPopupHTML({
       <div style="display: flex; gap: 4px; margin-top: 6px;">
         <button
           style="flex: 1; background: #0284c7; color: #fff; border: none; border-radius: 4px; padding: 5px 8px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;"
-          onclick="window.dispatchEvent(new CustomEvent('orca-select-coord', {detail: {latitude: ${repLat}, longitude: ${repLon}, label: 'PFZ: ${feature.id || 'Target'}'}}))"
+          onclick="event.stopPropagation(); window.dispatchEvent(new CustomEvent('orca-pan-to-coord', {detail: {latitude: ${repLat}, longitude: ${repLon}, zoom: 9}}))"
         >
-          📍 Focus Zone
+          🔍 Zoom to Zone
         </button>
         <button
           style="flex: 1; background: #059669; color: #fff; border: none; border-radius: 4px; padding: 5px 8px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;"
-          onclick="window.dispatchEvent(new CustomEvent('orca-navigate-pfz', {detail: {latitude: ${repLat}, longitude: ${repLon}, label: '${feature.id || 'PFZ Target'}'}}))"
+          onclick="event.stopPropagation(); window.dispatchEvent(new CustomEvent('orca-navigate-pfz', {detail: {latitude: ${repLat}, longitude: ${repLon}, label: '${feature.name || feature.id || props.name || props.id || 'PFZ Target'}', pfzId: '${feature.id || props.id || ''}'}}))"
         >
           🧭 Route Here
         </button>

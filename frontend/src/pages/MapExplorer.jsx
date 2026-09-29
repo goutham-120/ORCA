@@ -1330,6 +1330,84 @@ export default function MapExplorer({ navigate }) {
     }
   }, [liveVesselLocation, selectedCoordinate, activeLocation, activeLat, activeLon, searchRadius])
 
+  // Trigger Navigation to a Specific Target PFZ from Current Location
+  const startRouteToDestination = useCallback(async ({ destLat, destLon, pfzId, label }) => {
+    setLiveNavigation({ loading: true, error: '', data: null })
+    setDetailedRoute((prev) => ({ ...prev, data: null }))
+    setRoute((prev) => ({ ...prev, data: null }))
+    setIsRouteVisible(true)
+    setIsHudOpen(true)
+
+    const originLoc = liveVesselLocation || selectedCoordinate || activeLocation
+    const originLat = Number(originLoc?.latitude ?? originLoc?.lat ?? activeLat)
+    const originLon = Number(originLoc?.longitude ?? originLoc?.lng ?? activeLon)
+
+    if (!Number.isFinite(originLat) || !Number.isFinite(originLon) || !Number.isFinite(destLat) || !Number.isFinite(destLon)) {
+      setLiveNavigation({
+        loading: false,
+        error: 'Invalid coordinates for route calculation.',
+        data: null,
+      })
+      return
+    }
+
+    try {
+      const detailed = await analyzeDetailedRoute({
+        origin_latitude: originLat,
+        origin_longitude: originLon,
+        destination_latitude: destLat,
+        destination_longitude: destLon,
+        pfz_id: pfzId || 'selected_pfz',
+        vessel_speed_knots: 12.0,
+      })
+
+      const navSummary = {
+        pfz_name: label || detailed.destination_name || 'Selected PFZ Target',
+        bearing_deg: detailed.initial_bearing_deg || 0,
+        compass_heading: detailed.initial_bearing_cardinal || 'N',
+        distance_km: detailed.route_distance_km,
+        distance_nm: detailed.route_distance_nm,
+        estimated_hours: detailed.estimated_travel_time_hours,
+        estimated_time_formatted: detailed.estimated_travel_time,
+        overall_status: detailed.overall_status,
+        msi_score: detailed.marine_safety_index?.score,
+        msi_tier: detailed.marine_safety_index?.tier,
+        waypoint_count: detailed.waypoints?.length || 0,
+        origin: { latitude: originLat, longitude: originLon },
+        destination: { latitude: destLat, longitude: destLon },
+      }
+
+      setLiveNavigation({
+        loading: false,
+        error: detailed.gis_analysis?.status === 'unsuitable' ? 'Direct route blocked by marine hazards. Check detour.' : '',
+        data: {
+          has_pfz: true,
+          status: detailed.gis_analysis?.status === 'unsuitable' ? 'route_blocked' : 'ready_to_navigate',
+          message: detailed.explanation || `Navigation route calculated to ${label || 'PFZ'}.`,
+          selected_pfz: {
+            id: pfzId || 'selected-pfz',
+            name: label || 'Selected PFZ Target',
+            geometry: { type: 'Point', coordinates: [destLon, destLat] },
+          },
+          distance_km: detailed.route_distance_km,
+          distance_nm: detailed.route_distance_nm,
+          bearing_deg: detailed.initial_bearing_deg || 0,
+          compass_heading: detailed.initial_bearing_cardinal || 'N',
+          route: detailed,
+          navigation_summary: navSummary,
+        },
+      })
+      setIsRouteVisible(true)
+      setIsHudOpen(true)
+    } catch (err) {
+      setLiveNavigation({
+        loading: false,
+        error: mapErrorMessage(err),
+        data: null,
+      })
+    }
+  }, [liveVesselLocation, selectedCoordinate, activeLocation, activeLat, activeLon])
+
   useEffect(() => {
     const handleCustomCoord = (event) => {
       if (isDemoMode) return
@@ -1368,26 +1446,12 @@ export default function MapExplorer({ navigate }) {
         Number.isFinite(event.detail.latitude) &&
         Number.isFinite(event.detail.longitude)
       ) {
-        const coord = {
-          latitude: event.detail.latitude,
-          longitude: event.detail.longitude,
-          label: event.detail.label || 'PFZ Destination',
-        }
-        setSelectedCoordinate(coord)
-        setLiveVesselLocation(null)
-        if (watchIdRef.current !== null) {
-          navigator.geolocation?.clearWatch(watchIdRef.current)
-          watchIdRef.current = null
-        }
-        setIsGpsTracking(false)
-
-        setLiveNavigation((prev) => ({ ...prev, data: null }))
-        setDetailedRoute((prev) => ({ ...prev, data: null }))
-        setRoute((prev) => ({ ...prev, data: null }))
-
-        setIsRouteVisible(true)
-        setIsHudOpen(true)
-        startLivePFZNavigation(coord)
+        startRouteToDestination({
+          destLat: event.detail.latitude,
+          destLon: event.detail.longitude,
+          pfzId: event.detail.pfzId,
+          label: event.detail.label,
+        })
       }
     }
 
@@ -1397,7 +1461,7 @@ export default function MapExplorer({ navigate }) {
       window.removeEventListener('orca-select-coord', handleCustomCoord)
       window.removeEventListener('orca-navigate-pfz', handlePFZNavigate)
     }
-  }, [isRouteVisible, startLivePFZNavigation, isDemoMode])
+  }, [isRouteVisible, startLivePFZNavigation, startRouteToDestination, isDemoMode])
 
   const handleMapLocation = useCallback((coordinate) => {
     if (isDemoMode) {

@@ -354,6 +354,28 @@ export default function MapCanvas({
   }, [onMapLocation])
 
   /*
+   * Non-destructive map pan/zoom event listener (leaves vessel origin intact)
+   */
+  useEffect(() => {
+    const handlePanToCoord = (e) => {
+      const map = mapRef.current
+      if (!map || !e.detail) return
+      const { latitude, longitude, zoom } = e.detail
+      if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+        try {
+          map.flyTo({
+            center: [longitude, latitude],
+            zoom: zoom || Math.max(map.getZoom(), 8.5),
+            essential: true,
+          })
+        } catch {}
+      }
+    }
+    window.addEventListener('orca-pan-to-coord', handlePanToCoord)
+    return () => window.removeEventListener('orca-pan-to-coord', handlePanToCoord)
+  }, [])
+
+  /*
    * Reactive Basemap & Meteorological Cloud (Natural Optical vs Thermal IR) Layer Switching
    */
   useEffect(() => {
@@ -994,13 +1016,24 @@ export default function MapCanvas({
 
       map.on('click', (event) => {
         if (!map || !map.getLayer) return
-        const bbox = [[event.point.x - 6, event.point.y - 6], [event.point.x + 6, event.point.y + 6]]
+        const bbox = [[event.point.x - 14, event.point.y - 14], [event.point.x + 14, event.point.y + 14]]
         const featureLayers = [
+          'orca-selected-pfz-highlight',
+          'orca-line-pfz-in-radius',
+          'orca-line-pfz-in-radius-casing',
+          'orca-line-pfz-default',
+          'orca-pfz-buffer-fill',
+          'orca-pfz-buffer-line',
+          'orca-pfz-route-line',
+          'orca-land-route-line',
+          'orca-land-route-casing',
+          'orca-blocked-route-line',
           'orca-fill-hazards',
           'orca-fill-restricted',
           'orca-fill-marine',
           'orca-fill-default',
           'orca-line',
+          'orca-route-casing',
           'orca-route-line',
           'orca-point',
         ].filter((id) => {
@@ -1283,11 +1316,13 @@ export default function MapCanvas({
                 ${props.notice ? `<p style="margin: 4px 0 2px 0; color: #64748b; font-size: 12px;"><em>${props.notice}</em></p>` : ''}
               </div>
               <div style="margin-top: 8px;">
-                <button style="background: #dc2626; color: #fff; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; font-weight: 600; cursor: pointer;" onclick="window.dispatchEvent(new CustomEvent('orca-select-coord', {detail: {latitude: ${repLat}, longitude: ${repLon}, label: '${name}'}}))">📍 Focus Here</button>
+                <button style="background: #dc2626; color: #fff; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; font-weight: 600; cursor: pointer;" onclick="event.stopPropagation(); window.dispatchEvent(new CustomEvent('orca-pan-to-coord', {detail: {latitude: ${repLat}, longitude: ${repLon}}}))">🔍 Zoom to Hazard</button>
               </div>
             </div>
           `)
           try {
+            el.addEventListener('click', (e) => { e.stopPropagation(); e.stopImmediatePropagation() })
+            el.addEventListener('mousedown', (e) => e.stopPropagation())
             const marker = new Marker({ element: el }).setLngLat(repCoord).setPopup(popup).addTo(map)
             gisMarkersRef.current.push(marker)
           } catch {}
@@ -1312,11 +1347,13 @@ export default function MapCanvas({
                 ${props.notice ? `<p style="margin: 4px 0 2px 0; color: #64748b; font-size: 12px;"><em>${props.notice}</em></p>` : ''}
               </div>
               <div style="margin-top: 8px;">
-                <button style="background: #d97706; color: #fff; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; font-weight: 600; cursor: pointer;" onclick="window.dispatchEvent(new CustomEvent('orca-select-coord', {detail: {latitude: ${repLat}, longitude: ${repLon}, label: '${name}'}}))">📍 Focus Here</button>
+                <button style="background: #d97706; color: #fff; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; font-weight: 600; cursor: pointer;" onclick="event.stopPropagation(); window.dispatchEvent(new CustomEvent('orca-pan-to-coord', {detail: {latitude: ${repLat}, longitude: ${repLon}}}))">🔍 Zoom to Zone</button>
               </div>
             </div>
           `)
           try {
+            el.addEventListener('click', (e) => { e.stopPropagation(); e.stopImmediatePropagation() })
+            el.addEventListener('mousedown', (e) => e.stopPropagation())
             const marker = new Marker({ element: el }).setLngLat(repCoord).setPopup(popup).addTo(map)
             gisMarkersRef.current.push(marker)
           } catch {}
@@ -1340,11 +1377,13 @@ export default function MapCanvas({
                 ${dist ? `<p style="margin: 2px 0; color: #059669;"><strong>Distance:</strong> ${dist} km from center</p>` : ''}
               </div>
               <div style="margin-top: 8px;">
-                <button style="background: #059669; color: #fff; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; font-weight: 600; cursor: pointer;" onclick="window.dispatchEvent(new CustomEvent('orca-select-coord', {detail: {latitude: ${repLat}, longitude: ${repLon}, label: '${name}'}}))">📍 Focus Here</button>
+                <button style="background: #059669; color: #fff; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; font-weight: 600; cursor: pointer;" onclick="event.stopPropagation(); window.dispatchEvent(new CustomEvent('orca-pan-to-coord', {detail: {latitude: ${repLat}, longitude: ${repLon}}}))">🔍 Zoom to Area</button>
               </div>
             </div>
           `)
           try {
+            el.addEventListener('click', (e) => { e.stopPropagation(); e.stopImmediatePropagation() })
+            el.addEventListener('mousedown', (e) => e.stopPropagation())
             const marker = new Marker({ element: el }).setLngLat(repCoord).setPopup(popup).addTo(map)
             gisMarkersRef.current.push(marker)
           } catch {}
@@ -1401,9 +1440,12 @@ export default function MapCanvas({
             })
           )
           try {
-            el.addEventListener('click', () => {
+            el.addEventListener('click', (e) => {
+              e.stopPropagation()
+              e.stopImmediatePropagation()
               setInspectedPFZ(feature)
             })
+            el.addEventListener('mousedown', (e) => e.stopPropagation())
             const marker = new Marker({ element: el }).setLngLat(repCoord).setPopup(popup).addTo(map)
             gisMarkersRef.current.push(marker)
           } catch {}
