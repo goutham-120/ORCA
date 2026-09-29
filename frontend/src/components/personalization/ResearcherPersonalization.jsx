@@ -465,7 +465,7 @@ export default function ResearcherPersonalization({ user, userKey }) {
                 <th style={{ padding: '10px 12px', borderBottom: '2px solid #cbd5e1' }}>Taxon / Species</th>
                 <th style={{ padding: '10px 12px', borderBottom: '2px solid #cbd5e1' }}>Thermal Envelope (SST)</th>
                 <th style={{ padding: '10px 12px', borderBottom: '2px solid #cbd5e1' }}>Chlorophyll-a</th>
-                <th style={{ padding: '10px 12px', borderBottom: '298px solid #cbd5e1', borderBottomColor: '#cbd5e1' }}>Salinity</th>
+                <th style={{ padding: '10px 12px', borderBottom: '2px solid #cbd5e1' }}>Salinity</th>
                 <th style={{ padding: '10px 12px', borderBottom: '2px solid #cbd5e1' }}>Hypoxia Limit (DO)</th>
                 <th style={{ padding: '10px 12px', borderBottom: '2px solid #cbd5e1' }}>Trophic Guild</th>
                 <th style={{ padding: '10px 12px', borderBottom: '2px solid #cbd5e1' }}>Oceanographic Phenology</th>
@@ -527,7 +527,7 @@ export default function ResearcherPersonalization({ user, userKey }) {
 
           {/* ACTIVE PREFERENCES BADGE */}
           <div style={{ marginTop: 10, padding: '8px 12px', borderRadius: 6, background: '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 12 }}>
-            <span style={{ fontWeight: 700, color: '#0369a1' }}>🔍 Query Filter:</span>
+            <span style={{ fontWeight: 700, color: '#0369a1' }}>Query Filter:</span>
             <span style={{ color: '#0f172a', fontWeight: 600 }}>{activePrefs.domain}</span>
             <span style={{ color: '#94a3b8' }}>•</span>
             <span style={{ color: '#0f172a', fontWeight: 600 }}>{activePrefs.interests}</span>
