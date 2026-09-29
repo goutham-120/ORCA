@@ -1016,34 +1016,19 @@ export default function MapCanvas({
 
       map.on('click', (event) => {
         if (!map || !map.getLayer) return
-        const bbox = [[event.point.x - 14, event.point.y - 14], [event.point.x + 14, event.point.y + 14]]
-        const featureLayers = [
+        const pfzLineLayers = [
           'orca-selected-pfz-highlight',
           'orca-line-pfz-in-radius',
-          'orca-line-pfz-in-radius-casing',
           'orca-line-pfz-default',
-          'orca-pfz-buffer-fill',
-          'orca-pfz-buffer-line',
-          'orca-pfz-route-line',
-          'orca-land-route-line',
-          'orca-land-route-casing',
-          'orca-blocked-route-line',
-          'orca-fill-hazards',
-          'orca-fill-restricted',
-          'orca-fill-marine',
-          'orca-fill-default',
-          'orca-line',
-          'orca-route-casing',
-          'orca-route-line',
-          'orca-point',
         ].filter((id) => {
           try { return Boolean(map.getLayer(id)) } catch { return false }
         })
 
-        const hits = map.queryRenderedFeatures ? map.queryRenderedFeatures(bbox, { layers: featureLayers }) : []
-        if (hits.length > 0) {
+        const pfzHits = map.queryRenderedFeatures ? map.queryRenderedFeatures(event.point, { layers: pfzLineLayers }) : []
+        if (pfzHits && pfzHits.length > 0) {
           return
         }
+
         locationHandlerRef.current?.({
           latitude: event.lngLat.lat,
           longitude: event.lngLat.lng,
@@ -1321,8 +1306,11 @@ export default function MapCanvas({
             </div>
           `)
           try {
-            el.addEventListener('click', (e) => { e.stopPropagation(); e.stopImmediatePropagation() })
-            el.addEventListener('mousedown', (e) => e.stopPropagation())
+            el.style.cursor = 'pointer'
+            el.addEventListener('click', (e) => {
+              e.stopPropagation()
+              popup.setLngLat(repCoord).addTo(map)
+            })
             const marker = new Marker({ element: el }).setLngLat(repCoord).setPopup(popup).addTo(map)
             gisMarkersRef.current.push(marker)
           } catch {}
@@ -1331,7 +1319,7 @@ export default function MapCanvas({
           el.className = 'gis-interactive-marker restricted-marker'
           el.innerHTML = '<div class="gis-marker-bubble restricted-bubble"><span>🚫</span><strong>RESTRICTED</strong></div>'
 
-          const popup = new Popup({ offset: 15, maxWidth: '290px' }).setHTML(`
+          const popup = new Popup({ offset: 15, maxWidth: '290px', closeButton: true, closeOnClick: true }).setHTML(`
             <div style="font-family: system-ui, sans-serif; color: #0f172a; padding: 4px;">
               <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
                 <span style="font-size: 20px;">🚫</span>
@@ -1352,8 +1340,11 @@ export default function MapCanvas({
             </div>
           `)
           try {
-            el.addEventListener('click', (e) => { e.stopPropagation(); e.stopImmediatePropagation() })
-            el.addEventListener('mousedown', (e) => e.stopPropagation())
+            el.style.cursor = 'pointer'
+            el.addEventListener('click', (e) => {
+              e.stopPropagation()
+              popup.setLngLat(repCoord).addTo(map)
+            })
             const marker = new Marker({ element: el }).setLngLat(repCoord).setPopup(popup).addTo(map)
             gisMarkersRef.current.push(marker)
           } catch {}
@@ -1362,7 +1353,7 @@ export default function MapCanvas({
           el.className = 'gis-interactive-marker marine-marker'
           el.innerHTML = '<div class="gis-marker-bubble marine-bubble"><span>⚓</span><strong>MARINE ZONE</strong></div>'
 
-          const popup = new Popup({ offset: 15, maxWidth: '290px' }).setHTML(`
+          const popup = new Popup({ offset: 15, maxWidth: '290px', closeButton: true, closeOnClick: true }).setHTML(`
             <div style="font-family: system-ui, sans-serif; color: #0f172a; padding: 4px;">
               <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
                 <span style="font-size: 20px;">⚓</span>
@@ -1382,8 +1373,11 @@ export default function MapCanvas({
             </div>
           `)
           try {
-            el.addEventListener('click', (e) => { e.stopPropagation(); e.stopImmediatePropagation() })
-            el.addEventListener('mousedown', (e) => e.stopPropagation())
+            el.style.cursor = 'pointer'
+            el.addEventListener('click', (e) => {
+              e.stopPropagation()
+              popup.setLngLat(repCoord).addTo(map)
+            })
             const marker = new Marker({ element: el }).setLngLat(repCoord).setPopup(popup).addTo(map)
             gisMarkersRef.current.push(marker)
           } catch {}
@@ -1427,7 +1421,7 @@ export default function MapCanvas({
 
           el.innerHTML = `<div class="gis-marker-bubble pfz-bubble ${isStarPFZ ? 'star-bubble' : ''}" style="background: ${bgCol}; color: ${textCol}; border-color: ${borderCol}; font-weight: ${isStarPFZ || isInRadius ? '800' : '600'}; ${shadowStyle}">${badgeLabel}</div>`
 
-          const popup = new Popup({ offset: 15, maxWidth: '320px' }).setHTML(
+          const popup = new Popup({ offset: 15, maxWidth: '320px', closeButton: true, closeOnClick: true }).setHTML(
             renderPFZPopupHTML({
               isStarPFZ,
               isInRadius,
@@ -1440,12 +1434,12 @@ export default function MapCanvas({
             })
           )
           try {
+            el.style.cursor = 'pointer'
             el.addEventListener('click', (e) => {
               e.stopPropagation()
-              e.stopImmediatePropagation()
               setInspectedPFZ(feature)
+              popup.setLngLat(repCoord).addTo(map)
             })
-            el.addEventListener('mousedown', (e) => e.stopPropagation())
             const marker = new Marker({ element: el }).setLngLat(repCoord).setPopup(popup).addTo(map)
             gisMarkersRef.current.push(marker)
           } catch {}
