@@ -105,7 +105,7 @@ function parseOrcaAnswer(rawText) {
   const sections = []
 
   // 0. Tide & Hydrodynamic Evidence
-  const tideMatch = rawText.match(/(?:Tide conditions|Next High Tide)[\s\S]*?(?=(?:\.\s+(?:Ocean evidence:|Weather evidence:|GIS checked|Decision intelligence:|Marine Safety Index:|Risk factors:|Ecosystem Diagnosis:|Key Pelagic|Forecast evidence|View the source|“|ORCA)|$))/i)
+  const tideMatch = rawText.match(/(?:Tide conditions|Next High Tide)[\s\S]*?(?=(?:\.\s+(?:Ocean evidence:|Weather evidence:|GIS checked|Decision intelligence:|Marine Safety Index:|Projected Marine Safety Index:|Risk factors:|Ecosystem Diagnosis:|Key Pelagic|Forecast evidence|View the source|“|ORCA)|$))/i)
   if (tideMatch) {
     let tideText = tideMatch[0].trim()
     if (!tideText.endsWith('.')) tideText += '.'
@@ -119,7 +119,7 @@ function parseOrcaAnswer(rawText) {
   }
 
   // 1. Ocean Evidence
-  const oceanMatch = rawText.match(/Ocean evidence:\s*([\s\S]*?)(?=(?:\.\s+(?:Weather evidence:|GIS checked|Decision intelligence:|Marine Safety Index:|Risk factors:|Ecosystem Diagnosis:|Key Pelagic|Forecast evidence|View the source|“|ORCA)|$))/i)
+  const oceanMatch = rawText.match(/Ocean evidence:\s*([\s\S]*?)(?=(?:\.\s+(?:Weather evidence:|GIS checked|Decision intelligence:|Marine Safety Index:|Projected Marine Safety Index:|Risk factors:|Ecosystem Diagnosis:|Key Pelagic|Forecast evidence|View the source|“|ORCA)|$))/i)
   if (oceanMatch) {
     const rawMetrics = oceanMatch[1].replace(/\.$/, '').split(';').map((s) => s.trim()).filter(Boolean)
     const metrics = rawMetrics.map((item) => {
@@ -146,7 +146,7 @@ function parseOrcaAnswer(rawText) {
   }
 
   // 2. Weather Evidence
-  const weatherMatch = rawText.match(/Weather evidence:\s*([\s\S]*?)(?=(?:\.\s+(?:Ocean evidence:|GIS checked|Decision intelligence:|Marine Safety Index:|Risk factors:|Ecosystem Diagnosis:|Key Pelagic|Forecast evidence|View the source|“|ORCA)|$))/i)
+  const weatherMatch = rawText.match(/Weather evidence:\s*([\s\S]*?)(?=(?:\.\s+(?:Ocean evidence:|GIS checked|Decision intelligence:|Marine Safety Index:|Projected Marine Safety Index:|Risk factors:|Ecosystem Diagnosis:|Key Pelagic|Forecast evidence|View the source|“|ORCA)|$))/i)
   if (weatherMatch) {
     const rawMetrics = weatherMatch[1].replace(/\.$/, '').split(';').map((s) => s.trim()).filter(Boolean)
     const metrics = rawMetrics.map((item) => {
@@ -209,18 +209,23 @@ function parseOrcaAnswer(rawText) {
     })
   }
 
-  // Remaining notes
+  // Remaining notes & strict cleanup of MSI float regex leaks
   let remaining = rawText
   if (summary) remaining = remaining.replace(summary, '')
-  const msiMatch = rawText.match(/Marine Safety Index:\s*[^.]*\./i)
-  if (msiMatch) remaining = remaining.replace(msiMatch[0], '')
   if (tideMatch) remaining = remaining.replace(tideMatch[0], '')
   if (oceanMatch) remaining = remaining.replace(oceanMatch[0], '')
   if (weatherMatch) remaining = remaining.replace(weatherMatch[0], '')
   if (gisMatch) remaining = remaining.replace(gisMatch[0], '')
   if (decisionMatch) remaining = remaining.replace(decisionMatch[0], '')
   if (riskMatch) remaining = remaining.replace(riskMatch[0], '')
-  remaining = remaining.trim()
+
+  // Remove full Marine Safety Index mentions with floats/integers cleanly
+  remaining = remaining
+    .replace(/(?:Projected\s+)?Marine Safety Index:\s*[\d.]+\/100(?:\s*\([^)]*\))?\.?/gi, '')
+    .replace(/\b[\d.]+\/100(?:\s*\([^)]*\))?\.?/gi, '')
+    .replace(/\.\s*\.\s*\./g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
 
   return { summary, sections, remaining, hasStructuredEvidence: true }
 }
@@ -452,10 +457,23 @@ export default function Message({ message }) {
   const simulation = decision?.scenario_simulation
 
   // Take the highest risk rank between assessment and decision, with simulation override
+  // Align risk level between decision and assessment
   const riskRanks = { critical: 4, high: 3, moderate: 2, low: 1, unknown: 0 }
-  let assessmentLevel = assessment?.level || 'unknown'
-  let decisionLevel = decision?.risk_level && decision.risk_level !== 'unavailable' ? decision.risk_level : 'unknown'
+  let decisionLevel = decision?.risk_level && decision.risk_level !== 'unavailable' ? decision.risk_level : null
+  let assessmentLevel = assessment?.level && assessment.level !== 'unknown' ? assessment.level : null
+  
+  // Prefer deterministic decision level if available, otherwise assessment level
+  let level = decisionLevel || assessmentLevel || 'low'
+  if (decisionLevel && assessmentLevel) {
+    level = decisionLevel // Decision engine has the grounded physical threshold calculation
+  }
+
   let scorePercent = assessment?.score != null ? Math.round(assessment.score * 100) : null
+  if (decision?.marine_safety_index?.score != null) {
+    scorePercent = Math.max(0, Math.min(100, Math.round(100 - decision.marine_safety_index.score)))
+  } else if (level === 'low') {
+    scorePercent = scorePercent ? Math.min(scorePercent, 20) : 12
+  }
 
   if (isSimulation && simulation?.simulated?.msi) {
     const simMsi = simulation.simulated.msi
@@ -463,21 +481,16 @@ export default function Message({ message }) {
     if (msiScore != null) {
       scorePercent = Math.max(0, Math.min(100, Math.round(100 - msiScore)))
       if (msiScore >= 75) {
-        assessmentLevel = 'low'
+        level = 'low'
       } else if (msiScore >= 50) {
-        assessmentLevel = 'moderate'
+        level = 'moderate'
       } else if (msiScore >= 25) {
-        assessmentLevel = 'high'
+        level = 'high'
       } else {
-        assessmentLevel = 'critical'
+        level = 'critical'
       }
-      decisionLevel = assessmentLevel
     }
   }
-
-  const level = (riskRanks[assessmentLevel] || 0) >= (riskRanks[decisionLevel] || 0)
-    ? assessmentLevel
-    : decisionLevel
 
   const isKnowledgeOnly = response?.query_mode === 'knowledge_only'
   const isAnalyticalOnly = isChlorophyllOrSST || isAvoidanceQuery || (['ocean', 'gis'].includes(response?.intent) && !['safety', 'simulation', 'pfz'].includes(response?.context?.decision_type))
@@ -523,7 +536,16 @@ export default function Message({ message }) {
     }
   }
 
-  const headlineVerdict = decision?.assessment || assessment?.summary || ''
+  const headlineVerdict =
+    level === 'low'
+      ? 'Marine safety risk is low.'
+      : level === 'moderate'
+      ? 'Moderate maritime caution advised.'
+      : level === 'high'
+      ? 'High risk conditions detected.'
+      : level === 'critical'
+      ? 'Critical marine hazard warning.'
+      : (decision?.assessment || assessment?.summary || 'Operational conditions assessed.')
 
   const spatialData = isKnowledgeOnly ? null : (response?.spatial_data ? {
     ...response.spatial_data,
