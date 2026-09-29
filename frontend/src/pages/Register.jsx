@@ -3,10 +3,30 @@ import { useAuth } from '../hooks/useAuth'
 import orcaLogo from '../assets/orcalogo.png'
 
 const USER_ROLES = [
-  { id: 'fisherman', label: 'Fisherman', desc: 'Standard marine operation & safety access' },
-  { id: 'researcher', label: 'Researcher', desc: 'Marine science & research data access' },
-  { id: 'coastal_authority', label: 'Coastal Authority', desc: 'Regulatory oversight (Requires Admin Approval)' },
-  { id: 'marine_disaster_ops', label: 'Marine & Disaster Operations', desc: 'Emergency response & disaster management (Requires Admin Approval)' },
+  {
+    id: 'fisherman',
+    label: 'Fisherman / Mariner',
+    desc: 'PFZ corridors, wave & wind telemetry, navigation hazards, voice advisories',
+    requiresApproval: false,
+  },
+  {
+    id: 'researcher',
+    label: 'Marine Researcher',
+    desc: 'Satellite SST & Chlorophyll telemetry, thermal cloud IR, marine anomalies',
+    requiresApproval: false,
+  },
+  {
+    id: 'coastal_authority',
+    label: 'Coastal Authority',
+    desc: 'Port oversight, mariner safety broadcasts, regulatory management',
+    requiresApproval: true,
+  },
+  {
+    id: 'marine_disaster_ops',
+    label: 'Disaster Operations',
+    desc: 'Emergency coordination, search & rescue, storm surge & cyclone response',
+    requiresApproval: true,
+  },
 ]
 
 export default function Register({ navigate }) {
@@ -23,6 +43,7 @@ export default function Register({ navigate }) {
   const [error, setError] = useState('')
   const [pendingNotice, setPendingNotice] = useState('')
   const [busy, setBusy] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const handleRoleChange = (roleId) => {
     setForm((prev) => ({ ...prev, role: roleId }))
@@ -45,17 +66,17 @@ export default function Register({ navigate }) {
     }
 
     if (form.role === 'researcher' && !form.organization?.trim()) {
-      setError('Institution information is required for Researcher accounts.')
+      setError('Institution name is required for Researcher accounts.')
       return
     }
 
     if ((form.role === 'coastal_authority' || form.role === 'marine_disaster_ops') && !form.organization?.trim()) {
-      setError('Organization name is required for authority & disaster operations accounts.')
+      setError('Organization / Agency name is required for authority accounts.')
       return
     }
 
     if ((form.role === 'coastal_authority' || form.role === 'marine_disaster_ops') && !form.designation?.trim()) {
-      setError('Official designation is required for authority & disaster operations accounts.')
+      setError('Official designation is required for authority accounts.')
       return
     }
 
@@ -76,7 +97,7 @@ export default function Register({ navigate }) {
       const result = await register(payload)
 
       if (result?.user?.approval_status === 'pending' || result?.message?.includes('pending')) {
-        setPendingNotice(result.message || 'Your registration request has been submitted for administrator approval.')
+        setPendingNotice(result.message || 'Your registration request has been submitted for administrator review.')
       } else if (result?.access_token) {
         if (navigate) {
           navigate('/dashboard')
@@ -91,163 +112,236 @@ export default function Register({ navigate }) {
     }
   }
 
+  const selectedRoleObj = USER_ROLES.find((r) => r.id === form.role) || USER_ROLES[0]
+
   return (
-    <div className="auth-page font-inter" style={{ paddingTop: '2rem', paddingBottom: '2rem' }}>
-      <form className="auth-card font-inter" onSubmit={submit} style={{ maxWidth: '520px', width: '100%' }}>
-        <div className="auth-brand font-sora">
-          <img src={orcaLogo} alt="ORCA Logo" className="auth-brand-logo" />
-          <span>ORCA</span>
-          <small className="font-inter">OCEAN RESOURCE & CONTEXTUAL ANALYSIS</small>
+    <div className="auth-page font-inter" style={{ paddingTop: '2.5rem', paddingBottom: '2.5rem' }}>
+      <div className="auth-ambient-glow" aria-hidden="true" />
+      <form className="auth-card font-inter" onSubmit={submit} style={{ maxWidth: '560px', width: '100%' }}>
+        <div className="auth-brand">
+          <div className="auth-brand-logo-wrap">
+            <img src={orcaLogo} alt="ORCA Logo" className="auth-brand-logo" />
+            <span className="auth-brand-pulse" />
+          </div>
+          <div className="auth-brand-info">
+            <span className="auth-brand-title font-sora">ORCA</span>
+            <span className="auth-brand-sub font-inter">Ocean Resource &amp; Contextual Analysis</span>
+          </div>
         </div>
-        <h1 className="font-sora">Create an Account</h1>
-        <p className="font-inter">Join ORCA to access ocean intelligence and safety models.</p>
+
+        <h1 className="auth-heading font-sora">Create an Account</h1>
+        <p className="auth-subheading font-inter">Join ORCA to access role-tailored satellite models and ocean intelligence.</p>
 
         {error && (
-          <div className="form-error font-inter" style={{ padding: '10px 14px', borderRadius: '6px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#fca5a5', fontSize: '0.875rem', marginBottom: '1rem' }}>
-            {error}
+          <div className="auth-error-banner font-inter">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <span>{error}</span>
           </div>
         )}
 
         {pendingNotice ? (
-          <div style={{ padding: '16px', borderRadius: '8px', background: 'rgba(59, 130, 246, 0.15)', border: '1px solid rgba(59, 130, 246, 0.3)', color: '#93c5fd', marginTop: '1rem', textAlign: 'center' }}>
-            <h3 className="font-sora" style={{ fontSize: '1.1rem', marginBottom: '0.5rem', color: '#60a5fa' }}>Registration Submitted</h3>
-            <p style={{ fontSize: '0.9rem', lineHeight: '1.4' }}>{pendingNotice}</p>
+          <div className="auth-success-box font-inter">
+            <div className="auth-success-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+            <h3 className="font-sora">Application Submitted</h3>
+            <p>{pendingNotice}</p>
             <button
               type="button"
-              className="primary-button font-inter"
-              style={{ marginTop: '1rem', width: 'auto', padding: '8px 20px' }}
+              className="auth-submit-btn font-inter"
+              style={{ marginTop: '1rem', width: 'auto', padding: '10px 24px' }}
               onClick={() => navigate && navigate('/login')}
             >
-              Return to Login
+              Return to Sign In &rarr;
             </button>
           </div>
         ) : (
           <>
-            <label className="font-inter">
-              User Type / Role
-              <select
-                value={form.role}
-                onChange={(e) => handleRoleChange(e.target.value)}
-                className="font-inter"
-                style={{ width: '100%', padding: '10px', borderRadius: '6px', background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', marginTop: '4px' }}
-              >
-                {USER_ROLES.map((r) => (
-                  <option key={r.id} value={r.id} style={{ background: '#0f172a', color: '#fff' }}>
-                    {r.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+            {/* ROLE SELECTOR TILES */}
+            <div className="auth-role-selection-wrap">
+              <label className="auth-label-title font-inter">Select Your Maritime Persona</label>
+              <div className="auth-role-grid">
+                {USER_ROLES.map((r) => {
+                  const isSelected = form.role === r.id
+                  return (
+                    <div
+                      key={r.id}
+                      className={`auth-role-card ${isSelected ? 'is-selected' : ''}`}
+                      onClick={() => handleRoleChange(r.id)}
+                    >
+                      <div className="auth-role-header">
+                        <span className="auth-role-name font-sora">{r.label}</span>
+                        {r.requiresApproval && (
+                          <span className="auth-approval-badge">Requires Approval</span>
+                        )}
+                      </div>
+                      <p className="auth-role-desc font-inter">{r.desc}</p>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
 
-            {(form.role === 'coastal_authority' || form.role === 'marine_disaster_ops') && (
-              <div style={{ padding: '8px 12px', borderRadius: '6px', background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.3)', color: '#fcd34d', fontSize: '0.8rem', marginTop: '4px', marginBottom: '8px' }}>
-                ℹ️ Registration for {USER_ROLES.find(r => r.id === form.role)?.label} requires administrator approval before login is enabled.
+            {selectedRoleObj.requiresApproval && (
+              <div className="auth-approval-notice font-inter">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="16" x2="12" y2="12" />
+                  <line x1="12" y1="8" x2="12.01" y2="8" />
+                </svg>
+                <span>
+                  <strong>{selectedRoleObj.label}</strong> accounts require administrator verification prior to dashboard activation.
+                </span>
               </div>
             )}
 
-            <label className="font-inter">
-              Full Name
-              <input
-                required
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="Captain Alex Mercer"
-                className="font-inter"
-                disabled={busy}
-              />
-            </label>
-
-            <label className="font-inter">
-              {form.role === 'coastal_authority' || form.role === 'marine_disaster_ops' ? 'Official Email' : 'Email'}
-              <input
-                type="email"
-                required
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                placeholder={form.role === 'coastal_authority' || form.role === 'marine_disaster_ops' ? 'officer@agency.gov' : 'you@example.com'}
-                className="font-inter"
-                disabled={busy}
-              />
-            </label>
-
-            {form.role === 'researcher' && (
-              <label className="font-inter">
-                Institution Name
-                <input
-                  required
-                  value={form.organization}
-                  onChange={(e) => setForm({ ...form, organization: e.target.value })}
-                  placeholder="e.g. National Institute of Oceanography"
-                  className="font-inter"
-                  disabled={busy}
-                />
+            <div className="auth-field-group">
+              <label className="auth-label font-inter">
+                <span>Full Name</span>
+                <div className="auth-input-wrapper">
+                  <input
+                    required
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    placeholder="e.g. Captain Alex Mercer"
+                    className="auth-input font-inter"
+                    disabled={busy}
+                  />
+                </div>
               </label>
-            )}
 
-            {(form.role === 'coastal_authority' || form.role === 'marine_disaster_ops') && (
-              <>
-                <label className="font-inter">
-                  Organization / Agency
+              <label className="auth-label font-inter">
+                <span>{selectedRoleObj.requiresApproval ? 'Official Email Address' : 'Email Address'}</span>
+                <div className="auth-input-wrapper">
                   <input
+                    type="email"
                     required
-                    value={form.organization}
-                    onChange={(e) => setForm({ ...form, organization: e.target.value })}
-                    placeholder="e.g. Indian Coast Guard / NDMA"
-                    className="font-inter"
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    placeholder={selectedRoleObj.requiresApproval ? 'officer@coastal.gov' : 'mariner@orca.marine'}
+                    className="auth-input font-inter"
                     disabled={busy}
                   />
+                </div>
+              </label>
+
+              {form.role === 'researcher' && (
+                <label className="auth-label font-inter">
+                  <span>Research Institution / University</span>
+                  <div className="auth-input-wrapper">
+                    <input
+                      required
+                      value={form.organization}
+                      onChange={(e) => setForm({ ...form, organization: e.target.value })}
+                      placeholder="e.g. National Institute of Oceanography (NIO)"
+                      className="auth-input font-inter"
+                      disabled={busy}
+                    />
+                  </div>
                 </label>
-                <label className="font-inter">
-                  Designation / Role Title
-                  <input
-                    required
-                    value={form.designation}
-                    onChange={(e) => setForm({ ...form, designation: e.target.value })}
-                    placeholder="e.g. Regional Commander / Operations Officer"
-                    className="font-inter"
-                    disabled={busy}
-                  />
+              )}
+
+              {(form.role === 'coastal_authority' || form.role === 'marine_disaster_ops') && (
+                <>
+                  <label className="auth-label font-inter">
+                    <span>Organization / Maritime Agency</span>
+                    <div className="auth-input-wrapper">
+                      <input
+                        required
+                        value={form.organization}
+                        onChange={(e) => setForm({ ...form, organization: e.target.value })}
+                        placeholder="e.g. Indian Coast Guard / State Disaster Management"
+                        className="auth-input font-inter"
+                        disabled={busy}
+                      />
+                    </div>
+                  </label>
+
+                  <label className="auth-label font-inter">
+                    <span>Official Designation / Rank</span>
+                    <div className="auth-input-wrapper">
+                      <input
+                        required
+                        value={form.designation}
+                        onChange={(e) => setForm({ ...form, designation: e.target.value })}
+                        placeholder="e.g. Deputy Director / Operations Commander"
+                        className="auth-input font-inter"
+                        disabled={busy}
+                      />
+                    </div>
+                  </label>
+                </>
+              )}
+
+              <div className="auth-grid-two">
+                <label className="auth-label font-inter">
+                  <span>Password</span>
+                  <div className="auth-input-wrapper">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      minLength="8"
+                      required
+                      value={form.password}
+                      onChange={(e) => setForm({ ...form, password: e.target.value })}
+                      placeholder="Min 8 chars"
+                      className="auth-input font-inter"
+                      disabled={busy}
+                    />
+                  </div>
                 </label>
-              </>
-            )}
 
-            <label className="font-inter">
-              Password
-              <input
-                type="password"
-                minLength="8"
-                required
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                placeholder="At least 8 characters"
-                className="font-inter"
-                disabled={busy}
-              />
-            </label>
+                <label className="auth-label font-inter">
+                  <span>Confirm Password</span>
+                  <div className="auth-input-wrapper">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      minLength="8"
+                      required
+                      value={form.confirm_password}
+                      onChange={(e) => setForm({ ...form, confirm_password: e.target.value })}
+                      placeholder="Repeat password"
+                      className="auth-input font-inter"
+                      disabled={busy}
+                    />
+                  </div>
+                </label>
+              </div>
 
-            <label className="font-inter">
-              Confirm Password
-              <input
-                type="password"
-                minLength="8"
-                required
-                value={form.confirm_password}
-                onChange={(e) => setForm({ ...form, confirm_password: e.target.value })}
-                placeholder="Repeat password"
-                className="font-inter"
-                disabled={busy}
-              />
-            </label>
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  className="auth-show-pass-link font-inter"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                >
+                  {showPassword ? 'Hide Passwords' : 'Show Passwords'}
+                </button>
+              </div>
+            </div>
 
-            <button className="primary-button font-inter" disabled={busy} style={{ marginTop: '1rem' }}>
-              {busy ? 'Creating account…' : 'Create Account'}
+            <button type="submit" className="auth-submit-btn font-inter" disabled={busy} style={{ marginTop: '0.5rem' }}>
+              {busy ? (
+                <span className="auth-btn-loading">
+                  <svg className="auth-spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <circle cx="12" cy="12" r="10" strokeDasharray="30" strokeLinecap="round" />
+                  </svg>
+                  Creating account…
+                </span>
+              ) : (
+                <span>Complete Registration &rarr;</span>
+              )}
             </button>
           </>
         )}
 
         <p className="auth-switch font-inter">
           Already have an account?{' '}
-          <button type="button" onClick={() => navigate && navigate('/login')} className="font-inter">
+          <button type="button" onClick={() => navigate && navigate('/login')} className="auth-switch-link font-inter">
             Sign In
           </button>
         </p>
