@@ -133,20 +133,6 @@ export default function Home({ navigate }) {
             >
               Home
             </button>
-            <button
-              type="button"
-              className="nav-btn"
-              onClick={() => handleNav('/dashboard')}
-            >
-              Dashboard
-            </button>
-            <button
-              type="button"
-              className="nav-btn"
-              onClick={() => handleNav('/ask-orca')}
-            >
-              Ask ORCA
-            </button>
             {!isRealUser ? (
               <>
                 <button
