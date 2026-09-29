@@ -37,7 +37,9 @@ export function OceanPulse({ location }) {
         {/* Wave Height */}
         <div className="pulse-metric-tile wave-tile">
           <div className="tile-header">
-            <span className="tile-icon">🌊</span>
+            <span className="tile-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/></svg>
+            </span>
             <span className="tile-label">Wave Height</span>
           </div>
           <div className="tile-value-row">
@@ -52,7 +54,9 @@ export function OceanPulse({ location }) {
         {/* Swell Period */}
         <div className="pulse-metric-tile wave-tile">
           <div className="tile-header">
-            <span className="tile-icon">〰️</span>
+            <span className="tile-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12h2a4 4 0 0 1 4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 1 4-4h2"/></svg>
+            </span>
             <span className="tile-label">Swell Period</span>
           </div>
           <div className="tile-value-row">
@@ -67,7 +71,9 @@ export function OceanPulse({ location }) {
         {/* Wave Period */}
         <div className="pulse-metric-tile wave-tile">
           <div className="tile-header">
-            <span className="tile-icon">⏱️</span>
+            <span className="tile-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </span>
             <span className="tile-label">Wave Period</span>
           </div>
           <div className="tile-value-row">
@@ -82,7 +88,9 @@ export function OceanPulse({ location }) {
         {/* Sea Surface Temperature */}
         <div className="pulse-metric-tile temp-tile">
           <div className="tile-header">
-            <span className="tile-icon">🌡️</span>
+            <span className="tile-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
+            </span>
             <span className="tile-label">Sea Surface Temp</span>
           </div>
           <div className="tile-value-row">
@@ -97,7 +105,9 @@ export function OceanPulse({ location }) {
         {/* Wind Speed */}
         <div className="pulse-metric-tile wind-tile">
           <div className="tile-header">
-            <span className="tile-icon">💨</span>
+            <span className="tile-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/></svg>
+            </span>
             <span className="tile-label">Wind Speed</span>
           </div>
           <div className="tile-value-row">
@@ -112,7 +122,9 @@ export function OceanPulse({ location }) {
         {/* Wind Direction */}
         <div className="pulse-metric-tile wind-tile">
           <div className="tile-header">
-            <span className="tile-icon">🧭</span>
+            <span className="tile-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+            </span>
             <span className="tile-label">Wind Direction</span>
           </div>
           <div className="tile-value-row">

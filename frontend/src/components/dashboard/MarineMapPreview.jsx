@@ -179,6 +179,7 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
   const [windOpacity, setWindOpacity] = useState(0.75)
   const [cloudIROpacity, setCloudIROpacity] = useState(0.75)
   const [isExpanded, setIsExpanded] = useState(false)
+  const [isLegendOpen, setIsLegendOpen] = useState(false)
 
   const lng = location.longitude ?? 78.9
   const lat = location.latitude ?? 20.5
@@ -404,29 +405,9 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
     })
     resizeObserver.observe(mapContainerRef.current)
 
-    // Handle Map Click Point Inspection
+    // Map click in preview focuses coordinates without opening unwanted popups
     const handleMapClick = (e) => {
-      const clickLat = e.lngLat.lat
-      const clickLng = e.lngLat.lng
-
-      new Popup({ closeButton: true, closeOnClick: true })
-        .setLngLat([clickLng, clickLat])
-        .setHTML(`
-          <div style="font-family: system-ui, -apple-system, sans-serif; font-size: 11px; color: #0f172a; padding: 4px; min-width: 185px;">
-            <strong style="color: #0369a1; font-size: 12px; display: block; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 6px;">
-              📍 Open-Meteo Marine Inspection
-            </strong>
-            <div style="display: grid; gap: 4px;">
-              <div style="font-size: 10px; color: #64748b; font-family: monospace;">
-                Lat: ${clickLat.toFixed(4)}°N • Lng: ${clickLng.toFixed(4)}°E
-              </div>
-              <div style="color: #0284c7; font-weight: 600;">
-                Source: Open-Meteo Marine API (ocean_current_direction)
-              </div>
-            </div>
-          </div>
-        `)
-        .addTo(map)
+      // Intentionally silent or handled cleanly without intrusive popup
     }
 
     map.on('click', handleMapClick)
@@ -754,7 +735,7 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
             <button
               type="button"
               onClick={() => setBaseMapMode((m) => (m === 'satellite' ? 'standard' : 'satellite'))}
-              title={baseMapMode === 'satellite' ? 'Switch to Standard Cartography' : 'Switch to ESRI High-Resolution Satellite Basemap with Boundaries'}
+              title={baseMapMode === 'satellite' ? 'Switch to Standard Cartography' : 'Switch to Satellite Imagery'}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -772,7 +753,6 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
                 transition: 'all 0.2s ease',
               }}
             >
-              <span>{baseMapMode === 'satellite' ? '🌍' : '🛰️'}</span>
               {baseMapMode === 'satellite' ? 'Satellite Basemap' : 'Satellite View'}
             </button>
           </div>
@@ -793,29 +773,70 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
           </button>
         </div>
 
-        {/* Dynamic Context Legend Overlay */}
-        <div
-          className="map-legend font-mono"
-          style={{
-            position: 'absolute',
-            bottom: '12px',
-            left: '12px',
-            zIndex: 1000,
-            background: 'rgba(15, 23, 42, 0.92)',
-            backdropFilter: 'blur(8px)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: '8px',
-            padding: '8px 12px',
-            color: '#e2e8f0',
-            maxWidth: '340px',
-            fontSize: '10px',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
-          }}
-        >
-          <div style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94a3b8', marginBottom: '6px', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '3px', display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
-            <span>SPATIAL & METEOROLOGICAL LAYERS</span>
-            {lastUpdatedTime && <span>UPDATED: {lastUpdatedTime}</span>}
-          </div>
+        {/* Dynamic Context Legend Overlay (Collapsible on Preview, Always Open in Fullscreen) */}
+        {!isExpanded && !isLegendOpen ? (
+          <button
+            type="button"
+            onClick={() => setIsLegendOpen(true)}
+            style={{
+              position: 'absolute',
+              bottom: '12px',
+              left: '12px',
+              zIndex: 20,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 12px',
+              background: 'rgba(15, 23, 42, 0.90)',
+              backdropFilter: 'blur(8px)',
+              border: '1px solid rgba(255, 255, 255, 0.18)',
+              borderRadius: '20px',
+              color: '#e2e8f0',
+              fontSize: '11px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 4px 14px rgba(0, 0, 0, 0.35)',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#38bdf8' }}></span>
+            <span>Layers & Legend ▲</span>
+          </button>
+        ) : (
+          <div
+            className="map-legend font-mono"
+            style={{
+              position: 'absolute',
+              bottom: '12px',
+              left: '12px',
+              zIndex: 1000,
+              background: 'rgba(15, 23, 42, 0.94)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              borderRadius: '8px',
+              padding: '8px 12px',
+              color: '#e2e8f0',
+              maxWidth: '320px',
+              fontSize: '10px',
+              boxShadow: '0 6px 24px rgba(0,0,0,0.6)'
+            }}
+          >
+            <div style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94a3b8', marginBottom: '6px', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+              <span>SPATIAL & METEOROLOGICAL LAYERS</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                {lastUpdatedTime && <span style={{ fontSize: '8px' }}>{lastUpdatedTime}</span>}
+                {!isExpanded && (
+                  <button
+                    type="button"
+                    onClick={() => setIsLegendOpen(false)}
+                    style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '12px', padding: '0 2px' }}
+                    title="Collapse legend"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            </div>
 
           <div style={{ display: 'grid', gap: '8px' }}>
             {layers.temperature !== false && (
@@ -987,7 +1008,8 @@ export default function MarineMapPreview({ location, layers, onToggleLayer, zoom
             )}
           </div>
         </div>
-      </div>
+      )}
+    </div>
 
       <div className="map-layers font-sans" aria-label="Map layer controls">
         {Object.entries(layerLabels).map(([id, label]) => (
