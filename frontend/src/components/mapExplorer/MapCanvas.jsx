@@ -5,12 +5,15 @@ import {
   Marker,
   NavigationControl,
   Popup,
+  setWorkerUrl,
 } from 'maplibre-gl'
+import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 import 'maplibre-gl/dist/maplibre-gl.css'
 
 import { registerOmProtocol, getSatelliteCloudTileUrl, getVisibleCloudTileUrl } from '../../utils/omProtocolHelper'
 import { renderPFZPopupHTML, getPFZSpeciesAndCatchInfo } from '../../utils/pfzSpeciesData'
 
+setWorkerUrl(workerUrl)
 registerOmProtocol()
 
 export const ESRI_SATELLITE_TILES = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
@@ -346,6 +349,8 @@ export default function MapCanvas({
   const initialLocationRef = useRef(selectedLocation)
   const locationHandlerRef = useRef(onMapLocation)
   const [inspectedPFZ, setInspectedPFZ] = useState(null)
+  const lastFittedRouteKeyRef = useRef('')
+  const lastFlyLocationRef = useRef('')
 
   const [mapStatus, setMapStatus] = useState('loading')
 
@@ -1473,19 +1478,27 @@ export default function MapCanvas({
     ]
 
     if (allRouteCoords.length >= 2) {
-      try {
-        const routeBounds = allRouteCoords.reduce(
-          (b, pt) => (Array.isArray(pt) && pt.length >= 2 && Number.isFinite(pt[0]) && Number.isFinite(pt[1]) ? b.extend(pt) : b),
-          new LngLatBounds(allRouteCoords[0], allRouteCoords[0])
-        )
-        map.fitBounds(routeBounds, {
-          padding: { top: 95, bottom: 95, left: 95, right: 95 },
-          maxZoom: 12,
-          duration: 800,
-        })
-      } catch (e) {
-        console.warn('Failed to fit multi-modal route bounds:', e)
+      const startPt = allRouteCoords[0]
+      const endPt = allRouteCoords[allRouteCoords.length - 1]
+      const routeKey = `${allRouteCoords.length}-${Number(startPt[0] || 0).toFixed(3)},${Number(startPt[1] || 0).toFixed(3)}-${Number(endPt[0] || 0).toFixed(3)},${Number(endPt[1] || 0).toFixed(3)}`
+      if (routeKey !== lastFittedRouteKeyRef.current) {
+        lastFittedRouteKeyRef.current = routeKey
+        try {
+          const routeBounds = allRouteCoords.reduce(
+            (b, pt) => (Array.isArray(pt) && pt.length >= 2 && Number.isFinite(pt[0]) && Number.isFinite(pt[1]) ? b.extend(pt) : b),
+            new LngLatBounds(allRouteCoords[0], allRouteCoords[0])
+          )
+          map.fitBounds(routeBounds, {
+            padding: { top: 95, bottom: 95, left: 95, right: 95 },
+            maxZoom: 12,
+            duration: 600,
+          })
+        } catch (e) {
+          console.warn('Failed to fit multi-modal route bounds:', e)
+        }
       }
+    } else {
+      lastFittedRouteKeyRef.current = ''
     }
   }, [
     layers,
@@ -1576,11 +1589,15 @@ export default function MapCanvas({
           .addTo(map)
       }
 
-      map.flyTo({
-        center: [longitude, latitude],
-        zoom: Math.max(map.getZoom(), 7),
-        essential: true,
-      })
+      const locKey = `${latitude.toFixed(4)},${longitude.toFixed(4)}`
+      if (locKey !== lastFlyLocationRef.current) {
+        lastFlyLocationRef.current = locKey
+        map.flyTo({
+          center: [longitude, latitude],
+          zoom: Math.max(map.getZoom(), 7),
+          essential: true,
+        })
+      }
     } catch (e) {
       console.warn('Failed to update selected location marker:', e)
     }
