@@ -13,6 +13,7 @@ export default function LiveNavigationHUD({
 }) {
   const [showWaypoints, setShowWaypoints] = useState(false)
   const [vesselSpeed, setVesselSpeed] = useState(12.0)
+  const [isMinimized, setIsMinimized] = useState(false)
 
   if (!navigationData && !isLoading) return null
 
@@ -36,7 +37,7 @@ export default function LiveNavigationHUD({
   const landTransit = navigationData?.land_transit
 
   return (
-    <div className="live-nav-hud">
+    <div className={`live-nav-hud ${isMinimized ? 'is-minimized' : ''}`}>
       {/* HEADER BAR */}
       <div className="live-nav-header">
         <div className="live-nav-title-group">
@@ -49,6 +50,17 @@ export default function LiveNavigationHUD({
           </div>
         </div>
 
+        {isMinimized && (
+          <div className="live-nav-minimized-strip">
+            <span className="min-stat"><strong>🧭</strong> {bearing} {heading}</span>
+            <span className="min-stat"><strong>📏</strong> {distanceNM} NM</span>
+            <span className="min-stat"><strong>⏱️</strong> {eta}</span>
+            {msiScore != null && (
+              <span className="min-stat"><strong>🛡️</strong> MSI {msiScore}/100</span>
+            )}
+          </div>
+        )}
+
         <div className="live-nav-header-actions">
           {overallStatus && (
             <span className={`live-nav-status-badge status-${overallStatus.toLowerCase()}`}>
@@ -59,6 +71,15 @@ export default function LiveNavigationHUD({
             </span>
           )}
           <button
+            type="button"
+            className="live-nav-btn-minimize"
+            onClick={() => setIsMinimized((v) => !v)}
+            title={isMinimized ? 'Expand full navigation dashboard' : 'Minimize to compact navigation bar'}
+          >
+            {isMinimized ? '▼ Expand' : '▲ Minimize'}
+          </button>
+          <button
+            type="button"
             className="live-nav-btn-close"
             onClick={onStopNavigation}
             title="End Live Navigation"
@@ -68,6 +89,8 @@ export default function LiveNavigationHUD({
         </div>
       </div>
 
+      {!isMinimized && (
+        <>
       {/* MULTI-MODAL JOURNEY OVERVIEW BANNER (LAND TO SHORE TO SEA) */}
       {landTransit?.land_transit_needed && (
         <div className="live-nav-multimodal-banner">
@@ -267,6 +290,8 @@ export default function LiveNavigationHUD({
             </div>
           )}
         </div>
+      )}
+        </>
       )}
     </div>
   )

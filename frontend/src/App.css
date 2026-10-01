@@ -1266,7 +1266,12 @@
   top: 18px !important;
   left: 18px !important;
   right: 18px !important;
-  z-index: 100000 !important;
+  z-index: 35 !important;
+}
+.is-expanded-canvas .live-nav-hud {
+  top: 70px !important;
+  max-width: min(840px, calc(100vw - 220px)) !important;
+  z-index: 1000 !important;
 }
 .is-expanded-canvas .canvas-btn-expand {
   background: #dc2626 !important;
