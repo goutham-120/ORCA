@@ -5,47 +5,9 @@ ORCA (Ocean Resource and Contextual Analysis) is a modular marine decision-suppo
 
 ## High-Level Topology
 
-```
-+------------------------------------------------------------------+
-|                     Client Layer (React / Vite)                  |
-|  - Dashboard: Live Marine Conditions & Ocean Pulse KPI Cards    |
-|  - Map Explorer: MapLibre GL JS, Vector Layers & NavIC HUD       |
-|  - Ask ORCA: Multilingual Marine Intelligence Chatbot            |
-|  - Personalization: Coastal Ops, Fisherman, & Researcher Views   |
-+---------------------------------+--------------------------------+
-                                  | HTTPS / JSON
-                                  v
-+---------------------------------+--------------------------------+
-|                     FastAPI Backend Service                      |
-|                                                                  |
-|  +---------------------+  +--------------------+  +------------+ |
-|  |     API Routers     |  |   Core Services    |  | GIS Engine | |
-|  | - /orca/query       |  | - DecisionService  |  | - GeoPandas| |
-|  | - /map/layers       |  | - AlertService     |  | - Shapely  | |
-|  | - /alerts           |  | - PfzService       |  | - Spatial  | |
-|  | - /reports          |  | - NavicService     |  |   Queries  | |
-|  +----------+----------+  +---------+----------+  +-----+------+ |
-|             |                       |                   |        |
-|             +-----------------------+-------------------+        |
-|                                     v                            |
-|                       Workflow Orchestrator                      |
-|                       (LangGraph State Machine)                  |
-|                                     |                            |
-|             +-----------------------+-------------------+        |
-|             |                       |                   |        |
-|             v                       v                   v        |
-|       Ocean Agent             Weather Agent         GIS Agent    |
-+-------------+-----------------------+-------------------+--------+
-              |                       |                   |
-              v                       v                   v
-+-------------+-----------------------+-------------------+--------+
-|                      External Providers Layer                    |
-|  - Open-Meteo Marine & Weather APIs                              |
-|  - INCOIS Potential Fishing Zones (PFZ) Advisories               |
-|  - ISRO Earth Observation & NavIC Satellite Orbits              |
-|  - OSRM Road Routing API (Coastal Evacuation / Detour)           |
-+------------------------------------------------------------------+
-```
+<p align="center">
+  <img src="architecture.png" width="100%" alt="ORCA Technical Architecture Flowchart" style="border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.12);" />
+</p>
 
 ## Component Breakdown
 

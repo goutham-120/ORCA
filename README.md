@@ -1,161 +1,217 @@
-# ORCA
+<p align="center">
+  <img src="frontend/public/orcalogo.png" width="130" alt="ORCA Logo" />
+</p>
 
-**Ocean Resource and Contextual Analysis (ORCA)** is a marine decision-support application for exploring ocean and weather conditions, coastal safety, and location-specific marine questions. It combines a React web interface with a FastAPI service and GIS analysis components.
+<h1 align="center">ORCA — Ocean Resource & Contextual Analysis</h1>
 
-## Features
+<p align="center">
+  <b>A Multimodal Marine Decision-Support Platform for Coastal Safety, NavIC Tracking, and High-Yield Fishing Intelligence</b>
+</p>
 
-- **Dashboard** for marine conditions, safety summaries, and recent activity.
-- **Ask ORCA** for conversational, evidence-based marine and weather information, with English, Hindi, Telugu, and Tamil support.
-- **Map Explorer** for viewing map layers and spatial information.
-- **Alerts and coastal tools** for safety checks, reports, and coastal authority workflows.
-- **Reports and personalization** for saved or role-oriented views.
-- **Backend API** for authentication, conversations, maps, alerts, reports, and decision support.
+<p align="center">
+  <a href="#features"><img src="https://img.shields.io/badge/Frontend-React_19_%2B_Vite-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React 19" /></a>
+  <a href="#features"><img src="https://img.shields.io/badge/Backend-FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white" alt="FastAPI" /></a>
+  <a href="#features"><img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python 3.10+" /></a>
+  <a href="#features"><img src="https://img.shields.io/badge/Maps-MapLibre_GL_JS-396CB4?style=flat-square&logo=maplibre&logoColor=white" alt="MapLibre" /></a>
+  <a href="#features"><img src="https://img.shields.io/badge/Geospatial-GeoPandas_%2B_Shapely-139C5A?style=flat-square" alt="GeoPandas" /></a>
+  <a href="#features"><img src="https://img.shields.io/badge/Database-PostgreSQL_%2B_PostGIS-336791?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL" /></a>
+  <a href="#features"><img src="https://img.shields.io/badge/PWA-Mobile_Ready-5A0FC8?style=flat-square&logo=pwa&logoColor=white" alt="PWA" /></a>
+</p>
 
-The application can use Open-Meteo for marine and weather data. GIS layers and other live sources depend on the configured provider and deployment environment. When a source is unavailable, the API can report unavailable or cached evidence; do not treat demo or static layers as live observations.
+---
 
-## Technology
+## Overview
 
-- Frontend: React, Vite, JavaScript, MapLibre GL
-- Backend: Python, FastAPI, Uvicorn
-- Workflow orchestration: LangGraph
-- Geospatial processing: GeoPandas, Shapely
-- Persistence: SQLite for local development; optional PostgreSQL
+**ORCA (Ocean Resource and Contextual Analysis)** is an end-to-end maritime intelligence and coastal safety system. Built to address real-world coastal operations and disaster management challenges, ORCA synthesizes live oceanographic observations, atmospheric forecasts, satellite orbits, and geospatial boundaries into actionable, localized insights.
 
-## Requirements
+From small-craft fishermen needing spoken vernacular weather safety briefings to port authorities monitoring maritime distress and hazard perimeters, ORCA delivers real-time situational awareness across India's coastline.
 
-- Node.js and npm
-- Python 3.10 or newer
-- Windows PowerShell, macOS, or Linux shell
+---
 
-PostgreSQL is optional for local development. The frontend and backend use separate terminals during development.
+## 🎥 Prototype Demo Video
 
-## Quick start
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=RA6qrDFKa_c">
+    <img src="https://img.youtube.com/vi/RA6qrDFKa_c/maxresdefault.jpg" width="85%" alt="ORCA - SIH26176 Prototype Explanation" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" />
+  </a>
+</p>
 
-### 1. Configure the backend
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=RA6qrDFKa_c">
+    <b>▶️ Click here to watch the full Prototype Walkthrough (SIH26176) on YouTube</b>
+  </a>
+</p>
 
-From the repository root, create and activate a virtual environment, then install the backend requirements:
+---
+
+## Key Features
+
+### 🌊 1. Marine Safety Index (MSI)
+- Deterministic 0–100 safety score and risk classification (**Low**, **Moderate**, **High**, **Severe**).
+- Computes multidimensional thresholds across wave height, swell period, wind gust speed, and tidal flows.
+- Automatically generates concrete operational directives (e.g., *"Restrict operations beyond 5 nautical miles"*).
+
+### 🐟 2. INCOIS Potential Fishing Zones (PFZ)
+- Direct integration with **INCOIS** ocean chlorophyll concentration and sea-surface temperature (SST) gradients.
+- Interactive vector polygons displaying recommended target species (Tuna, Mackerel, Sardines), distance from port, and compass bearings.
+- Live routing from vessel GPS coordinates directly to high-yield fishing zones.
+
+### 🛰️ 3. ISRO Earth Observation & NavIC Tracking
+- **NavIC Constellation Monitor**: Real-time Space Vehicle (SV) health, orbital positions, and Geometric Dilution of Precision (GDOP).
+- **Satellite Overpass HUD**: Visualizes upcoming passes of Indian remote sensing satellites over user coordinates.
+- **Emergency SOS Transponder**: One-click distress beacon broadcasting vessel position, battery level, and emergency alerts.
+
+### 🎙️ 4. Ask ORCA — Multilingual Voice Intelligence
+- Conversational decision support with localized text-to-speech briefings tailored for coastal communities.
+- Native support for **English**, **Hindi (हिन्दी)**, **Telugu (తెలుగు)**, and **Tamil (தமிழ்)**.
+- Evidence-grounded responses displaying telemetry provenance badges (Live, Cached, Unavailable).
+
+### 🗺️ 5. Multi-Modal Navigational Detours
+- **Bathymetric Pathfinding**: Identifies safe marine waypoints avoiding shallow shoals, restricted naval perimeters, and active cyclone cones.
+- **OSRM Land-to-Shore Routing**: Seamless road routing to nearest safe landing jetties, cyclone shelters, or coastal medical facilities when sea transit is compromised.
+
+### 🌪️ 6. Marine Scenario Simulator
+- Perturbation modeling engine testing environmental stress scenarios (SST thermal anomalies, wave surges, cyclone intensification).
+- Allows researchers and disaster planners to project impact radii and calculate risk deltas before deploying offshore resources.
+
+---
+
+## Persona-Driven Workflows
+
+| Persona | Primary Focus & Dashboard Modules |
+| :--- | :--- |
+| **Traditional Fishermen** | Spoken vernacular audio briefings, PFZ fish locations, SOS emergency beacon, and simple safe-to-venture indicators. |
+| **Coastal Authorities** | Vessel Monitoring System (VMS), AIS telemetry feeds, broadcast hazard alerts, and community grievance resolution. |
+| **Marine Scientists** | Oceanographic anomalies, SST gradients, historical environmental logs, and climate simulation perturbations. |
+
+---
+
+## System Architecture
+
+<p align="center">
+  <img src="docs/architecture.png" width="95%" alt="ORCA End-to-End System Architecture" style="border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.12);" />
+</p>
+
+The ORCA system is architected across a 5-tier pipeline:
+1. **User Entry & Multimodal Inputs**: GPS telemetry, Web Speech voice recognition in 4 coastal languages (English, Hindi, Telugu, Tamil), and map interactions.
+2. **FastAPI Gateway & Autonomous Planner**: Query parsing and LangGraph dynamic subtask decomposition.
+3. **Parallel Domain Multi-Agents**: Specialized workers (`OceanAgent`, `WeatherAgent`, `GISAgent`, `SatelliteAgent`) concurrently pulling from Open-Meteo, INCOIS PFZ, and ISRO NavIC.
+4. **Marine Risk Intelligence**: The Marine Safety Index (MSI 0–100) engine evaluating cyclone cones and geofenced hazard zones into deterministic verdicts (Safe, Moderate, Severe).
+5. **Synthesis & Multimodal Delivery**: Grounded evidence synthesis delivering interactive MapLibre routes, spoken audio briefings, and emergency SOS alerts.
+
+---
+
+## Quick Start
+
+### Prerequisites
+- **Node.js** (v18 or newer)
+- **Python** (v3.10 or newer)
+- **Git**
+
+---
+
+### 1. Backend Setup
 
 ```powershell
+# Navigate to backend directory
 cd backend
+
+# Create and activate virtual environment
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
-```
+.\.venv\Scripts\Activate.ps1    # On Linux/macOS: source .venv/bin/activate
 
-On macOS or Linux, activate with `source .venv/bin/activate` instead.
+# Install dependencies
+pip install -r requirements.txt
 
-The backend reads `backend/.env` when present. It can run without a custom environment file, using a local SQLite database. Optional configuration keys include:
-
-```dotenv
-ORCA_ENVIRONMENT=development
-ORCA_JWT_SECRET=replace-with-a-long-random-secret
-ORCA_ADMIN_EMAIL=admin@example.com
-ORCA_ADMIN_PASSWORD=replace-with-a-strong-password
-ORCA_CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
-# Optional PostgreSQL persistence:
-# ORCA_DATABASE_URL=postgresql://user:password@localhost:5432/orca
-# Optional LLM integration:
-# GROQ_API_KEY=your-key
-```
-
-Keep real secrets in local environment files or a secrets manager. Do not commit credentials. PostgreSQL support additionally requires:
-
-```powershell
-python -m pip install -r requirements-postgres.txt
-```
-
-### 2. Start the backend
-
-From `backend/`, with the virtual environment active:
-
-```powershell
+# Start FastAPI server
 uvicorn app.main:app --reload
 ```
 
-By default, the API is at `http://127.0.0.1:8000`. Interactive API documentation is at `http://127.0.0.1:8000/docs`, and the health endpoint is `http://127.0.0.1:8000/health`.
+* Backend API will be live at: `http://localhost:8000`
+* Interactive API Documentation (Swagger UI): `http://localhost:8000/docs`
+* API Health Check: `http://localhost:8000/health`
 
-### 3. Configure and start the frontend
+---
 
-In a second terminal:
+### 2. Frontend Setup
+
+In a new terminal:
 
 ```powershell
+# Navigate to frontend directory
 cd frontend
+
+# Install packages
 npm install
+
+# Launch development server
 npm run dev
 ```
 
-Open the Vite URL shown in the terminal (usually `http://localhost:5173`). Set `VITE_API_BASE_URL` in `frontend/.env.local` if the backend runs at a different address:
+* Frontend will be live at: `http://localhost:5173`
 
-```dotenv
-VITE_API_BASE_URL=http://127.0.0.1:8000
-```
+---
 
-The map can use a configured `VITE_MAP_API_KEY` where required by the chosen map service. Do not commit private keys.
+### 3. Optional: PostgreSQL + PostGIS with Docker
 
-## PostgreSQL with Docker Compose
-
-The included Compose file starts a local PostGIS database:
+For local PostGIS spatial persistence:
 
 ```powershell
 docker compose up -d postgres
+pip install -r backend/requirements-postgres.txt
 ```
 
-Install `backend/requirements-postgres.txt` and set `ORCA_DATABASE_URL` to the database URL that matches your local Compose configuration before launching the backend. The service maps PostgreSQL to host port `5433`.
+Set `ORCA_DATABASE_URL=postgresql://user:password@localhost:5433/orca` in `backend/.env`.
 
-## Useful commands
+---
 
-Run the frontend production build:
+## Testing & Quality Assurance
 
 ```powershell
+# Run backend test suite
+cd backend
+python -m unittest discover -s tests -v
+
+# Run frontend production build
 cd frontend
 npm run build
-```
 
-Run the frontend linter:
-
-```powershell
-cd frontend
+# Run frontend linting
 npm run lint
 ```
 
-Run backend tests with the project virtual environment active:
+---
 
-```powershell
-cd backend
-python -m unittest discover -s tests -v
-```
-
-## Repository layout
+## Repository Structure
 
 ```text
 ORCA/
 ├── backend/
 │   ├── app/
-│   │   ├── agents/       # Ocean, weather, and GIS agents
-│   │   ├── analysis/     # Marine safety, route, and PFZ analysis
-│   │   ├── api/          # FastAPI routers
-│   │   ├── providers/    # External and demo data providers
-│   │   ├── services/     # Data and domain services
-│   │   └── workflows/    # ORCA orchestration graph
-│   └── tests/
-├── docs/                 # Architecture, data sources, API contracts
+│   │   ├── agents/          # Ocean, weather, and GIS specialized agents
+│   │   ├── analysis/        # Marine safety index (MSI) & detour algorithms
+│   │   ├── api/             # FastAPI REST endpoints
+│   │   ├── core/            # Query parsing & conversation store
+│   │   ├── providers/       # Open-Meteo, INCOIS, & ISRO data adapters
+│   │   ├── services/        # Decision, alert, and navigation services
+│   │   └── workflows/       # LangGraph multi-agent execution pipeline
+│   └── tests/               # Automated unit & integration tests
+├── docs/
+│   ├── architecture.md      # Detailed system architecture specification
+│   └── data_sources.md      # Live telemetry providers & ingestion specs
 ├── frontend/
+│   ├── public/              # Icons, manifest.json & PWA service workers
 │   └── src/
-│       ├── components/
-│       ├── pages/
-│       └── services/
-└── docker-compose.yml
+│       ├── components/      # MapLibre canvas, HUDs, charts, and chat cards
+│       ├── pages/           # Dashboard, AskOrca, MapExplorer, Simulator
+│       └── services/        # API clients and offline synchronization
+└── docker-compose.yml       # Local PostGIS container configuration
 ```
 
-## Architecture and API references
+---
 
-- [Architecture](docs/architecture.md)
-- [Data sources](docs/data_sources.md)
-- [API contracts](docs/api_contracts.md)
+## Documentation
 
-## Development notes
-
-- The backend loads `backend/.env`; the frontend uses Vite environment variables such as those in `frontend/.env.local`.
-- The frontend expects the backend at `http://127.0.0.1:8000` unless `VITE_API_BASE_URL` is overridden.
-- SQLite is the default local persistence option. PostgreSQL is optional and configured with `ORCA_DATABASE_URL`.
-- Do not assume that a successful demo response represents a live external data source. Check the evidence and provider status returned by the relevant API.
+* [System Architecture Specification](docs/architecture.md)
+* [External Data Sources & Ingestion Matrix](docs/data_sources.md)
+* Interactive REST Documentation: Run the backend and visit `/docs`.
