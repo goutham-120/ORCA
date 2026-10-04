@@ -609,3 +609,5 @@ class OrcaWorkflow:
     @staticmethod
     def _persona_focus(persona:str)->str: return {"fisher_marine_operator":"practical fishing suitability and safety","researcher_scientist":"measurements, timestamps, and provenance","coastal_authority":"risk severity and monitoring implications"}.get(persona,"clear, understandable conditions")
 
+# End of OrcaWorkflow
+

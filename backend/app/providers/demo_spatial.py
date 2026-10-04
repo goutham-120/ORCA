@@ -285,3 +285,5 @@ def replace_demo_pfz(repository: SpatialFeatureRepository = spatial_features) ->
         return len(records)
     except Exception:
         return 0
+
+# End of demo_spatial provider

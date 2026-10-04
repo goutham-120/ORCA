@@ -84,3 +84,5 @@ class GISAgent:
         if any(term in query for term in ("near", "distance", "nearby")):
             return "proximity"
         return "zone_check"
+
+# End of GISAgent
