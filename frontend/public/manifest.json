@@ -1,0 +1,19 @@
+{
+  "short_name": "ORCA",
+  "name": "ORCA - Marine Decision & Coastal Intelligence",
+  "description": "Intelligent Marine Decision & Coastal Advisory Intelligence Platform",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0b132b",
+  "theme_color": "#0284c7",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "categories": ["navigation", "weather", "productivity"]
+}
