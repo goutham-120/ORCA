@@ -38,11 +38,12 @@ Thumbs.db
 *.db-wal
 *.db-journal
 
-backend/orca-session-backend*.log
+# Logs & debug traces
+*.log
+backend/*.log
+server*.log
 
-# ORCA knowledge source files
+# Knowledge & ChromaDB vector store data
 orca-knowledge/
-
-# ChromaDB vector store data (tracked for direct production deployment)
 !backend/data/rag/chroma/
-!backend/data/rag/chroma/**
+!backend/data/rag/chroma/**
