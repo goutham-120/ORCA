@@ -464,3 +464,4 @@ export default function EvidencePanel({ evidence = [], rag = null }) {
     </div>
   )
 }
+// End of EvidencePanel component

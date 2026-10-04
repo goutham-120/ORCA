@@ -250,3 +250,4 @@ export default function ChatHeader({
     </header>
   )
 }
+// End of ChatHeader component

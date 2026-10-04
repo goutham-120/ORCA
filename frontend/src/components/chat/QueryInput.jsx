@@ -233,3 +233,4 @@ export default function QueryInput({ value, onChange, onSend, loading, language 
     </div>
   )
 }
+// End of QueryInput component
